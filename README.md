@@ -56,26 +56,6 @@ Este sistema permite a estudiantes, encargados y administrativos gestionar de fo
 
 
 
-🎓 Sistema de Reserva de Equipos FACE
-Este proyecto es una plataforma web desarrollada para la Facultad de Ciencias Empresariales (FACE) que permite a estudiantes, administrativos y encargados gestionar de forma eficiente la reserva de notebooks y otros equipos tecnológicos. El sistema automatiza el proceso de solicitud, autorización, seguimiento y entrega, garantizando transparencia, trazabilidad y control de los recursos.
-
-✨ Características principales
-📋 Solicitud de préstamos por parte de estudiantes desde una interfaz amigable.
-
-✅ Flujo de autorizaciones multietapa: encargado → jefe de carrera → administrador.
-
-🔁 Seguimiento del estado de la solicitud (estilo AliExpress).
-
-🧾 Firma de documento de compromiso y validación de permisos.
-
-🗂 Gestión administrativa del inventario de equipos.
-
-🔐 Acceso según rol: alumno, encargado o administrador.
-
-🛠 Panel de control para gestionar solicitudes, equipos y usuarios.
-
-⚙️ Tecnologías utilizadas
-Frontend: React, Material UI, SweetAlert2
 
 Backend: Node.js, Express
 
