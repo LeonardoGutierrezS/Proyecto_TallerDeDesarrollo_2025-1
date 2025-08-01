@@ -1,0 +1,510 @@
+/* Horas Disponibles - Diseño consistente con navbar y login */
+
+/* Container Principal */
+.horas-disponibles-main-container {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+  padding: 20px;
+  margin-left: 280px;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+/* Hero Section */
+.horas-hero-section {
+  background: linear-gradient(135deg, #003366, #004d99);
+  border-radius: 24px;
+  padding: 40px;
+  margin-bottom: 30px;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 8px 25px rgba(0, 51, 102, 0.25);
+  border: 3px solid rgba(0, 51, 102, 0.3);
+}
+
+.horas-hero-section::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: linear-gradient(
+    45deg,
+    transparent,
+    rgba(255, 255, 255, 0.1),
+    transparent
+  );
+  animation: shimmer 6s infinite;
+}
+
+@keyframes shimmer {
+  0% { transform: translateX(-100%) rotate(45deg); }
+  100% { transform: translateX(100%) rotate(45deg); }
+}
+
+.horas-hero-content {
+  position: relative;
+  z-index: 2;
+  text-align: center;
+}
+
+.horas-hero-title {
+  color: #ffffff;
+  font-size: 2.8rem;
+  font-weight: 800;
+  margin: 0 0 15px 0;
+  letter-spacing: 1.5px;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.horas-hero-subtitle {
+  color: rgba(238, 247, 255, 0.9);
+  font-size: 1.2rem;
+  margin: 0 0 40px 0;
+  font-weight: 400;
+  max-width: 600px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.horas-hero-stats {
+  display: flex;
+  justify-content: center;
+  gap: 40px;
+  flex-wrap: wrap;
+}
+
+.horas-hero-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  background: rgba(255, 255, 255, 0.1);
+  padding: 25px 30px;
+  border-radius: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(10px);
+  transition: all 0.3s ease;
+}
+
+.horas-hero-stat:hover {
+  background: rgba(255, 255, 255, 0.15);
+  transform: translateY(-3px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+}
+
+.horas-hero-stat .stat-number {
+  font-size: 2.5rem;
+  font-weight: 800;
+  color: #eef7ff;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  line-height: 1;
+}
+
+.horas-hero-stat .stat-label {
+  font-size: 0.9rem;
+  color: rgba(238, 247, 255, 0.9);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  text-align: center;
+}
+
+/* Controls Section */
+.horas-controls-section {
+  margin-bottom: 30px;
+}
+
+.horas-controls-card {
+  background: #eef7ff;
+  border-radius: 24px;
+  padding: 30px;
+  border: 3px solid #003366;
+  box-shadow: 0 8px 25px rgba(0, 51, 102, 0.15);
+}
+
+.horas-controls-header {
+  text-align: center;
+  margin-bottom: 30px;
+}
+
+.horas-controls-header h3 {
+  color: #003366;
+  font-size: 1.8rem;
+  font-weight: 800;
+  margin: 0 0 8px 0;
+  letter-spacing: 1px;
+}
+
+.horas-controls-header p {
+  color: rgba(0, 51, 102, 0.7);
+  font-size: 1rem;
+  margin: 0;
+  font-weight: 500;
+}
+
+.horas-controls-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 30px;
+  flex-wrap: wrap;
+}
+
+.horas-filters-group {
+  display: flex;
+  gap: 20px;
+  flex: 1;
+  flex-wrap: wrap;
+}
+
+.horas-filter-item {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 200px;
+  flex: 1;
+}
+
+.horas-filter-item label {
+  color: #003366;
+  font-weight: 700;
+  font-size: 14px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.horas-filter-select,
+.horas-filter-date {
+  padding: 12px 15px;
+  border: 3px solid #003366;
+  border-radius: 12px;
+  background-color: #eef7ff;
+  color: #003366;
+  font-size: 16px;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  box-sizing: border-box;
+}
+
+.horas-filter-select:focus,
+.horas-filter-date:focus {
+  background-color: rgba(0, 110, 223, 0.14);
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(0, 51, 102, 0.2);
+}
+
+.horas-filter-select::placeholder,
+.horas-filter-date::placeholder {
+  color: rgba(0, 51, 102, 0.5);
+}
+
+.horas-refresh-btn {
+  padding: 12px 20px;
+  border: 2px solid #003366;
+  border-radius: 12px;
+  background: rgba(0, 51, 102, 0.1);
+  color: #003366;
+  font-weight: 700;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.horas-refresh-btn:hover {
+  background: #003366;
+  color: #eef7ff;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 51, 102, 0.3);
+}
+
+.horas-refresh-btn:hover[style*="background-color: #dc2626"] {
+  background: #b91c1c !important;
+  color: white !important;
+  border-color: #b91c1c !important;
+  box-shadow: 0 4px 12px rgba(220, 38, 38, 0.3) !important;
+}
+
+.horas-actions-group {
+  display: flex;
+  gap: 15px;
+  flex-wrap: wrap;
+}
+
+.horas-action-btn {
+  padding: 15px 25px;
+  border: none;
+  border-radius: 12px;
+  font-weight: 700;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: 2px solid transparent;
+}
+
+.horas-generate-btn {
+  background: linear-gradient(135deg, #003366, #004d99);
+  color: #eef7ff;
+  border-color: rgba(0, 51, 102, 0.3);
+}
+
+.horas-generate-btn:hover {
+  background: linear-gradient(135deg, #004d99, #0066cc);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0, 51, 102, 0.4);
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+.horas-create-btn {
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: white;
+  border-color: rgba(16, 185, 129, 0.3);
+}
+
+.horas-create-btn:hover {
+  background: linear-gradient(135deg, #059669, #047857);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4);
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+/* Table Section */
+.horas-table-section {
+  margin-bottom: 30px;
+}
+
+/* Loading Section */
+.horas-loading-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 60vh;
+  text-align: center;
+  background: #eef7ff;
+  border-radius: 24px;
+  padding: 60px 40px;
+  border: 3px solid #003366;
+  box-shadow: 0 8px 25px rgba(0, 51, 102, 0.15);
+}
+
+.horas-loading-spinner {
+  width: 60px;
+  height: 60px;
+  border: 5px solid rgba(0, 51, 102, 0.2);
+  border-top: 5px solid #003366;
+  border-radius: 50%;
+  animation: spin 1.2s linear infinite;
+  margin-bottom: 30px;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.horas-loading-section h3 {
+  color: #003366;
+  font-size: 1.8rem;
+  font-weight: 700;
+  margin: 0 0 10px 0;
+  letter-spacing: 1px;
+}
+
+.horas-loading-section p {
+  color: rgba(0, 51, 102, 0.7);
+  font-size: 1.1rem;
+  margin: 0;
+  font-weight: 500;
+}
+
+/* Custom Table Styles - Specific for HorasDisponibles */
+.custom-table-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  align-items: center;
+}
+
+.custom-edit-btn, .custom-delete-btn {
+  border: none;
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 8px;
+  font-size: 16px;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border: 2px solid transparent;
+}
+
+.custom-edit-btn {
+  background: linear-gradient(135deg, #003366, #004d99);
+  color: white;
+}
+
+.custom-edit-btn:hover:not(:disabled) {
+  background: linear-gradient(135deg, #004d99, #0066cc);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 51, 102, 0.3);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.custom-delete-btn {
+  background: linear-gradient(135deg, #dc2626, #b91c1c);
+  color: white;
+}
+
+.custom-delete-btn:hover:not(:disabled) {
+  background: linear-gradient(135deg, #ef4444, #dc2626);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(220, 38, 38, 0.3);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.custom-edit-btn:disabled, .custom-delete-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.custom-status-badge {
+  padding: 6px 14px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  border: 2px solid transparent;
+  display: inline-block;
+  text-align: center;
+  min-width: 80px;
+}
+
+.custom-status-badge.disponible {
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: white;
+  border-color: rgba(16, 185, 129, 0.3);
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.2);
+}
+
+.custom-status-badge.ocupado {
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  color: white;
+  border-color: rgba(245, 158, 11, 0.3);
+  box-shadow: 0 2px 8px rgba(245, 158, 11, 0.2);
+}
+
+/* Responsive Design */
+@media (max-width: 1200px) {
+  .horas-disponibles-main-container {
+    margin-left: 0;
+    padding: 15px;
+  }
+}
+
+@media (max-width: 768px) {
+  .horas-hero-section {
+    padding: 30px 20px;
+    margin-bottom: 20px;
+  }
+
+  .horas-hero-title {
+    font-size: 2.2rem;
+  }
+
+  .horas-hero-subtitle {
+    font-size: 1rem;
+    margin-bottom: 30px;
+  }
+
+  .horas-hero-stats {
+    gap: 20px;
+  }
+
+  .horas-hero-stat {
+    padding: 20px 25px;
+  }
+
+  .horas-hero-stat .stat-number {
+    font-size: 2rem;
+  }
+
+  .horas-controls-card {
+    padding: 20px;
+  }
+
+  .horas-controls-content {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 20px;
+  }
+
+  .horas-filters-group {
+    flex-direction: column;
+    gap: 15px;
+  }
+
+  .horas-filter-item {
+    min-width: auto;
+    flex: none;
+  }
+
+  .horas-actions-group {
+    justify-content: center;
+  }
+
+  .horas-action-btn {
+    flex: 1;
+    justify-content: center;
+  }
+}
+
+@media (max-width: 480px) {
+  .horas-disponibles-main-container {
+    padding: 10px;
+  }
+
+  .horas-hero-section {
+    padding: 25px 15px;
+    border-radius: 16px;
+  }
+
+  .horas-hero-title {
+    font-size: 1.8rem;
+  }
+
+  .horas-hero-stats {
+    flex-direction: column;
+    gap: 15px;
+  }
+
+  .horas-controls-card {
+    padding: 15px;
+    border-radius: 16px;
+  }
+
+  .horas-controls-header h3 {
+    font-size: 1.5rem;
+  }
+
+  .horas-actions-group {
+    flex-direction: column;
+  }
+
+  .horas-loading-section {
+    padding: 40px 20px;
+    border-radius: 16px;
+  }
+}

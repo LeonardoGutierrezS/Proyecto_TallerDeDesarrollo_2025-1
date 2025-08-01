@@ -1,0 +1,285 @@
+/* Home Page Styles - Diseño consistente con navbar y login */
+.home-container {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+  padding: 20px;
+  margin-left: 280px;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.welcome-section {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+/* Welcome Header */
+.welcome-header {
+  background: linear-gradient(135deg, #003366, #004d99);
+  border-radius: 24px;
+  padding: 50px 40px;
+  margin-bottom: 30px;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 8px 25px rgba(0, 51, 102, 0.25);
+  border: 3px solid rgba(0, 51, 102, 0.3);
+  text-align: center;
+}
+
+.welcome-header::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: linear-gradient(
+    45deg,
+    transparent,
+    rgba(255, 255, 255, 0.1),
+    transparent
+  );
+  animation: shimmer 6s infinite;
+}
+
+@keyframes shimmer {
+  0% { transform: translateX(-100%) rotate(45deg); }
+  100% { transform: translateX(100%) rotate(45deg); }
+}
+
+.welcome-header h1 {
+  color: #ffffff;
+  font-size: 3.2rem;
+  font-weight: 900;
+  margin: 0 0 20px 0;
+  letter-spacing: 2px;
+  text-shadow: 3px 3px 12px rgba(0, 0, 0, 0.8), 0 0 20px rgba(0, 0, 0, 0.4);
+  text-transform: uppercase;
+  position: relative;
+  z-index: 2;
+}
+
+.welcome-subtitle {
+  color: #ffffff;
+  font-size: 1.3rem;
+  margin: 0;
+  font-weight: 600;
+  max-width: 700px;
+  margin-left: auto;
+  margin-right: auto;
+  text-shadow: 1px 1px 4px rgba(0, 0, 0, 0.5);
+  line-height: 1.4;
+  position: relative;
+  z-index: 2;
+}
+
+/* Instructions Card */
+.instructions-card {
+  background: #eef7ff;
+  border-radius: 24px;
+  padding: 40px;
+  border: 3px solid #003366;
+  box-shadow: 0 8px 25px rgba(0, 51, 102, 0.15);
+  margin-bottom: 30px;
+}
+
+.instructions-card h2 {
+  color: #003366;
+  font-size: 2.2rem;
+  font-weight: 800;
+  margin: 0 0 30px 0;
+  text-align: center;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+.instruction-step {
+  display: flex;
+  align-items: flex-start;
+  margin-bottom: 25px;
+  padding: 20px;
+  background: rgba(255, 255, 255, 0.6);
+  border-radius: 16px;
+  border: 2px solid rgba(0, 51, 102, 0.1);
+  transition: all 0.3s ease;
+}
+
+.instruction-step:hover {
+  background: rgba(255, 255, 255, 0.8);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0, 51, 102, 0.15);
+}
+
+.instruction-step:last-child {
+  margin-bottom: 0;
+}
+
+.step-number {
+  background: linear-gradient(135deg, #003366, #004d99);
+  color: #ffffff;
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 900;
+  font-size: 1.4rem;
+  margin-right: 20px;
+  flex-shrink: 0;
+  border: 3px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 4px 12px rgba(0, 51, 102, 0.3);
+}
+
+.step-content h3 {
+  margin: 0 0 8px 0;
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: #003366;
+  letter-spacing: 0.5px;
+}
+
+.step-content p {
+  margin: 0;
+  font-size: 1rem;
+  line-height: 1.6;
+  color: rgba(0, 51, 102, 0.8);
+  font-weight: 500;
+}
+
+/* Info Cards */
+.info-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 1.5rem;
+  margin-top: 1rem;
+}
+
+.info-card {
+  background: #eef7ff;
+  border-radius: 24px;
+  padding: 30px;
+  border: 3px solid #003366;
+  box-shadow: 0 8px 25px rgba(0, 51, 102, 0.15);
+  transition: all 0.3s ease;
+}
+
+.info-card:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 12px 35px rgba(0, 51, 102, 0.25);
+  background: rgba(238, 247, 255, 0.9);
+}
+
+.info-card h3 {
+  color: #003366;
+  margin: 0 0 15px 0;
+  font-size: 1.4rem;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+.info-card p {
+  color: rgba(0, 51, 102, 0.8);
+  margin: 8px 0;
+  line-height: 1.6;
+  font-weight: 500;
+  font-size: 1rem;
+}
+
+.info-card p:last-child {
+  margin-bottom: 0;
+}
+
+/* Responsive Design */
+@media (max-width: 1200px) {
+  .home-container {
+    margin-left: 0;
+    padding: 15px;
+  }
+}
+
+@media (max-width: 768px) {
+  .home-container {
+    padding: 15px;
+  }
+
+  .welcome-header {
+    padding: 40px 20px;
+    margin-bottom: 20px;
+  }
+
+  .welcome-header h1 {
+    font-size: 2.4rem;
+    letter-spacing: 1.5px;
+  }
+
+  .welcome-subtitle {
+    font-size: 1.1rem;
+  }
+
+  .instructions-card {
+    padding: 25px;
+  }
+
+  .instructions-card h2 {
+    font-size: 1.8rem;
+  }
+
+  .instruction-step {
+    flex-direction: column;
+    text-align: center;
+    padding: 20px;
+  }
+
+  .step-number {
+    margin: 0 auto 15px auto;
+  }
+
+  .info-cards {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+
+  .info-card {
+    padding: 25px;
+  }
+}
+
+@media (max-width: 480px) {
+  .home-container {
+    padding: 10px;
+  }
+
+  .welcome-header {
+    padding: 35px 15px;
+    border-radius: 16px;
+  }
+
+  .welcome-header h1 {
+    font-size: 2rem;
+    letter-spacing: 1px;
+  }
+
+  .welcome-subtitle {
+    font-size: 1rem;
+  }
+
+  .instructions-card {
+    padding: 20px;
+    border-radius: 16px;
+  }
+
+  .instructions-card h2 {
+    font-size: 1.5rem;
+  }
+
+  .instruction-step {
+    padding: 15px;
+  }
+
+  .info-card {
+    padding: 20px;
+    border-radius: 16px;
+  }
+}

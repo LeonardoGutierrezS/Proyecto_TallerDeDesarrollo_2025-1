@@ -1,0 +1,166 @@
+/* Admin Home Page Styles - Simplified */
+.admin-home-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem;
+  min-height: calc(100vh - 120px);
+}
+
+.admin-welcome-section {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+/* Admin Header */
+.admin-header {
+  text-align: center;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border-radius: 16px;
+  padding: 2rem;
+  box-shadow: 0 8px 30px rgba(102, 126, 234, 0.3);
+}
+
+.sirec-logo h1 {
+  font-size: 3rem;
+  font-weight: 900;
+  margin: 0;
+  letter-spacing: 2px;
+}
+
+.sirec-subtitle {
+  font-size: 1.1rem;
+  margin: 0.5rem 0 1.5rem 0;
+  opacity: 0.9;
+}
+
+.welcome-message h2 {
+  font-size: 1.8rem;
+  margin: 0 0 0.5rem 0;
+  font-weight: 600;
+}
+
+.admin-role {
+  font-size: 1rem;
+  margin: 0;
+  opacity: 0.8;
+}
+
+/* Stats Cards */
+.admin-stats-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 1.5rem;
+}
+
+.stat-card {
+  background: white;
+  border-radius: 12px;
+  padding: 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  border: 1px solid #e1e5e9;
+  transition: transform 0.3s ease;
+}
+
+.stat-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
+}
+
+.stat-icon {
+  font-size: 2rem;
+  width: 50px;
+  height: 50px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 10px;
+  flex-shrink: 0;
+}
+
+.stat-content h3 {
+  color: #2c3e50;
+  margin: 0 0 0.5rem 0;
+  font-size: 1.2rem;
+  font-weight: 600;
+}
+
+.stat-content p {
+  color: #5a6c7d;
+  margin: 0;
+  line-height: 1.5;
+}
+
+/* Admin Info */
+.admin-info {
+  display: flex;
+  justify-content: center;
+}
+
+.info-card {
+  background: white;
+  border-radius: 12px;
+  padding: 2rem;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  border: 1px solid #e1e5e9;
+  max-width: 600px;
+  text-align: center;
+}
+
+.info-card h3 {
+  color: #2c3e50;
+  margin-bottom: 1rem;
+  font-size: 1.3rem;
+  font-weight: 600;
+}
+
+.info-card p {
+  color: #5a6c7d;
+  line-height: 1.6;
+  margin: 0;
+  font-size: 1rem;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .admin-home-container {
+    padding: 1rem;
+  }
+
+  .sirec-logo h1 {
+    font-size: 2.2rem;
+  }
+
+  .welcome-message h2 {
+    font-size: 1.5rem;
+  }
+
+  .admin-header {
+    padding: 1.5rem;
+  }
+
+  .admin-stats-cards {
+    grid-template-columns: 1fr;
+  }
+
+  .stat-card {
+    text-align: center;
+    flex-direction: column;
+  }
+}
+
+@media (max-width: 480px) {
+  .sirec-logo h1 {
+    font-size: 1.8rem;
+    letter-spacing: 1px;
+  }
+
+  .welcome-message h2 {
+    font-size: 1.3rem;
+  }
+}

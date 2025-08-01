@@ -1,0 +1,75 @@
+/* Layout principal para manejar sidebar y contenido */
+.app-layout {
+  display: flex;
+  min-height: 100vh;
+  background: #f8f9fa;
+}
+
+.main-content {
+  flex: 1;
+  margin-left: 280px;
+  transition: margin-left 0.3s ease;
+  min-height: 100vh;
+  background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+}
+
+.content-wrapper {
+  padding: 30px;
+  max-width: 1400px;
+  margin: 0 auto;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* Ajustes responsive */
+@media (max-width: 1024px) {
+  .main-content {
+    margin-left: 0;
+    width: 100%;
+  }
+  
+  .content-wrapper {
+    padding: 20px;
+  }
+}
+
+@media (max-width: 768px) {
+  .content-wrapper {
+    padding: 15px;
+  }
+}
+
+@media (max-width: 480px) {
+  .content-wrapper {
+    padding: 10px;
+  }
+}
+
+/* Estilos para contenido general */
+.content-wrapper h1,
+.content-wrapper h2,
+.content-wrapper h3 {
+  color: #003366;
+  margin-bottom: 20px;
+}
+
+.content-wrapper h1 {
+  font-size: 2.5rem;
+  font-weight: 700;
+  margin-bottom: 30px;
+}
+
+.content-wrapper h2 {
+  font-size: 2rem;
+  font-weight: 600;
+}
+
+.content-wrapper h3 {
+  font-size: 1.5rem;
+  font-weight: 600;
+}
+
+/* Resetear body margin que definimos en navbar-new.css */
+body {
+  margin: 0;
+}

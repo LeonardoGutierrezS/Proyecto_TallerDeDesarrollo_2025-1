@@ -1,0 +1,259 @@
+/* Estilos específicos para la página de login */
+.login-container {
+  min-height: 100vh;
+  background: linear-gradient(
+    135deg,
+    rgba(0, 51, 102, 0.95),
+    rgba(0, 26, 51, 0.95)
+  ), url('../images/technology-background.jpg');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 20px;
+  position: relative;
+}
+
+.login-container::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 51, 102, 0.1);
+  backdrop-filter: blur(1px);
+  z-index: 1;
+}
+
+.login-content {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  max-width: 450px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.login-form-wrapper {
+  width: 100%;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  border-radius: 20px;
+  box-shadow: 
+    0 20px 40px rgba(0, 0, 0, 0.3),
+    0 0 0 1px rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  overflow: hidden;
+  animation: slideInUp 0.6s ease-out;
+}
+
+.login-header {
+  background: linear-gradient(135deg, #003366, #004d99);
+  padding: 30px 40px;
+  text-align: center;
+  color: white;
+  position: relative;
+  overflow: hidden;
+}
+
+.login-header::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: linear-gradient(
+    45deg,
+    transparent,
+    rgba(255, 255, 255, 0.1),
+    transparent
+  );
+  animation: shimmer 3s infinite;
+}
+
+.login-title {
+  font-size: 2.5rem;
+  font-weight: 800;
+  margin: 0 0 10px 0;
+  letter-spacing: 2px;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  position: relative;
+  z-index: 2;
+}
+
+.login-subtitle {
+  font-size: 0.95rem;
+  margin: 0;
+  opacity: 0.9;
+  font-weight: 300;
+  letter-spacing: 0.5px;
+  position: relative;
+  z-index: 2;
+}
+
+/* Modificaciones al formulario para el login */
+.login-form-wrapper .form {
+  background: transparent;
+  padding: 40px;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.login-form-wrapper .form h1 {
+  color: #003366;
+  font-size: 1.8rem;
+  margin-bottom: 30px;
+  text-align: center;
+  font-weight: 600;
+}
+
+.login-form-wrapper .form input {
+  background: rgba(238, 247, 255, 0.8);
+  border: 2px solid rgba(0, 51, 102, 0.3);
+  transition: all 0.3s ease;
+  backdrop-filter: blur(5px);
+}
+
+.login-form-wrapper .form input:focus {
+  background: rgba(238, 247, 255, 1);
+  border-color: #003366;
+  box-shadow: 0 0 0 3px rgba(0, 51, 102, 0.1);
+  transform: translateY(-2px);
+}
+
+.login-form-wrapper .form button {
+  background: linear-gradient(135deg, #003366, #004d99);
+  border: none;
+  padding: 15px;
+  font-size: 1.1rem;
+  font-weight: 600;
+  letter-spacing: 1px;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(0, 51, 102, 0.3);
+}
+
+.login-form-wrapper .form button:hover {
+  background: linear-gradient(135deg, #004d99, #0066cc);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0, 51, 102, 0.4);
+  color: white;
+  border: none;
+}
+
+.login-form-wrapper .form .footerContent {
+  text-align: center;
+  margin-top: 20px;
+}
+
+.login-form-wrapper .form .footerContent a {
+  color: #003366;
+  text-decoration: none;
+  font-weight: 600;
+  transition: color 0.3s ease;
+}
+
+.login-form-wrapper .form .footerContent a:hover {
+  color: #004d99;
+  text-decoration: underline;
+}
+
+/* Animaciones */
+@keyframes slideInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    transform: translateX(-100%) translateY(-100%) rotate(45deg);
+  }
+  100% {
+    transform: translateX(100%) translateY(100%) rotate(45deg);
+  }
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .login-container {
+    padding: 15px;
+    background-attachment: scroll;
+  }
+  
+  .login-content {
+    max-width: 100%;
+  }
+  
+  .login-header {
+    padding: 25px 30px;
+  }
+  
+  .login-title {
+    font-size: 2rem;
+  }
+  
+  .login-subtitle {
+    font-size: 0.85rem;
+  }
+  
+  .login-form-wrapper .form {
+    padding: 30px 25px;
+  }
+}
+
+@media (max-width: 480px) {
+  .login-header {
+    padding: 20px 25px;
+  }
+  
+  .login-title {
+    font-size: 1.8rem;
+    letter-spacing: 1px;
+  }
+  
+  .login-subtitle {
+    font-size: 0.8rem;
+  }
+  
+  .login-form-wrapper .form {
+    padding: 25px 20px;
+  }
+  
+  .login-form-wrapper .form h1 {
+    font-size: 1.5rem;
+  }
+}
+
+/* Efectos adicionales */
+.login-form-wrapper .form label {
+  font-weight: 600;
+  color: #003366;
+  margin-bottom: 8px;
+  font-size: 0.95rem;
+}
+
+.login-form-wrapper .form input::placeholder {
+  color: rgba(0, 51, 102, 0.5);
+  font-style: italic;
+}
+
+/* Mejora de accesibilidad */
+.login-form-wrapper .form input:focus {
+  outline: none;
+}
+
+.login-form-wrapper .form button:focus {
+  outline: 3px solid rgba(0, 51, 102, 0.3);
+  outline-offset: 2px;
+}

@@ -1,0 +1,173 @@
+/* Solicitudes Stats Component Styles */
+.solicitudes-stats {
+  margin-bottom: 30px;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 20px;
+}
+
+.stat-card {
+  background: white;
+  padding: 20px;
+  border-radius: 12px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+  border: 1px solid #e2e8f0;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  position: relative;
+  overflow: hidden;
+}
+
+.stat-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, #4299e1, #3182ce);
+}
+
+.stat-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.12);
+}
+
+.stat-card.primary::before {
+  background: linear-gradient(90deg, #4299e1, #3182ce);
+}
+
+.stat-card.pending::before {
+  background: linear-gradient(90deg, #ed8936, #dd6b20);
+}
+
+.stat-card.approved::before {
+  background: linear-gradient(90deg, #48bb78, #38a169);
+}
+
+.stat-card.in-progress::before {
+  background: linear-gradient(90deg, #4299e1, #3182ce);
+}
+
+.stat-card.completed::before {
+  background: linear-gradient(90deg, #48bb78, #2f855a);
+}
+
+.stat-card.info::before {
+  background: linear-gradient(90deg, #9f7aea, #805ad5);
+}
+
+.stat-icon {
+  font-size: 2rem;
+  padding: 10px;
+  border-radius: 8px;
+  background: #f7fafc;
+  min-width: 60px;
+  text-align: center;
+}
+
+.stat-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.stat-number {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #2d3748;
+  line-height: 1;
+}
+
+.stat-text {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #2d3748;
+  line-height: 1.2;
+  word-wrap: break-word;
+}
+
+.stat-label {
+  font-size: 0.85rem;
+  color: #4a5568;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-weight: 500;
+}
+
+.progress-bar {
+  width: 100%;
+  height: 4px;
+  background: #e2e8f0;
+  border-radius: 2px;
+  overflow: hidden;
+  margin-top: 5px;
+}
+
+.progress-fill {
+  height: 100%;
+  border-radius: 2px;
+  transition: width 0.8s ease;
+}
+
+.pending .progress-fill {
+  background: linear-gradient(90deg, #ed8936, #dd6b20);
+}
+
+.approved .progress-fill {
+  background: linear-gradient(90deg, #48bb78, #38a169);
+}
+
+.in-progress .progress-fill {
+  background: linear-gradient(90deg, #4299e1, #3182ce);
+}
+
+.completed .progress-fill {
+  background: linear-gradient(90deg, #48bb78, #2f855a);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 15px;
+  }
+  
+  .stat-card {
+    padding: 15px;
+    gap: 10px;
+  }
+  
+  .stat-icon {
+    font-size: 1.5rem;
+    min-width: 50px;
+  }
+  
+  .stat-number {
+    font-size: 1.5rem;
+  }
+  
+  .stat-text {
+    font-size: 0.9rem;
+  }
+  
+  .stat-label {
+    font-size: 0.8rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .stats-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .stat-card {
+    flex-direction: row;
+  }
+}
