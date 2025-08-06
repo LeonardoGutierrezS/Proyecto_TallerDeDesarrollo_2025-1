@@ -10,7 +10,7 @@ import UpdateIcon from '../assets/updateIcon.svg';
 import UpdateIconDisable from '../assets/updateIconDisabled.svg';
 import DeleteIconDisable from '../assets/deleteIconDisabled.svg';
 import { useCallback, useState } from 'react';
-import '@styles/users.css';
+import '@styles/equipos.css';
 
 const Equipos = () => {
   const { equipos, fetchEquipos, setEquipos } = useGetEquipos();
@@ -53,24 +53,25 @@ const Equipos = () => {
   ];
 
   return (
-    <div className='main-container'>
-      <div className='table-container'>
-        <div className='top-table'>
-          <h1 className='title-table'>Equipos</h1>
-          <div className='filter-actions'>
+    <div className='equipos-main-container'>
+      <div className='equipos-table-container'>
+        <div className='equipos-top-table'>
+          <h1 className='equipos-title-table'>Gestión de Equipos</h1>
+          <div className='equipos-filter-actions'>
             <Search 
               value={filterSerie} 
               onChange={handleSerieFilterChange} 
               placeholder={'Filtrar por número de serie'} 
             />
             <button 
-              className='add-button'
+              className='equipos-add-button'
               onClick={handleClickCreate}
               title="Agregar equipo"
             >
-              +
+              + AGREGAR
             </button>
             <button 
+              className='equipos-action-button'
               onClick={handleClickUpdate} 
               disabled={dataEquipo.length === 0}
               title="Editar equipo"
@@ -82,7 +83,7 @@ const Equipos = () => {
               )}
             </button>
             <button 
-              className='delete-user-button' 
+              className='equipos-action-button' 
               disabled={dataEquipo.length === 0} 
               onClick={() => handleDelete(dataEquipo)}
               title="Eliminar equipo"
@@ -95,14 +96,16 @@ const Equipos = () => {
             </button>
           </div>
         </div>
-        <Table
-          data={equipos}
-          columns={columns}
-          filter={filterSerie}
-          dataToFilter={'numeroDeSerie'}
-          initialSortName={'modelo'}
-          onSelectionChange={handleSelectionChange}
-        />
+        <div className='equipos-table-wrapper'>
+          <Table
+            data={equipos}
+            columns={columns}
+            filter={filterSerie}
+            dataToFilter={'numeroDeSerie'}
+            initialSortName={'modelo'}
+            onSelectionChange={handleSelectionChange}
+          />
+        </div>
       </div>
       
       {/* Popup para editar equipo */}

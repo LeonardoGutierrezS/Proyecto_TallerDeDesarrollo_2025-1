@@ -1,0 +1,338 @@
+/* Estilos específicos para la página de Equipos - Simplificado */
+
+.equipos-main-container {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    width: 100%;
+    background: #f8f9fa;
+    padding: 0;
+    margin: 0;
+}
+
+.equipos-table-container {
+    width: 95%;
+    max-width: 1400px;
+    margin: 40px auto;
+    background: white;
+    border-radius: 20px;
+    box-shadow: 
+        0 4px 20px rgba(0, 51, 102, 0.1),
+        0 2px 8px rgba(0, 0, 0, 0.05);
+    overflow: hidden;
+    border: 1px solid #e8f0fe;
+}
+
+.equipos-top-table {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 35px 40px;
+    background: linear-gradient(135deg, #003366, #004d99);
+    position: relative;
+    border-bottom: 4px solid #002244;
+}
+
+.equipos-title-table {
+    color: white;
+    font-size: 2.6rem;
+    font-weight: 800;
+    margin: 0;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    position: relative;
+    z-index: 2;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.equipos-filter-actions {
+    display: flex;
+    gap: 15px;
+    align-items: center;
+    position: relative;
+    z-index: 2;
+}
+
+.equipos-add-button {
+    background: linear-gradient(135deg, #28a745, #34ce57) !important;
+    color: white !important;
+    border: none !important;
+    border-radius: 12px;
+    padding: 14px 20px;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    box-shadow: 0 4px 12px rgba(40, 167, 69, 0.3);
+}
+
+.equipos-add-button:hover {
+    background: linear-gradient(135deg, #218838, #28a745) !important;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(40, 167, 69, 0.4);
+}
+
+.equipos-action-button {
+    background: rgba(255, 255, 255, 0.95) !important;
+    border: 2px solid rgba(255, 255, 255, 0.6) !important;
+    border-radius: 10px;
+    padding: 12px;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    backdrop-filter: blur(5px);
+}
+
+.equipos-action-button:hover:not(:disabled) {
+    background: white !important;
+    border-color: white !important;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(255, 255, 255, 0.3);
+}
+
+.equipos-action-button:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    background: rgba(255, 255, 255, 0.3) !important;
+    border-color: rgba(255, 255, 255, 0.2) !important;
+}
+
+.equipos-action-button img {
+    width: 20px;
+    height: 20px;
+}
+
+.equipos-table-wrapper {
+    padding: 0;
+    background: white;
+    border-radius: 0 0 20px 20px;
+    overflow: hidden;
+}
+
+/* Estilos para la tabla dentro del contenedor de equipos */
+.equipos-table-container .tabulator {
+    border: none !important;
+    border-radius: 0 !important;
+    background: white;
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+}
+
+.equipos-table-container .tabulator-header {
+    background: linear-gradient(135deg, #003366, #004d99) !important;
+    border-bottom: 3px solid #002244 !important;
+    border-radius: 0 !important;
+}
+
+.equipos-table-container .tabulator-col {
+    background: transparent !important;
+    border-right: 1px solid rgba(255, 255, 255, 0.2) !important;
+    padding: 18px 16px !important;
+}
+
+.equipos-table-container .tabulator-col-title {
+    color: white !important;
+    font-weight: 700 !important;
+    font-size: 0.9rem !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.8px !important;
+}
+
+.equipos-table-container .tabulator-row {
+    border-bottom: 1px solid #f0f4f8 !important;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    margin: 2px 8px;
+    border-radius: 8px;
+    background: white;
+}
+
+.equipos-table-container .tabulator-row:hover {
+    background: linear-gradient(90deg, #f8fbff, #f0f7ff) !important;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 51, 102, 0.1);
+    border-color: rgba(0, 51, 102, 0.2) !important;
+}
+
+.equipos-table-container .tabulator-row.tabulator-selected {
+    background: linear-gradient(90deg, #e3f2fd, #bbdefb) !important;
+    border-color: #003366 !important;
+    box-shadow: 
+        inset 4px 0 0 #003366,
+        0 4px 12px rgba(0, 51, 102, 0.15);
+    transform: translateY(-1px);
+}
+
+.equipos-table-container .tabulator-cell {
+    border-right: 1px solid #f0f4f8 !important;
+    padding: 16px 14px !important;
+    color: #2c3e50 !important;
+    font-weight: 500 !important;
+    transition: all 0.2s ease !important;
+}
+
+/* Estilos para popups específicos de equipos */
+.equipos-main-container .bg {
+    background: rgba(0, 0, 0, 0.5);
+}
+
+.equipos-main-container .popup {
+    border: 2px solid #e8f0fe;
+    box-shadow: 
+        0 15px 35px rgba(0, 51, 102, 0.15),
+        0 5px 15px rgba(0, 0, 0, 0.08);
+    border-radius: 20px;
+    backdrop-filter: blur(10px);
+}
+
+.equipos-main-container .popup .form h1 {
+    color: #003366;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1.2px;
+    border-bottom: 3px solid #003366;
+    padding-bottom: 15px;
+    margin-bottom: 30px;
+    text-shadow: none;
+}
+
+.equipos-main-container .popup .form button[type="submit"] {
+    background: linear-gradient(135deg, #003366, #004d99);
+    border: none;
+    border-radius: 12px;
+    padding: 14px 28px;
+    color: white;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 4px 12px rgba(0, 51, 102, 0.3);
+}
+
+.equipos-main-container .popup .form button[type="submit"]:hover {
+    background: linear-gradient(135deg, #004d99, #0066cc);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0, 51, 102, 0.4);
+}
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+    .equipos-table-container {
+        width: 98%;
+        margin: 25px auto;
+        border-radius: 16px;
+    }
+    
+    .equipos-top-table {
+        padding: 28px 25px;
+        flex-direction: column;
+        gap: 20px;
+        text-align: center;
+    }
+    
+    .equipos-title-table {
+        font-size: 2.2rem;
+        letter-spacing: 1.2px;
+    }
+    
+    .equipos-filter-actions {
+        justify-content: center;
+        flex-wrap: wrap;
+        gap: 12px;
+    }
+}
+
+@media (max-width: 768px) {
+    .equipos-main-container {
+        padding: 80px 8px 20px 8px;
+    }
+    
+    .equipos-table-container {
+        width: 100%;
+        margin: 15px auto;
+        border-radius: 12px;
+    }
+    
+    .equipos-top-table {
+        padding: 20px 15px;
+        border-radius: 12px 12px 0 0;
+    }
+    
+    .equipos-title-table {
+        font-size: 1.8rem;
+        letter-spacing: 1px;
+        text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+    }
+    
+    .equipos-filter-actions {
+        gap: 10px;
+        width: 100%;
+    }
+    
+    .equipos-add-button {
+        padding: 12px 16px;
+        font-size: 14px;
+        letter-spacing: 0.6px;
+    }
+    
+    .equipos-action-button {
+        padding: 10px;
+    }
+    
+    .equipos-action-button img {
+        width: 18px;
+        height: 18px;
+    }
+    
+    .equipos-table-wrapper {
+        border-radius: 0 0 12px 12px;
+    }
+}
+
+@media (max-width: 480px) {
+    .equipos-title-table {
+        font-size: 1.5rem;
+    }
+    
+    .equipos-top-table {
+        padding: 15px;
+    }
+    
+    .equipos-filter-actions {
+        gap: 8px;
+    }
+    
+    .equipos-add-button {
+        padding: 8px 12px;
+        font-size: 12px;
+    }
+    
+    .equipos-action-button {
+        padding: 6px;
+    }
+    
+    .equipos-action-button img {
+        width: 16px;
+        height: 16px;
+    }
+}
+
+/* Personalización del scroll para la tabla */
+.equipos-table-container .tabulator-tableHolder::-webkit-scrollbar {
+    height: 10px;
+    width: 10px;
+}
+
+.equipos-table-container .tabulator-tableHolder::-webkit-scrollbar-track {
+    background: #f8f9fa;
+    border-radius: 5px;
+}
+
+.equipos-table-container .tabulator-tableHolder::-webkit-scrollbar-thumb {
+    background: linear-gradient(135deg, #003366, #004d99);
+    border-radius: 5px;
+    border: 2px solid #f8f9fa;
+}
+
+.equipos-table-container .tabulator-tableHolder::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(135deg, #004d99, #0066cc);
+}

@@ -7,6 +7,8 @@
   padding: 20px;
   margin-left: 280px;
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  display: flex;
+  flex-direction: column;
 }
 
 /* Hero Section */
@@ -19,6 +21,7 @@
   overflow: hidden;
   box-shadow: 0 8px 25px rgba(0, 51, 102, 0.25);
   border: 3px solid rgba(0, 51, 102, 0.3);
+  flex-shrink: 0;
 }
 
 .horas-hero-section::before {
@@ -113,6 +116,7 @@
 /* Controls Section */
 .horas-controls-section {
   margin-bottom: 30px;
+  flex-shrink: 0;
 }
 
 .horas-controls-card {
@@ -147,13 +151,13 @@
   display: flex;
   justify-content: space-between;
   align-items: flex-end;
-  gap: 30px;
+  gap: 20px;
   flex-wrap: wrap;
 }
 
 .horas-filters-group {
   display: flex;
-  gap: 20px;
+  gap: 15px;
   flex: 1;
   flex-wrap: wrap;
 }
@@ -161,8 +165,8 @@
 .horas-filter-item {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  min-width: 200px;
+  gap: 6px;
+  min-width: 180px;
   flex: 1;
 }
 
@@ -176,12 +180,12 @@
 
 .horas-filter-select,
 .horas-filter-date {
-  padding: 12px 15px;
-  border: 3px solid #003366;
-  border-radius: 12px;
+  padding: 10px 12px;
+  border: 2px solid #003366;
+  border-radius: 10px;
   background-color: #eef7ff;
   color: #003366;
-  font-size: 16px;
+  font-size: 14px;
   font-weight: 500;
   transition: all 0.3s ease;
   box-sizing: border-box;
@@ -234,18 +238,18 @@
 }
 
 .horas-action-btn {
-  padding: 15px 25px;
+  padding: 12px 20px;
   border: none;
-  border-radius: 12px;
+  border-radius: 10px;
   font-weight: 700;
-  font-size: 14px;
+  font-size: 13px;
   cursor: pointer;
   transition: all 0.3s ease;
   text-transform: uppercase;
-  letter-spacing: 0.8px;
+  letter-spacing: 0.6px;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   border: 2px solid transparent;
 }
 
@@ -277,7 +281,35 @@
 
 /* Table Section */
 .horas-table-section {
-  margin-bottom: 30px;
+  flex: 1;
+}
+
+/* Estilos para la tabla dentro de horas disponibles */
+.horas-table-section .custom-table-container {
+  background: white;
+  border-radius: 16px;
+  padding: 0;
+  border: 2px solid #e8f0fe;
+  box-shadow: 0 4px 15px rgba(0, 51, 102, 0.1);
+  height: 100%;
+}
+
+.horas-table-section .custom-table-header {
+  display: none; /* Ocultar header de tabla ya que tenemos el hero */
+}
+
+/* Estilo para el indicador de cantidad de horarios */
+.horas-table-section > div[style*="marginBottom"],
+.horas-table-section > div[style*="margin-bottom"] {
+  margin-bottom: 20px !important;
+  padding: 15px 25px;
+  background: rgba(0, 51, 102, 0.05);
+  border-radius: 12px;
+  font-size: 16px !important;
+  text-align: center;
+  color: #003366;
+  font-weight: 600;
+  border: 2px solid rgba(0, 51, 102, 0.1);
 }
 
 /* Loading Section */
@@ -412,99 +444,116 @@
     margin-left: 0;
     padding: 15px;
   }
+  
+  .horas-hero-stats {
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+  
+  .horas-hero-stat {
+    flex: 1;
+    min-width: 200px;
+  }
 }
 
 @media (max-width: 768px) {
-  .horas-hero-section {
-    padding: 30px 20px;
-    margin-bottom: 20px;
-  }
-
-  .horas-hero-title {
-    font-size: 2.2rem;
-  }
-
-  .horas-hero-subtitle {
-    font-size: 1rem;
-    margin-bottom: 30px;
-  }
-
-  .horas-hero-stats {
-    gap: 20px;
-  }
-
-  .horas-hero-stat {
-    padding: 20px 25px;
-  }
-
-  .horas-hero-stat .stat-number {
-    font-size: 2rem;
-  }
-
-  .horas-controls-card {
-    padding: 20px;
-  }
-
-  .horas-controls-content {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 20px;
-  }
-
   .horas-filters-group {
     flex-direction: column;
+    align-items: stretch;
     gap: 15px;
   }
-
+  
   .horas-filter-item {
+    flex-direction: column;
+    align-items: stretch;
     min-width: auto;
-    flex: none;
+    gap: 5px;
   }
-
+  
   .horas-actions-group {
+    margin-left: 0;
     justify-content: center;
+    flex-wrap: wrap;
   }
-
-  .horas-action-btn {
-    flex: 1;
-    justify-content: center;
+  
+  .horas-hero-stats {
+    flex-direction: column;
+  }
+  
+  .horas-hero-stat {
+    min-width: auto;
   }
 }
 
 @media (max-width: 480px) {
   .horas-disponibles-main-container {
-    padding: 10px;
+    padding: 8px;
   }
 
   .horas-hero-section {
-    padding: 25px 15px;
-    border-radius: 16px;
+    padding: 12px;
+    border-radius: 12px;
+    margin-bottom: 8px;
+    min-height: 80px;
   }
 
   .horas-hero-title {
-    font-size: 1.8rem;
+    font-size: 1.4rem;
+  }
+
+  .horas-hero-subtitle {
+    font-size: 0.8rem;
+    margin-bottom: 12px;
   }
 
   .horas-hero-stats {
-    flex-direction: column;
-    gap: 15px;
+    flex-direction: row;
+    gap: 10px;
+  }
+
+  .horas-hero-stat {
+    padding: 8px 12px;
+    flex: 1;
+  }
+
+  .horas-hero-stat .stat-number {
+    font-size: 1.2rem;
+  }
+
+  .horas-hero-stat .stat-label {
+    font-size: 0.7rem;
   }
 
   .horas-controls-card {
-    padding: 15px;
-    border-radius: 16px;
+    padding: 12px;
+    border-radius: 12px;
   }
 
   .horas-controls-header h3 {
-    font-size: 1.5rem;
+    font-size: 1.1rem;
+  }
+
+  .horas-controls-header p {
+    font-size: 0.8rem;
   }
 
   .horas-actions-group {
     flex-direction: column;
   }
 
+  .horas-action-btn {
+    padding: 8px 12px;
+    font-size: 11px;
+  }
+
+  .horas-filter-select,
+  .horas-filter-date {
+    padding: 8px 10px;
+    font-size: 13px;
+  }
+
   .horas-loading-section {
-    padding: 40px 20px;
-    border-radius: 16px;
+    padding: 30px 15px;
+    border-radius: 12px;
   }
 }

@@ -24,12 +24,18 @@ export async function sendSolicitudCreatedNotification(userEmail, userName, soli
                         <h3 style="color: #1e40af; margin-top: 0;">📋 Detalles de tu Solicitud</h3>
                         
                         <p><strong>Número de Solicitud:</strong> #${solicitudData.id}</p>
-                        <p><strong>Equipo:</strong> ${solicitudData.equipo?.marca?.nombre || "N/A"} ${solicitudData.equipo?.modelo || "N/A"}</p>
-                        <p><strong>Categoría:</strong> ${solicitudData.categoria?.nombre || "N/A"}</p>
-                        <p><strong>Fecha Inicio:</strong> ${new Date(solicitudData.fechaInicioPrestamo).toLocaleDateString("es-ES")}</p>
-                        <p><strong>Fecha Fin:</strong> ${new Date(solicitudData.fechaFinPrestamo).toLocaleDateString("es-ES")}</p>
-                        <p><strong>Horario:</strong> ${solicitudData.horaInicioPrestamo} - ${solicitudData.horaFinPrestamo}</p>
-                        <p><strong>Estado:</strong> ${solicitudData.estadoPrestamo?.nombre || "Pendiente"}</p>
+                        <p><strong>Equipo:</strong> 
+                        ${solicitudData.equipo?.marca?.nombre || "N/A"} ${solicitudData.equipo?.modelo || "N/A"}</p>
+                        <p><strong>Categoría:</strong> 
+                        ${solicitudData.categoria?.nombre || "N/A"}</p>
+                        <p><strong>Fecha Inicio:</strong> 
+                        ${new Date(solicitudData.fechaInicioPrestamo).toLocaleDateString("es-ES")}</p>
+                        <p><strong>Fecha Fin:</strong> 
+                        ${new Date(solicitudData.fechaFinPrestamo).toLocaleDateString("es-ES")}</p>
+                        <p><strong>Horario:</strong> 
+                        ${solicitudData.horaInicioPrestamo} - ${solicitudData.horaFinPrestamo}</p>
+                        <p><strong>Estado:</strong>
+                        ${solicitudData.estadoPrestamo?.nombre || "Pendiente"}</p>
                     </div>
 
                     <div style="background-color: #eff6ff; padding: 15px; border-radius: 8px; margin: 20px 0;">
@@ -43,8 +49,8 @@ export async function sendSolicitudCreatedNotification(userEmail, userName, soli
 
                     <div style="text-align: center; margin: 30px 0;">
                         <a href="${process.env.FRONTEND_URL || "http://localhost:3000"}/mis-solicitudes" 
-                           style="background-color: #2563eb; color: white; padding: 12px 30px; 
-                                  text-decoration: none; border-radius: 6px; display: inline-block;">
+                            style="background-color: #2563eb; color: white; padding: 12px 30px; 
+                            text-decoration: none; border-radius: 6px; display: inline-block;">
                             Ver Mis Solicitudes
                         </a>
                     </div>
@@ -68,7 +74,8 @@ DETALLES:
 - Número: #${solicitudData.id}
 - Equipo: ${solicitudData.equipo?.marca?.nombre || "N/A"} ${solicitudData.equipo?.modelo || "N/A"}
 - Categoría: ${solicitudData.categoria?.nombre || "N/A"}
-- Período: ${new Date(solicitudData.fechaInicioPrestamo).toLocaleDateString("es-ES")} - ${new Date(solicitudData.fechaFinPrestamo).toLocaleDateString("es-ES")}
+- Período: ${new Date(solicitudData.fechaInicioPrestamo).toLocaleDateString("es-ES")} - 
+            ${new Date(solicitudData.fechaFinPrestamo).toLocaleDateString("es-ES")}
 - Horario: ${solicitudData.horaInicioPrestamo} - ${solicitudData.horaFinPrestamo}
 - Estado: ${solicitudData.estadoPrestamo?.nombre || "Pendiente"}
 
@@ -131,12 +138,14 @@ export async function sendSolicitudStatusUpdateNotification(userEmail, userName,
                 
                 <div style="padding: 20px;">
                     <p>Hola <strong>${userName}</strong>,</p>
-                    
-                    <div style="background-color: #f3f4f6; padding: 20px; border-radius: 8px; margin: 20px 0; text-align: center;">
+
+                    <div style="background-color: #f3f4f6; padding: 20px;  
+                    border-radius: 8px; margin: 20px 0; text-align: center;">
                         <h3 style="color: ${estadoColor}; margin: 0;">Estado: ${estadoActual}</h3>
                         <p>${mensajePersonalizado}</p>
                         ${solicitudData.motivoRechazo ? `
-                            <div style="background-color: #fee2e2; padding: 15px; margin-top: 15px; border-radius: 6px;">
+                            <div style="background-color: #fee2e2; 
+                            padding: 15px; margin-top: 15px; border-radius: 6px;">
                                 <strong>Motivo del rechazo:</strong><br>
                                 ${solicitudData.motivoRechazo}
                             </div>
@@ -145,15 +154,19 @@ export async function sendSolicitudStatusUpdateNotification(userEmail, userName,
 
                     <div style="background-color: #f8fafc; padding: 20px; border-radius: 8px; margin: 20px 0;">
                         <h3 style="color: #1e40af; margin-top: 0;">📋 Resumen</h3>
-                        <p><strong>Equipo:</strong> ${solicitudData.equipo?.marca?.nombre || "N/A"} ${solicitudData.equipo?.modelo || "N/A"}</p>
-                        <p><strong>Período:</strong> ${new Date(solicitudData.fechaInicioPrestamo).toLocaleDateString("es-ES")} - ${new Date(solicitudData.fechaFinPrestamo).toLocaleDateString("es-ES")}</p>
-                        <p><strong>Horario:</strong> ${solicitudData.horaInicioPrestamo} - ${solicitudData.horaFinPrestamo}</p>
+                        <p><strong>Equipo:</strong> ${solicitudData.equipo?.marca?.nombre || "N/A"} 
+                                                    ${solicitudData.equipo?.modelo || "N/A"}</p>
+                        <p><strong>Período:</strong> ${new Date(solicitudData.fechaInicioPrestamo).
+                                                    toLocaleDateString("es-ES")} - 
+                                            ${new Date(solicitudData.fechaFinPrestamo).toLocaleDateString("es-ES")}</p>
+                        <p><strong>Horario:</strong> ${solicitudData.horaInicioPrestamo} - 
+                                                    ${solicitudData.horaFinPrestamo}</p>
                     </div>
 
                     <div style="text-align: center; margin: 30px 0;">
                         <a href="${process.env.FRONTEND_URL || "http://localhost:3000"}/mis-solicitudes" 
-                           style="background-color: ${estadoColor}; color: white; padding: 12px 30px; 
-                                  text-decoration: none; border-radius: 6px; display: inline-block;">
+                        style="background-color: ${estadoColor}; color: white; padding: 12px 30px; 
+                                text-decoration: none; border-radius: 6px; display: inline-block;">
                             Ver Detalles Completos
                         </a>
                     </div>
@@ -182,7 +195,8 @@ ${solicitudData.motivoRechazo ? `MOTIVO: ${solicitudData.motivoRechazo}` : ""}
 
 RESUMEN:
 - Equipo: ${solicitudData.equipo?.marca?.nombre || "N/A"} ${solicitudData.equipo?.modelo || "N/A"}
-- Período: ${new Date(solicitudData.fechaInicioPrestamo).toLocaleDateString("es-ES")} - ${new Date(solicitudData.fechaFinPrestamo).toLocaleDateString("es-ES")}
+- Período: ${new Date(solicitudData.fechaInicioPrestamo).toLocaleDateString("es-ES")} - 
+            ${new Date(solicitudData.fechaFinPrestamo).toLocaleDateString("es-ES")}
 - Horario: ${solicitudData.horaInicioPrestamo} - ${solicitudData.horaFinPrestamo}
 
 Sistema SIREC - Universidad del Bío-Bío
