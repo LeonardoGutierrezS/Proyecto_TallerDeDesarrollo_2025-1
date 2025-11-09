@@ -3,65 +3,73 @@ import { EntitySchema } from "typeorm";
 
 const UserSchema = new EntitySchema({
   name: "User",
-  tableName: "users",
+  tableName: "usuario",
   columns: {
-    id: {
+    ID_Usuario: {
       type: "int",
       primary: true,
       generated: true,
     },
-    nombreCompleto: {
+    Correo: {
       type: "varchar",
-      length: 255,
+      length: 100,
       nullable: false,
+      unique: true,
     },
-    rut: {
+    Rut: {
       type: "varchar",
       length: 12,
       nullable: false,
       unique: true,
     },
-    email: {
+    Nombre_Completo: {
+      type: "varchar",
+      length: 150,
+      nullable: false,
+    },
+    Contrasenia: {
       type: "varchar",
       length: 255,
       nullable: false,
-      unique: true,
+    },
+    Vigente: {
+      type: "boolean",
+      nullable: false,
+      default: true,
+    },
+  },
+  relations: {
+    carrera: {
+      type: "many-to-one",
+      target: "Carrera",
+      joinColumn: {
+        name: "ID_Carrera",
+      },
+      nullable: false,
     },
     rol: {
-      type: "varchar",
-      length: 50,
-      nullable: false,
-    },
-    password: {
-      type: "varchar",
-      nullable: false,
-    },
-    createdAt: {
-      type: "timestamp with time zone",
-      default: () => "CURRENT_TIMESTAMP",
-      nullable: false,
-    },
-    updatedAt: {
-      type: "timestamp with time zone",
-      default: () => "CURRENT_TIMESTAMP",
-      onUpdate: "CURRENT_TIMESTAMP",
+      type: "many-to-one",
+      target: "Rol",
+      joinColumn: {
+        name: "ID_Rol",
+      },
       nullable: false,
     },
   },
   indices: [
     {
-      name: "IDX_USER",
-      columns: ["id"],
+      name: "IDX_USUARIO",
+      columns: ["ID_Usuario"],
       unique: true,
     },
     {
-      name: "IDX_USER_RUT",
-      columns: ["rut"],
+      name: "IDX_USUARIO_RUT",
+      columns: ["Rut"],
       unique: true,
     },
     {
-      name: "IDX_USER_EMAIL",
-      columns: ["email"],
+      name: "IDX_USUARIO_CORREO",
+      columns: ["Correo"],
       unique: true,
     },
   ],
