@@ -11,12 +11,21 @@ export async function login(dataUser) {
         });
         const { status, data } = response;
         if (status === 200) {
-            const { nombreCompleto, email, rut, rol } = jwtDecode(data.data.token);
-            const userData = { nombreCompleto, email, rut, rol };
+            const decodedToken = jwtDecode(data.data.token);
+            const { id, nombreCompleto, email, rut, rol, carrera, vigente } = decodedToken;
+            const userData = { 
+                id,
+                nombreCompleto, 
+                email, 
+                rut, 
+                rol: rol.toLowerCase(),
+                carrera,
+                vigente
+            };
             sessionStorage.setItem('usuario', JSON.stringify(userData));
-            axios.defaults.headers.common['Authorization'] = `Bearer ${data.token}`;
+            axios.defaults.headers.common['Authorization'] = `Bearer ${data.data.token}`;
             cookies.set('jwt-auth', data.data.token, {path:'/'});
-            return response.data
+            return response.data;
         }
     } catch (error) {
         return error.response.data;
@@ -26,12 +35,13 @@ export async function login(dataUser) {
 export async function register(data) {
     try {
         const dataRegister = convertirMinusculas(data);
-        const { nombreCompleto, email, rut, password } = dataRegister
+        const { nombreCompleto, email, rut, password, carreraId } = dataRegister;
         const response = await axios.post('/auth/register', {
             nombreCompleto,
             email,
             rut,
-            password
+            password,
+            carreraId: parseInt(carreraId)
         });
         return response.data;
     } catch (error) {

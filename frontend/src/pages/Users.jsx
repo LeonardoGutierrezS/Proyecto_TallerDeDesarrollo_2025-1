@@ -43,7 +43,7 @@ const Users = () => {
   ];
 
   return (
-    <div className='main-container'>
+    <div className='users-main-container'>
       <div className='table-container'>
         <div className='top-table'>
           <h1 className='title-table'>Usuarios</h1>

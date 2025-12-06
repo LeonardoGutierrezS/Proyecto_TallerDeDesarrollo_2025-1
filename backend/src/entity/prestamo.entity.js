@@ -56,6 +56,22 @@ const PrestamoSchema = new EntitySchema({
       type: "text",
       nullable: true,
     },
+    ID_Usuario: {
+      type: "int",
+      nullable: false,
+    },
+    ID_Categoria: {
+      type: "int",
+      nullable: false,
+    },
+    ID_Estado_Prestamo: {
+      type: "int",
+      nullable: false,
+    },
+    ID_Tipo_Documento: {
+      type: "int",
+      nullable: true,
+    },
   },
   relations: {
     usuario: {
@@ -89,6 +105,14 @@ const PrestamoSchema = new EntitySchema({
         name: "ID_Tipo_Documento",
       },
       nullable: true,
+    },
+    equipos: {
+      type: "many-to-one",
+      target: "Equipos",
+      joinColumn: {
+        name: "ID_Num_Inv",
+      },
+      nullable: false,
     },
   },
   indices: [

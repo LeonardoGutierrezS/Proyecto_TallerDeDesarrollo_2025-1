@@ -45,7 +45,7 @@ const UserSchema = new EntitySchema({
       joinColumn: {
         name: "ID_Carrera",
       },
-      nullable: false,
+      nullable: true,
     },
     rol: {
       type: "many-to-one",

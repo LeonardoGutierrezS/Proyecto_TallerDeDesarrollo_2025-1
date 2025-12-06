@@ -10,6 +10,8 @@ const Register = () => {
 	const {
         errorEmail,
         errorRut,
+        errorCarrera,
+        carreras,
         errorData,
         handleInputChange
     } = useRegister();
@@ -18,16 +20,19 @@ const registerSubmit = async (data) => {
     try {
         const response = await register(data);
         if (response.status === 'Success') {
-            showSuccessAlert('¡Registrado!','Usuario registrado exitosamente.');
+            showSuccessAlert(
+                '¡Registro Exitoso!',
+                'Tu cuenta ha sido creada y está pendiente de aprobación por el administrador. Recibirás una notificación cuando sea aprobada.'
+            );
             setTimeout(() => {
                 navigate('/auth');
-            }, 3000)
+            }, 4000)
         } else if (response.status === 'Client error') {
             errorData(response.details);
         }
     } catch (error) {
         console.error("Error al registrar un usuario: ", error);
-        showErrorAlert('Cancelado', 'Ocurrió un error al registrarse.');
+        showErrorAlert('Error', 'Ocurrió un error al registrarse.');
     }
 }
 
@@ -78,6 +83,18 @@ const patternRut = new RegExp(/^(?:(?:[1-9]\d{0}|[1-2]\d{1})(\.\d{3}){2}|[1-9]\d
 						required: true,
                         errorMessageData: errorRut,
                         onChange: (e) => handleInputChange('rut', e.target.value)
+                    },
+                    {
+                        label: "Carrera",
+                        name: "carreraId",
+                        fieldType: 'select',
+                        required: true,
+                        options: carreras.map(carrera => ({
+                            value: carrera.ID_Carrera,
+                            label: carrera.Carrera
+                        })),
+                        errorMessageData: errorCarrera,
+                        onChange: (e) => handleInputChange('carrera', e.target.value)
                     },
                     {
                         label: "Contraseña",

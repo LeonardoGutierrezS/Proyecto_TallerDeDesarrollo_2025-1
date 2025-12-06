@@ -1,40 +1,344 @@
+"use strict";
 import User from "../entity/user.entity.js";
 import { AppDataSource } from "../config/configDb.js";
 import {
-handleErrorClient,
-handleErrorServer,
+  handleErrorClient,
+  handleErrorServer,
 } from "../handlers/responseHandlers.js";
 
+/**
+ * Middleware para verificar que el usuario tiene rol de administrador
+ */
 export async function isAdmin(req, res, next) {
-try {
+  try {
+    if (!req.user || !req.user.email) {
+      return handleErrorClient(
+        res,
+        401,
+        "No autenticado",
+        "No se encontró información del usuario en la petición",
+      );
+    }
+
+    // Ya tenemos el rol del usuario desde passport
+    if (req.user.rol?.toLowerCase() === "administrador") {
+      next();
+      return;
+    }
+
+    return handleErrorClient(
+      res,
+      403,
+      "Error al acceder al recurso",
+      "Se requiere un rol de administrador para realizar esta acción.",
+    );
+  } catch (error) {
+    handleErrorServer(
+      res,
+      500,
+      error.message,
+    );
+  }
+}
+
+/**
+ * Middleware para verificar que el usuario tiene rol de Director de Escuela
+ */
+export async function isDirector(req, res, next) {
+  try {
     const userRepository = AppDataSource.getRepository(User);
 
-    const userFound = await userRepository.findOneBy({ email: req.user.email });
+    const userFound = await userRepository.findOne({
+      where: { Correo: req.user.email },
+      relations: ["rol"],
+    });
 
     if (!userFound) {
-    return handleErrorClient(
+      return handleErrorClient(
         res,
         404,
         "Usuario no encontrado en la base de datos",
-    );
+      );
     }
 
-    const rolUser = userFound.rol;
-
-    if (rolUser !== "administrador") {
-        return handleErrorClient(
-            res,
-            403,
-            "Error al acceder al recurso",
-            "Se requiere un rol de administrador para realizar esta acción."
-        );
+    if (!userFound.Vigente) {
+      return handleErrorClient(
+        res,
+        403,
+        "Usuario no vigente",
+        "El usuario no está habilitado para realizar acciones en el sistema.",
+      );
     }
+
+    const rolUser = userFound.rol?.Rol || userFound.rol;
+
+    if (rolUser?.toLowerCase() !== "director de escuela") {
+      return handleErrorClient(
+        res,
+        403,
+        "Error al acceder al recurso",
+        "Se requiere un rol de Director de Escuela para realizar esta acción.",
+      );
+    }
+
+    req.user.rol = rolUser;
+    req.user.vigente = userFound.Vigente;
     next();
-} catch (error) {
+  } catch (error) {
     handleErrorServer(
-    res,
-    500,
-    error.message,
+      res,
+      500,
+      error.message,
     );
+  }
 }
+
+/**
+ * Middleware para verificar que el usuario tiene rol de Alumno
+ */
+export async function isAlumno(req, res, next) {
+  try {
+    const userRepository = AppDataSource.getRepository(User);
+
+    const userFound = await userRepository.findOne({
+      where: { Correo: req.user.email },
+      relations: ["rol"],
+    });
+
+    if (!userFound) {
+      return handleErrorClient(
+        res,
+        404,
+        "Usuario no encontrado en la base de datos",
+      );
+    }
+
+    if (!userFound.Vigente) {
+      return handleErrorClient(
+        res,
+        403,
+        "Usuario no vigente",
+        "El usuario no está habilitado para realizar acciones en el sistema.",
+      );
+    }
+
+    const rolUser = userFound.rol?.Rol || userFound.rol;
+
+    if (rolUser?.toLowerCase() !== "alumno") {
+      return handleErrorClient(
+        res,
+        403,
+        "Error al acceder al recurso",
+        "Se requiere un rol de Alumno para realizar esta acción.",
+      );
+    }
+
+    req.user.rol = rolUser;
+    req.user.vigente = userFound.Vigente;
+    next();
+  } catch (error) {
+    handleErrorServer(
+      res,
+      500,
+      error.message,
+    );
+  }
+}
+
+/**
+ * Middleware para verificar que el usuario tiene rol de Profesor
+ */
+export async function isProfesor(req, res, next) {
+  try {
+    const userRepository = AppDataSource.getRepository(User);
+
+    const userFound = await userRepository.findOne({
+      where: { Correo: req.user.email },
+      relations: ["rol"],
+    });
+
+    if (!userFound) {
+      return handleErrorClient(
+        res,
+        404,
+        "Usuario no encontrado en la base de datos",
+      );
+    }
+
+    if (!userFound.Vigente) {
+      return handleErrorClient(
+        res,
+        403,
+        "Usuario no vigente",
+        "El usuario no está habilitado para realizar acciones en el sistema.",
+      );
+    }
+
+    const rolUser = userFound.rol?.Rol || userFound.rol;
+
+    if (rolUser?.toLowerCase() !== "profesor") {
+      return handleErrorClient(
+        res,
+        403,
+        "Error al acceder al recurso",
+        "Se requiere un rol de Profesor para realizar esta acción.",
+      );
+    }
+
+    req.user.rol = rolUser;
+    req.user.vigente = userFound.Vigente;
+    next();
+  } catch (error) {
+    handleErrorServer(
+      res,
+      500,
+      error.message,
+    );
+  }
+}
+
+/**
+ * Middleware para verificar que el usuario tiene rol de Alumno o Profesor
+ * (misma vista según requerimiento)
+ */
+export async function isAlumnoOrProfesor(req, res, next) {
+  try {
+    const userRepository = AppDataSource.getRepository(User);
+
+    const userFound = await userRepository.findOne({
+      where: { Correo: req.user.email },
+      relations: ["rol"],
+    });
+
+    if (!userFound) {
+      return handleErrorClient(
+        res,
+        404,
+        "Usuario no encontrado en la base de datos",
+      );
+    }
+
+    if (!userFound.Vigente) {
+      return handleErrorClient(
+        res,
+        403,
+        "Usuario no vigente",
+        "El usuario no está habilitado para realizar acciones en el sistema.",
+      );
+    }
+
+    const rolUser = userFound.rol?.Rol || userFound.rol;
+    const rolLower = rolUser?.toLowerCase();
+
+    if (rolLower !== "alumno" && rolLower !== "profesor") {
+      return handleErrorClient(
+        res,
+        403,
+        "Error al acceder al recurso",
+        "Se requiere un rol de Alumno o Profesor para realizar esta acción.",
+      );
+    }
+
+    req.user.rol = rolUser;
+    req.user.vigente = userFound.Vigente;
+    next();
+  } catch (error) {
+    handleErrorServer(
+      res,
+      500,
+      error.message,
+    );
+  }
+}
+
+/**
+ * Middleware para verificar que el usuario tiene rol de Administrador o Director
+ */
+export async function isAdminOrDirector(req, res, next) {
+  try {
+    const userRepository = AppDataSource.getRepository(User);
+
+    const userFound = await userRepository.findOne({
+      where: { Correo: req.user.email },
+      relations: ["rol"],
+    });
+
+    if (!userFound) {
+      return handleErrorClient(
+        res,
+        404,
+        "Usuario no encontrado en la base de datos",
+      );
+    }
+
+    if (!userFound.Vigente) {
+      return handleErrorClient(
+        res,
+        403,
+        "Usuario no vigente",
+        "El usuario no está habilitado para realizar acciones en el sistema.",
+      );
+    }
+
+    const rolUser = userFound.rol?.Rol || userFound.rol;
+    const rolLower = rolUser?.toLowerCase();
+
+    if (rolLower !== "administrador" && rolLower !== "director de escuela") {
+      return handleErrorClient(
+        res,
+        403,
+        "Error al acceder al recurso",
+        "Se requiere un rol de Administrador o Director de Escuela para realizar esta acción.",
+      );
+    }
+
+    req.user.rol = rolUser;
+    req.user.vigente = userFound.Vigente;
+    next();
+  } catch (error) {
+    handleErrorServer(
+      res,
+      500,
+      error.message,
+    );
+  }
+}
+
+/**
+ * Middleware para verificar que el usuario está vigente
+ */
+export async function isVigente(req, res, next) {
+  try {
+    const userRepository = AppDataSource.getRepository(User);
+
+    const userFound = await userRepository.findOne({
+      where: { Correo: req.user.email },
+    });
+
+    if (!userFound) {
+      return handleErrorClient(
+        res,
+        404,
+        "Usuario no encontrado en la base de datos",
+      );
+    }
+
+    if (!userFound.Vigente) {
+      return handleErrorClient(
+        res,
+        403,
+        "Usuario no vigente",
+        "El usuario no está habilitado. Puede estar en lista negra.",
+      );
+    }
+
+    req.user.vigente = userFound.Vigente;
+    next();
+  } catch (error) {
+    handleErrorServer(
+      res,
+      500,
+      error.message,
+    );
+  }
 }

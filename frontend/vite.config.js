@@ -8,6 +8,10 @@ const __dirname = path.dirname(__filename);
 
 export default defineConfig({
   plugins: [react()],
+  server: {
+    host: true,   // permite acceso desde red externa (necesario para ngrok)
+    port: 5173,   // puerto donde corre el servidor local
+  },
   preview: {port:443, host:true},
   resolve: {
     alias: {
@@ -21,4 +25,6 @@ export default defineConfig({
       '@helpers': path.resolve(__dirname, './src/helpers')
     }
   }
+  
+
 });

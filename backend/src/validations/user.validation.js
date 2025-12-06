@@ -124,6 +124,30 @@ export const userBodyValidation = Joi.object({
       "string.min": "El rol debe tener como mínimo 4 caracteres.",
       "string.max": "El rol debe tener como máximo 15 caracteres.",
     }),
+  rolId: Joi.number()
+    .integer()
+    .positive()
+    .min(1)
+    .max(4)
+    .messages({
+      "number.base": "El ID del rol debe ser un número.",
+      "number.integer": "El ID del rol debe ser un número entero.",
+      "number.positive": "El ID del rol debe ser un número positivo.",
+      "number.min": "El ID del rol debe ser al menos 1.",
+      "number.max": "El ID del rol debe ser como máximo 4.",
+    }),
+  carreraId: Joi.number()
+    .integer()
+    .min(0)
+    .messages({
+      "number.base": "El ID de la carrera debe ser un número.",
+      "number.integer": "El ID de la carrera debe ser un número entero.",
+      "number.min": "El ID de la carrera debe ser 0 o mayor.",
+    }),
+  vigente: Joi.boolean()
+    .messages({
+      "boolean.base": "El campo vigente debe ser un valor booleano.",
+    }),
 })
   .or(
     "nombreCompleto",
@@ -131,11 +155,14 @@ export const userBodyValidation = Joi.object({
     "password",
     "newPassword",
     "rut",
-    "rol"
+    "rol",
+    "rolId",
+    "carreraId",
+    "vigente"
   )
   .unknown(false)
   .messages({
     "object.unknown": "No se permiten propiedades adicionales.",
     "object.missing":
-      "Debes proporcionar al menos un campo: nombreCompleto, email, password, newPassword, rut o rol.",
+      "Debes proporcionar al menos un campo para actualizar.",
   });

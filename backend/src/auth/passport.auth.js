@@ -16,12 +16,23 @@ passport.use(
       const userRepository = AppDataSource.getRepository(User);
       const user = await userRepository.findOne({
         where: {
-          email: jwt_payload.email,
+          Correo: jwt_payload.email,
         },
+        relations: ["rol", "carrera"],
       });
 
       if (user) {
-        return done(null, user);
+        // Crear objeto con la estructura esperada por los middlewares
+        const userPayload = {
+          id: user.ID_Usuario,
+          email: user.Correo,
+          rut: user.Rut,
+          nombreCompleto: user.Nombre_Completo,
+          rol: user.rol?.Rol,
+          carrera: user.carrera?.Nombre_Carrera,
+          vigente: user.Vigente,
+        };
+        return done(null, userPayload);
       } else {
         return done(null, false);
       }

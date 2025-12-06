@@ -12,19 +12,15 @@ const domainEmailValidator = (value, helper) => {
 
 export const authValidation = Joi.object({
   email: Joi.string()
-    .min(15)
-    .max(35)
     .email()
     .required()
+    .custom(domainEmailValidator, "Validación dominio email")
     .messages({
       "string.empty": "El correo electrónico no puede estar vacío.",
       "any.required": "El correo electrónico es obligatorio.",
       "string.base": "El correo electrónico debe ser de tipo texto.",
-      "string.email": "El correo electrónico debe finalizar en @gmail.cl.",
-      "string.min": "El correo electrónico debe tener al menos 15 caracteres.",
-      "string.max": "El correo electrónico debe tener como máximo 35 caracteres.",
-    })
-    .custom(domainEmailValidator, "Validación dominio email"),
+      "string.email": "El correo electrónico debe ser un email válido.",
+    }),
   password: Joi.string()
     .min(8)
     .max(26)
@@ -94,6 +90,16 @@ export const registerValidation = Joi.object({
       "string.min": "La contraseña debe tener al menos 8 caracteres.",
       "string.max": "La contraseña debe tener como máximo 26 caracteres.",
       "string.pattern.base": "La contraseña solo puede contener letras y números.",
+    }),
+  carreraId: Joi.number()
+    .integer()
+    .positive()
+    .required()
+    .messages({
+      "number.base": "La carrera debe ser un número.",
+      "number.integer": "La carrera debe ser un número entero.",
+      "number.positive": "La carrera debe ser un número positivo.",
+      "any.required": "La carrera es obligatoria.",
     }),
 })
   .unknown(false)

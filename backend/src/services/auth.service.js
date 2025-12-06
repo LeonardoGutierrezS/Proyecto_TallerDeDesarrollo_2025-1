@@ -15,25 +15,36 @@ export async function loginService(user) {
       message
     });
 
+    console.log("Buscando usuario con email:", email);
     const userFound = await userRepository.findOne({
-      where: { email }
+      where: { Correo: email },
+      relations: ["rol", "carrera"],
     });
 
+    console.log("Usuario encontrado:", userFound ? "Sí" : "No");
     if (!userFound) {
       return [null, createErrorMessage("email", "El correo electrónico es incorrecto")];
     }
 
-    const isMatch = await comparePassword(password, userFound.password);
+    // Verificar si el usuario está vigente (aprobado)
+    if (!userFound.Vigente) {
+      return [null, createErrorMessage("email", "Tu cuenta está pendiente de aprobación por el administrador")];
+    }
+
+    const isMatch = await comparePassword(password, userFound.Contrasenia);
 
     if (!isMatch) {
       return [null, createErrorMessage("password", "La contraseña es incorrecta")];
     }
 
     const payload = {
-      nombreCompleto: userFound.nombreCompleto,
-      email: userFound.email,
-      rut: userFound.rut,
-      rol: userFound.rol,
+      id: userFound.ID_Usuario,
+      nombreCompleto: userFound.Nombre_Completo,
+      email: userFound.Correo,
+      rut: userFound.Rut,
+      rol: userFound.rol?.Rol || "Alumno",
+      carrera: userFound.carrera?.Carrera || "",
+      vigente: userFound.Vigente,
     };
 
     const accessToken = jwt.sign(payload, ACCESS_TOKEN_SECRET, {
@@ -51,8 +62,10 @@ export async function loginService(user) {
 export async function registerService(user) {
   try {
     const userRepository = AppDataSource.getRepository(User);
+    const RolSchema = AppDataSource.getRepository("Rol");
+    const CarreraSchema = AppDataSource.getRepository("Carrera");
 
-    const { nombreCompleto, rut, email } = user;
+    const { nombreCompleto, rut, email, carreraId } = user;
 
     const createErrorMessage = (dataInfo, message) => ({
       dataInfo,
@@ -75,17 +88,33 @@ export async function registerService(user) {
 
     if (existingRutUser) return [null, createErrorMessage("rut", "Rut ya asociado a una cuenta")];
 
+    // Obtener rol de Alumno (usuarios registrados desde el frontend son alumnos)
+    const alumnoRol = await RolSchema.findOne({ where: { Rol: "Alumno" } });
+    
+    if (!alumnoRol) {
+      return [null, "Error: Rol de Alumno no encontrado en el sistema"];
+    }
+
+    // Verificar que la carrera exista
+    const carrera = await CarreraSchema.findOne({ where: { ID_Carrera: carreraId } });
+    
+    if (!carrera) {
+      return [null, createErrorMessage("carrera", "La carrera seleccionada no existe")];
+    }
+
     const newUser = userRepository.create({
-      nombreCompleto,
-      email,
-      rut,
-      password: await encryptPassword(user.password),
-      rol: "usuario",
+      Nombre_Completo: nombreCompleto,
+      Correo: email,
+      Rut: rut,
+      Contrasenia: await encryptPassword(user.password),
+      Vigente: false, // Los alumnos registrados quedan inactivos hasta ser aprobados
+      rol: alumnoRol,
+      carrera: carrera,
     });
 
     await userRepository.save(newUser);
 
-    const { password, ...dataUser } = newUser;
+    const { Contrasenia, ...dataUser } = newUser;
 
     return [dataUser, null];
   } catch (error) {
