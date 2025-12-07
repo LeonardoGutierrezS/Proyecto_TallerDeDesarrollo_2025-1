@@ -25,7 +25,12 @@ export async function prestamoExists(req, res, next) {
 
     const prestamo = await prestamoRepository.findOne({
       where: { ID_Prestamo: prestamoId },
-      relations: ["usuario", "estadoPrestamo"],
+      relations: [
+        "solicitud",
+        "solicitud.usuario",
+        "tieneEstados",
+        "tieneEstados.estado",
+      ],
     });
 
     if (!prestamo) {
@@ -72,7 +77,13 @@ export async function prestamoActivo(req, res, next) {
       );
     }
 
-    if (prestamo.Fecha_devolucion) {
+    // Verificar si tiene devolución registrada
+    const prestamoConDevolucion = await prestamoRepository.findOne({
+      where: { ID_Prestamo: prestamoId },
+      relations: ["devolucion"],
+    });
+
+    if (prestamoConDevolucion?.devolucion) {
       return handleErrorClient(
         res,
         400,
@@ -93,23 +104,26 @@ export async function prestamoActivo(req, res, next) {
  */
 export async function limitePrestamosPorUsuario(req, res, next) {
   try {
-    const usuarioId = req.body.ID_Usuario;
+    const rut = req.body.Rut || req.user?.rut;
     const limitePrestamos = 3; // Configurar según necesidad
 
-    if (!usuarioId) {
+    if (!rut) {
       return handleErrorClient(
         res,
         400,
-        "ID del usuario es requerido",
+        "RUT del usuario es requerido",
       );
     }
 
     const prestamoRepository = AppDataSource.getRepository(Prestamo);
 
+    // Contar préstamos activos (sin devolución) del usuario
     const prestamosActivos = await prestamoRepository
-      .createQueryBuilder("p")
-      .where("p.ID_Usuario = :userId", { userId: usuarioId })
-      .andWhere("p.Fecha_devolucion IS NULL")
+      .createQueryBuilder("prestamo")
+      .leftJoin("prestamo.solicitud", "solicitud")
+      .leftJoin("prestamo.devolucion", "devolucion")
+      .where("solicitud.Rut = :rut", { rut })
+      .andWhere("devolucion.ID_Devolucion IS NULL")
       .getCount();
 
     if (prestamosActivos >= limitePrestamos) {

@@ -28,9 +28,9 @@ router
   .get("/detail/", getUser)
   .post("/create", createUserByAdmin)
   .patch("/detail/", updateUser)
-  .patch("/:id/approve", approveUser)
-  .patch("/:id/status", updateUserStatus)
+  .patch("/:rut/approve", approveUser)
+  .patch("/:rut/status", updateUserStatus)
   .delete("/detail/", deleteUser)
-  .delete("/:id/reject", rejectUser);
+  .delete("/:rut/reject", rejectUser);
 
 export default router;

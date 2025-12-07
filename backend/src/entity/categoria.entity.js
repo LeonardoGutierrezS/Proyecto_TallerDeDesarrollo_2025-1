@@ -1,6 +1,10 @@
 "use strict";
 import { EntitySchema } from "typeorm";
 
+/**
+ * @note Esta entidad sigue en uso para clasificación de equipos.
+ * Se mantiene activa en la arquitectura actual.
+ */
 const CategoriaSchema = new EntitySchema({
   name: "Categoria",
   tableName: "categoria",

@@ -56,6 +56,16 @@ const EquiposSchema = new EntitySchema({
       },
       nullable: false,
     },
+    caracteristicas: {
+      type: "one-to-many",
+      target: "CaracteristicasEquipo",
+      inverseSide: "equipo",
+    },
+    prestamos: {
+      type: "one-to-many",
+      target: "Prestamo",
+      inverseSide: "equipos",
+    },
   },
   indices: [
     {

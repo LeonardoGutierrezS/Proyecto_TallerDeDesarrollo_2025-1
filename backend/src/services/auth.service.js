@@ -18,7 +18,7 @@ export async function loginService(user) {
     console.log("Buscando usuario con email:", email);
     const userFound = await userRepository.findOne({
       where: { Correo: email },
-      relations: ["rol", "carrera"],
+      relations: ["tipoUsuario", "carrera", "cargo"],
     });
 
     console.log("Usuario encontrado:", userFound ? "Sí" : "No");
@@ -38,11 +38,11 @@ export async function loginService(user) {
     }
 
     const payload = {
-      id: userFound.ID_Usuario,
+      rut: userFound.Rut,
       nombreCompleto: userFound.Nombre_Completo,
       email: userFound.Correo,
-      rut: userFound.Rut,
-      rol: userFound.rol?.Rol || "Alumno",
+      tipoUsuario: userFound.tipoUsuario?.Descripcion || "Alumno",
+      cargo: userFound.cargo?.Desc_Cargo || null,
       carrera: userFound.carrera?.Carrera || "",
       vigente: userFound.Vigente,
     };
@@ -62,7 +62,7 @@ export async function loginService(user) {
 export async function registerService(user) {
   try {
     const userRepository = AppDataSource.getRepository(User);
-    const RolSchema = AppDataSource.getRepository("Rol");
+    const TipoUsuarioSchema = AppDataSource.getRepository("TipoUsuario");
     const CarreraSchema = AppDataSource.getRepository("Carrera");
 
     const { nombreCompleto, rut, email, carreraId } = user;
@@ -88,11 +88,11 @@ export async function registerService(user) {
 
     if (existingRutUser) return [null, createErrorMessage("rut", "Rut ya asociado a una cuenta")];
 
-    // Obtener rol de Alumno (usuarios registrados desde el frontend son alumnos)
-    const alumnoRol = await RolSchema.findOne({ where: { Rol: "Alumno" } });
+    // Obtener tipo de usuario Alumno (usuarios registrados desde el frontend son alumnos)
+    const tipoAlumno = await TipoUsuarioSchema.findOne({ where: { Descripcion: "Alumno" } });
     
-    if (!alumnoRol) {
-      return [null, "Error: Rol de Alumno no encontrado en el sistema"];
+    if (!tipoAlumno) {
+      return [null, "Error: Tipo de usuario Alumno no encontrado en el sistema"];
     }
 
     // Verificar que la carrera exista
@@ -103,13 +103,13 @@ export async function registerService(user) {
     }
 
     const newUser = userRepository.create({
+      Rut: rut,
       Nombre_Completo: nombreCompleto,
       Correo: email,
-      Rut: rut,
       Contrasenia: await encryptPassword(user.password),
       Vigente: false, // Los alumnos registrados quedan inactivos hasta ser aprobados
-      rol: alumnoRol,
-      carrera: carrera,
+      Cod_TipoUsuario: tipoAlumno.Cod_TipoUsuario,
+      ID_Carrera: carrera.ID_Carrera,
     });
 
     await userRepository.save(newUser);

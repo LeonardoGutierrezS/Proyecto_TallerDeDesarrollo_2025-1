@@ -12,7 +12,7 @@ export async function createPrestamoService(body) {
 
     // Verificar que el usuario existe
     const userFound = await userRepository.findOne({
-      where: { ID_Usuario: body.ID_Usuario },
+      where: { Rut: body.Rut },
     });
 
     if (!userFound) {
@@ -39,21 +39,12 @@ export async function createPrestamoService(body) {
 
     const newPrestamo = prestamoRepository.create({
       ID_Num_Inv: body.ID_Num_Inv,
-      ID_Usuario: body.ID_Usuario, // Agregar directamente el ID
       Fecha_inicio_prestamo: body.Fecha_inicio_prestamo || new Date(),
       Hora_inicio_prestamo: body.Hora_inicio_prestamo,
-      Fecha_ter_prestamo: body.Fecha_ter_prestamo || null,
+      Fecha_fin_prestamo: body.Fecha_fin_prestamo || null,
       Hora_fin_prestamo: body.Hora_fin_prestamo || null,
-      Motivo_Rechazo: body.Motivo_Rechazo || null,
-      Retencion_documento: body.Retencion_documento || null,
-      Fecha_devolucion: body.Fecha_devolucion || null,
-      Hora_devolucion: body.Hora_devolucion || null,
+      Tipo_documento: body.Tipo_documento || null,
       Condiciones_Prestamo: body.Condiciones_Prestamo || null,
-      Observaciones: body.Observaciones || null,
-      usuario: { ID_Usuario: body.ID_Usuario },
-      categoria: { ID_Categoria: body.ID_Categoria },
-      estadoPrestamo: { ID_Estado_Prestamo: body.ID_Estado_Prestamo },
-      tipoDocumento: body.ID_Tipo_Documento ? { ID_Tipo_Documento: body.ID_Tipo_Documento } : null,
     });
 
     const prestamoSaved = await prestamoRepository.save(newPrestamo);
@@ -67,13 +58,15 @@ export async function createPrestamoService(body) {
     const prestamoWithRelations = await prestamoRepository.findOne({
       where: { ID_Prestamo: prestamoSaved.ID_Prestamo },
       relations: [
-        "usuario",
-        "usuario.rol",
-        "usuario.carrera",
-        "categoria",
-        "estadoPrestamo",
-        "tipoDocumento",
         "equipos",
+        "solicitud",
+        "solicitud.usuario",
+        "solicitud.usuario.tipoUsuario",
+        "solicitud.usuario.carrera",
+        "autorizacion",
+        "devolucion",
+        "tieneEstados",
+        "tieneEstados.estado",
       ],
     });
 
@@ -91,13 +84,15 @@ export async function getPrestamoService(id) {
     const prestamoFound = await prestamoRepository.findOne({
       where: { ID_Prestamo: id },
       relations: [
-        "usuario",
-        "usuario.rol",
-        "usuario.carrera",
-        "categoria",
-        "estadoPrestamo",
-        "tipoDocumento",
         "equipos",
+        "solicitud",
+        "solicitud.usuario",
+        "solicitud.usuario.tipoUsuario",
+        "solicitud.usuario.carrera",
+        "autorizacion",
+        "devolucion",
+        "tieneEstados",
+        "tieneEstados.estado",
       ],
     });
 
@@ -116,13 +111,15 @@ export async function getPrestamosService() {
 
     const prestamos = await prestamoRepository.find({
       relations: [
-        "usuario",
-        "usuario.rol",
-        "usuario.carrera",
-        "categoria",
-        "estadoPrestamo",
-        "tipoDocumento",
         "equipos",
+        "solicitud",
+        "solicitud.usuario",
+        "solicitud.usuario.tipoUsuario",
+        "solicitud.usuario.carrera",
+        "autorizacion",
+        "devolucion",
+        "tieneEstados",
+        "tieneEstados.estado",
       ],
       order: { Fecha_inicio_prestamo: "DESC" },
     });
@@ -134,23 +131,24 @@ export async function getPrestamosService() {
   }
 }
 
-export async function getPrestamosPorUsuarioService(usuarioId) {
+export async function getPrestamosPorUsuarioService(rut) {
   try {
     const prestamoRepository = AppDataSource.getRepository(Prestamo);
 
-    const prestamos = await prestamoRepository.find({
-      where: { usuario: { ID_Usuario: usuarioId } },
-      relations: [
-        "usuario",
-        "usuario.rol",
-        "usuario.carrera",
-        "categoria",
-        "estadoPrestamo",
-        "tipoDocumento",
-        "equipos",
-      ],
-      order: { Fecha_inicio_prestamo: "DESC" },
-    });
+    const prestamos = await prestamoRepository
+      .createQueryBuilder("prestamo")
+      .leftJoinAndSelect("prestamo.equipos", "equipos")
+      .leftJoinAndSelect("prestamo.solicitud", "solicitud")
+      .leftJoinAndSelect("solicitud.usuario", "usuario")
+      .leftJoinAndSelect("usuario.tipoUsuario", "tipoUsuario")
+      .leftJoinAndSelect("usuario.carrera", "carrera")
+      .leftJoinAndSelect("prestamo.autorizacion", "autorizacion")
+      .leftJoinAndSelect("prestamo.devolucion", "devolucion")
+      .leftJoinAndSelect("prestamo.tieneEstados", "tieneEstados")
+      .leftJoinAndSelect("tieneEstados.estado", "estado")
+      .where("solicitud.Rut = :rut", { rut })
+      .orderBy("prestamo.Fecha_inicio_prestamo", "DESC")
+      .getMany();
 
     return [prestamos || [], null];
   } catch (error) {
@@ -163,19 +161,20 @@ export async function getPrestamosActivosService() {
   try {
     const prestamoRepository = AppDataSource.getRepository(Prestamo);
 
-    const prestamosActivos = await prestamoRepository.find({
-      where: { Fecha_devolucion: null },
-      relations: [
-        "usuario",
-        "usuario.rol",
-        "usuario.carrera",
-        "categoria",
-        "estadoPrestamo",
-        "tipoDocumento",
-        "equipos",
-      ],
-      order: { Fecha_inicio_prestamo: "DESC" },
-    });
+    const prestamosActivos = await prestamoRepository
+      .createQueryBuilder("prestamo")
+      .leftJoinAndSelect("prestamo.equipos", "equipos")
+      .leftJoinAndSelect("prestamo.solicitud", "solicitud")
+      .leftJoinAndSelect("solicitud.usuario", "usuario")
+      .leftJoinAndSelect("usuario.tipoUsuario", "tipoUsuario")
+      .leftJoinAndSelect("usuario.carrera", "carrera")
+      .leftJoinAndSelect("prestamo.autorizacion", "autorizacion")
+      .leftJoinAndSelect("prestamo.devolucion", "devolucion")
+      .leftJoinAndSelect("prestamo.tieneEstados", "tieneEstados")
+      .leftJoinAndSelect("tieneEstados.estado", "estado")
+      .where("prestamo.devolucion IS NULL")
+      .orderBy("prestamo.Fecha_inicio_prestamo", "DESC")
+      .getMany();
 
     if (!prestamosActivos || prestamosActivos.length === 0) {
       return [null, "No hay préstamos activos"];
@@ -221,13 +220,15 @@ export async function updatePrestamoService(id, body) {
     const prestamoUpdated = await prestamoRepository.findOne({
       where: { ID_Prestamo: id },
       relations: [
-        "usuario",
-        "usuario.rol",
-        "usuario.carrera",
-        "categoria",
-        "estadoPrestamo",
-        "tipoDocumento",
         "equipos",
+        "solicitud",
+        "solicitud.usuario",
+        "solicitud.usuario.tipoUsuario",
+        "solicitud.usuario.carrera",
+        "autorizacion",
+        "devolucion",
+        "tieneEstados",
+        "tieneEstados.estado",
       ],
     });
 
@@ -274,13 +275,15 @@ export async function finalizarPrestamoService(id, body) {
     const prestamoFinalizado = await prestamoRepository.findOne({
       where: { ID_Prestamo: id },
       relations: [
-        "usuario",
-        "usuario.rol",
-        "usuario.carrera",
-        "categoria",
-        "estadoPrestamo",
-        "tipoDocumento",
         "equipos",
+        "solicitud",
+        "solicitud.usuario",
+        "solicitud.usuario.tipoUsuario",
+        "solicitud.usuario.carrera",
+        "autorizacion",
+        "devolucion",
+        "tieneEstados",
+        "tieneEstados.estado",
       ],
     });
 

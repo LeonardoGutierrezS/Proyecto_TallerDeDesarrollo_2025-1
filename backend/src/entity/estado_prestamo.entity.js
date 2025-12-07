@@ -1,6 +1,11 @@
 "use strict";
 import { EntitySchema } from "typeorm";
 
+/**
+ * @deprecated Esta entidad está siendo reemplazada por TieneEstado (tiene_estado)
+ * en la nueva arquitectura 3FN. Se mantiene por compatibilidad con código legacy.
+ * TODO: Migrar servicios y middlewares para usar TieneEstado
+ */
 const EstadoPrestamoSchema = new EntitySchema({
   name: "EstadoPrestamo",
   tableName: "estado_prestamo",

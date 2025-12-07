@@ -5,21 +5,30 @@ import { Router } from "express";
 import authRoutes from "./auth.routes.js";
 import userRoutes from "./user.routes.js";
 
-// Rutas de catálogos
-import rolRoutes from "./rol.routes.js";
+// Rutas de catálogos base
 import carreraRoutes from "./carrera.routes.js";
-import motivoRoutes from "./motivo.routes.js";
-import tipoDocumentoRoutes from "./tipo_documento.routes.js";
 import marcaRoutes from "./marca.routes.js";
 import estadoRoutes from "./estado.routes.js";
 import categoriaRoutes from "./categoria.routes.js";
-import estadoPrestamoRoutes from "./estado_prestamo.routes.js";
 
-// Rutas principales
+// Rutas de equipos
 import equiposRoutes from "./equipos.routes.js";
-import detallesNotebookRoutes from "./detalles_notebook.routes.js";
+import caracteristicasEquipoRoutes from "./caracteristicas_equipo.routes.js";
+
+// Rutas del sistema de préstamos (3FN)
+import solicitudRoutes from "./solicitud.routes.js";
+import autorizacionRoutes from "./autorizacion.routes.js";
 import prestamoRoutes from "./prestamo.routes.js";
-import listaNegraRoutes from "./lista_negra.routes.js";
+import devolucionRoutes from "./devolucion.routes.js";
+import tieneEstadoRoutes from "./tiene_estado.routes.js";
+
+// Rutas de penalizaciones
+import penalizacionesRoutes from "./penalizaciones.routes.js";
+import tienePenalizacionRoutes from "./tiene_penalizacion.routes.js";
+
+// Rutas de clasificaciones de usuarios
+import cargoRoutes from "./cargo.routes.js";
+import tipoUsuarioRoutes from "./tipo_usuario.routes.js";
 
 const router = Router();
 
@@ -28,22 +37,34 @@ router
   .use("/auth", authRoutes)
   .use("/user", userRoutes);
 
-// Catálogos
+// Catálogos base
 router
-  .use("/rol", rolRoutes)
   .use("/carrera", carreraRoutes)
-  .use("/motivo", motivoRoutes)
-  .use("/tipo-documento", tipoDocumentoRoutes)
   .use("/marca", marcaRoutes)
   .use("/estado", estadoRoutes)
-  .use("/categoria", categoriaRoutes)
-  .use("/estado-prestamo", estadoPrestamoRoutes);
+  .use("/categoria", categoriaRoutes);
 
-// Entidades principales
+// Equipos
 router
   .use("/equipos", equiposRoutes)
-  .use("/detalles-notebook", detallesNotebookRoutes)
+  .use("/caracteristicas-equipo", caracteristicasEquipoRoutes);
+
+// Sistema de préstamos (3FN)
+router
+  .use("/solicitud", solicitudRoutes)
+  .use("/autorizacion", autorizacionRoutes)
   .use("/prestamo", prestamoRoutes)
-  .use("/lista-negra", listaNegraRoutes);
+  .use("/devolucion", devolucionRoutes)
+  .use("/tiene-estado", tieneEstadoRoutes);
+
+// Sistema de penalizaciones
+router
+  .use("/penalizaciones", penalizacionesRoutes)
+  .use("/tiene-penalizacion", tienePenalizacionRoutes);
+
+// Clasificaciones de usuarios
+router
+  .use("/cargo", cargoRoutes)
+  .use("/tipo-usuario", tipoUsuarioRoutes);
 
 export default router;

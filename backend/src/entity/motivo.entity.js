@@ -1,6 +1,10 @@
 "use strict";
 import { EntitySchema } from "typeorm";
 
+/**
+ * @note Esta entidad sigue en uso para motivos de lista negra.
+ * Se mantiene activa en la arquitectura actual.
+ */
 const MotivoSchema = new EntitySchema({
   name: "Motivo",
   tableName: "motivo",

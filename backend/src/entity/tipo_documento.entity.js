@@ -1,6 +1,11 @@
 "use strict";
 import { EntitySchema } from "typeorm";
 
+/**
+ * @deprecated El tipo de documento ahora se maneja como campo de texto en Prestamo.Tipo_documento
+ * Se mantiene por compatibilidad con código legacy.
+ * TODO: Migrar servicios para usar campo de texto directo
+ */
 const TipoDocumentoSchema = new EntitySchema({
   name: "TipoDocumento",
   tableName: "tipo_documento",

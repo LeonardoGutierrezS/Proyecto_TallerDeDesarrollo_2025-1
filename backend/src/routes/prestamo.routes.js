@@ -21,7 +21,7 @@ router.use(authenticateJwt);
 router.post("/", createPrestamo); // Cualquier usuario autenticado puede crear una solicitud
 router.get("/activos", getPrestamosActivos);
 router.get("/usuario/mis-prestamos", getPrestamosPorUsuario); // Obtener préstamos del usuario autenticado
-router.get("/usuario/:usuarioId", getPrestamosPorUsuario);
+router.get("/usuario/:rut", getPrestamosPorUsuario);
 router.get("/:id", getPrestamo);
 
 // Rutas que requieren permisos de administrador

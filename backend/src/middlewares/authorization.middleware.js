@@ -7,7 +7,7 @@ import {
 } from "../handlers/responseHandlers.js";
 
 /**
- * Middleware para verificar que el usuario tiene rol de administrador
+ * Middleware para verificar que el usuario tiene tipo de usuario administrador
  */
 export async function isAdmin(req, res, next) {
   try {
@@ -20,8 +20,8 @@ export async function isAdmin(req, res, next) {
       );
     }
 
-    // Ya tenemos el rol del usuario desde passport
-    if (req.user.rol?.toLowerCase() === "administrador") {
+    // Ya tenemos el tipo de usuario desde passport
+    if (req.user.tipoUsuario?.toLowerCase() === "administrador") {
       next();
       return;
     }
@@ -30,7 +30,7 @@ export async function isAdmin(req, res, next) {
       res,
       403,
       "Error al acceder al recurso",
-      "Se requiere un rol de administrador para realizar esta acción.",
+      "Se requiere tipo de usuario Administrador para realizar esta acción.",
     );
   } catch (error) {
     handleErrorServer(
@@ -50,7 +50,7 @@ export async function isDirector(req, res, next) {
 
     const userFound = await userRepository.findOne({
       where: { Correo: req.user.email },
-      relations: ["rol"],
+      relations: ["tipoUsuario"],
     });
 
     if (!userFound) {
@@ -70,18 +70,18 @@ export async function isDirector(req, res, next) {
       );
     }
 
-    const rolUser = userFound.rol?.Rol || userFound.rol;
+    const tipoUsuarioDesc = userFound.tipoUsuario?.Descripcion;
 
-    if (rolUser?.toLowerCase() !== "director de escuela") {
+    if (tipoUsuarioDesc?.toLowerCase() !== "director de escuela") {
       return handleErrorClient(
         res,
         403,
         "Error al acceder al recurso",
-        "Se requiere un rol de Director de Escuela para realizar esta acción.",
+        "Se requiere tipo de usuario Director de Escuela para realizar esta acción.",
       );
     }
 
-    req.user.rol = rolUser;
+    req.user.tipoUsuario = tipoUsuarioDesc;
     req.user.vigente = userFound.Vigente;
     next();
   } catch (error) {
@@ -102,7 +102,7 @@ export async function isAlumno(req, res, next) {
 
     const userFound = await userRepository.findOne({
       where: { Correo: req.user.email },
-      relations: ["rol"],
+      relations: ["tipoUsuario"],
     });
 
     if (!userFound) {
@@ -122,18 +122,18 @@ export async function isAlumno(req, res, next) {
       );
     }
 
-    const rolUser = userFound.rol?.Rol || userFound.rol;
+    const tipoUsuarioDesc = userFound.tipoUsuario?.Descripcion;
 
-    if (rolUser?.toLowerCase() !== "alumno") {
+    if (tipoUsuarioDesc?.toLowerCase() !== "alumno") {
       return handleErrorClient(
         res,
         403,
         "Error al acceder al recurso",
-        "Se requiere un rol de Alumno para realizar esta acción.",
+        "Se requiere tipo de usuario Alumno para realizar esta acción.",
       );
     }
 
-    req.user.rol = rolUser;
+    req.user.tipoUsuario = tipoUsuarioDesc;
     req.user.vigente = userFound.Vigente;
     next();
   } catch (error) {
@@ -154,7 +154,7 @@ export async function isProfesor(req, res, next) {
 
     const userFound = await userRepository.findOne({
       where: { Correo: req.user.email },
-      relations: ["rol"],
+      relations: ["tipoUsuario"],
     });
 
     if (!userFound) {
@@ -174,18 +174,18 @@ export async function isProfesor(req, res, next) {
       );
     }
 
-    const rolUser = userFound.rol?.Rol || userFound.rol;
+    const tipoUsuarioDesc = userFound.tipoUsuario?.Descripcion;
 
-    if (rolUser?.toLowerCase() !== "profesor") {
+    if (tipoUsuarioDesc?.toLowerCase() !== "profesor") {
       return handleErrorClient(
         res,
         403,
         "Error al acceder al recurso",
-        "Se requiere un rol de Profesor para realizar esta acción.",
+        "Se requiere tipo de usuario Profesor para realizar esta acción.",
       );
     }
 
-    req.user.rol = rolUser;
+    req.user.tipoUsuario = tipoUsuarioDesc;
     req.user.vigente = userFound.Vigente;
     next();
   } catch (error) {
@@ -207,7 +207,7 @@ export async function isAlumnoOrProfesor(req, res, next) {
 
     const userFound = await userRepository.findOne({
       where: { Correo: req.user.email },
-      relations: ["rol"],
+      relations: ["tipoUsuario"],
     });
 
     if (!userFound) {
@@ -227,19 +227,19 @@ export async function isAlumnoOrProfesor(req, res, next) {
       );
     }
 
-    const rolUser = userFound.rol?.Rol || userFound.rol;
-    const rolLower = rolUser?.toLowerCase();
+    const tipoUsuarioDesc = userFound.tipoUsuario?.Descripcion;
+    const tipoLower = tipoUsuarioDesc?.toLowerCase();
 
-    if (rolLower !== "alumno" && rolLower !== "profesor") {
+    if (tipoLower !== "alumno" && tipoLower !== "profesor") {
       return handleErrorClient(
         res,
         403,
         "Error al acceder al recurso",
-        "Se requiere un rol de Alumno o Profesor para realizar esta acción.",
+        "Se requiere tipo de usuario Alumno o Profesor para realizar esta acción.",
       );
     }
 
-    req.user.rol = rolUser;
+    req.user.tipoUsuario = tipoUsuarioDesc;
     req.user.vigente = userFound.Vigente;
     next();
   } catch (error) {
@@ -260,7 +260,7 @@ export async function isAdminOrDirector(req, res, next) {
 
     const userFound = await userRepository.findOne({
       where: { Correo: req.user.email },
-      relations: ["rol"],
+      relations: ["tipoUsuario"],
     });
 
     if (!userFound) {
@@ -280,19 +280,19 @@ export async function isAdminOrDirector(req, res, next) {
       );
     }
 
-    const rolUser = userFound.rol?.Rol || userFound.rol;
-    const rolLower = rolUser?.toLowerCase();
+    const tipoUsuarioDesc = userFound.tipoUsuario?.Descripcion;
+    const tipoLower = tipoUsuarioDesc?.toLowerCase();
 
-    if (rolLower !== "administrador" && rolLower !== "director de escuela") {
+    if (tipoLower !== "administrador" && tipoLower !== "director de escuela") {
       return handleErrorClient(
         res,
         403,
         "Error al acceder al recurso",
-        "Se requiere un rol de Administrador o Director de Escuela para realizar esta acción.",
+        "Se requiere tipo de usuario Administrador o Director de Escuela para realizar esta acción.",
       );
     }
 
-    req.user.rol = rolUser;
+    req.user.tipoUsuario = tipoUsuarioDesc;
     req.user.vigente = userFound.Vigente;
     next();
   } catch (error) {

@@ -18,18 +18,18 @@ passport.use(
         where: {
           Correo: jwt_payload.email,
         },
-        relations: ["rol", "carrera"],
+        relations: ["tipoUsuario", "carrera", "cargo"],
       });
 
       if (user) {
         // Crear objeto con la estructura esperada por los middlewares
         const userPayload = {
-          id: user.ID_Usuario,
-          email: user.Correo,
           rut: user.Rut,
+          email: user.Correo,
           nombreCompleto: user.Nombre_Completo,
-          rol: user.rol?.Rol,
-          carrera: user.carrera?.Nombre_Carrera,
+          tipoUsuario: user.tipoUsuario?.Descripcion,
+          cargo: user.cargo?.Desc_Cargo,
+          carrera: user.carrera?.Carrera,
           vigente: user.Vigente,
         };
         return done(null, userPayload);

@@ -23,10 +23,10 @@ export async function createPrestamo(req, res) {
   try {
     const { body } = req;
 
-    // Agregar el ID del usuario desde el token JWT
+    // Agregar el RUT del usuario desde el token JWT
     const prestamoData = {
       ...body,
-      ID_Usuario: req.user.id, // Tomar el ID del usuario autenticado (minúscula)
+      Rut: req.user.rut, // Tomar el RUT del usuario autenticado
     };
 
     const { error: validationError } = prestamoValidation.validate(prestamoData);
@@ -78,10 +78,10 @@ export async function getPrestamos(req, res) {
 
 export async function getPrestamosPorUsuario(req, res) {
   try {
-    // Si viene de /usuario/mis-prestamos, usar el ID del usuario autenticado
-    const usuarioId = req.params.usuarioId || req.user.id;
+    // Si viene de /usuario/mis-prestamos, usar el RUT del usuario autenticado
+    const rut = req.params.rut || req.user.rut;
 
-    const [prestamos, error] = await getPrestamosPorUsuarioService(usuarioId);
+    const [prestamos, error] = await getPrestamosPorUsuarioService(rut);
 
     if (error) return handleErrorClient(res, 404, error);
 

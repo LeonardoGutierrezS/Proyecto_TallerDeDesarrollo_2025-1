@@ -22,13 +22,13 @@ import {
 
 export async function getUser(req, res) {
   try {
-    const { rut, id, email } = req.query;
+    const { rut, email } = req.query;
 
-    const { error } = userQueryValidation.validate({ rut, id, email });
+    const { error } = userQueryValidation.validate({ rut, email });
 
     if (error) return handleErrorClient(res, 400, error.message);
 
-    const [user, errorUser] = await getUserService({ rut, id, email });
+    const [user, errorUser] = await getUserService({ rut, email });
 
     if (errorUser) return handleErrorClient(res, 404, errorUser);
 
@@ -58,15 +58,14 @@ export async function getUsers(req, res) {
 
 export async function updateUser(req, res) {
   try {
-    const { rut, id, email } = req.query;
+    const { rut, email } = req.query;
     const { body } = req;
 
-    console.log("updateUser - Query params:", { rut, id, email });
+    console.log("updateUser - Query params:", { rut, email });
     console.log("updateUser - Body:", body);
 
     const { error: queryError } = userQueryValidation.validate({
       rut,
-      id,
       email,
     });
 
@@ -92,7 +91,7 @@ export async function updateUser(req, res) {
       );
     }
 
-    const [user, userError] = await updateUserService({ rut, id, email }, body);
+    const [user, userError] = await updateUserService({ rut, email }, body);
 
     if (userError) {
       console.error("updateUser - Service error:", userError);
@@ -108,11 +107,10 @@ export async function updateUser(req, res) {
 
 export async function deleteUser(req, res) {
   try {
-    const { rut, id, email } = req.query;
+    const { rut, email } = req.query;
 
     const { error: queryError } = userQueryValidation.validate({
       rut,
-      id,
       email,
     });
 
@@ -127,7 +125,6 @@ export async function deleteUser(req, res) {
 
     const [userDelete, errorUserDelete] = await deleteUserService({
       rut,
-      id,
       email,
     });
 
@@ -165,8 +162,8 @@ export async function getPendingUsers(req, res) {
 
 export async function approveUser(req, res) {
   try {
-    const { id } = req.params;
-    const [user, error] = await approveUserService(id);
+    const { rut } = req.params;
+    const [user, error] = await approveUserService(rut);
 
     if (error) return handleErrorClient(res, 400, "Error al aprobar usuario", error);
 
@@ -178,8 +175,8 @@ export async function approveUser(req, res) {
 
 export async function rejectUser(req, res) {
   try {
-    const { id } = req.params;
-    const [user, error] = await rejectUserService(id);
+    const { rut } = req.params;
+    const [user, error] = await rejectUserService(rut);
 
     if (error) return handleErrorClient(res, 400, "Error al rechazar usuario", error);
 
@@ -191,9 +188,9 @@ export async function rejectUser(req, res) {
 
 export async function updateUserStatus(req, res) {
   try {
-    const { id } = req.params;
+    const { rut } = req.params;
     const { vigente } = req.body;
-    const [user, error] = await updateUserStatusService(id, vigente);
+    const [user, error] = await updateUserStatusService(rut, vigente);
 
     if (error) return handleErrorClient(res, 400, "Error al actualizar estado", error);
 

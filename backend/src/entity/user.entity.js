@@ -5,27 +5,21 @@ const UserSchema = new EntitySchema({
   name: "User",
   tableName: "usuario",
   columns: {
-    ID_Usuario: {
-      type: "int",
+    Rut: {
+      type: "varchar",
+      length: 12,
       primary: true,
-      generated: true,
+    },
+    Nombre_Completo: {
+      type: "varchar",
+      length: 150,
+      nullable: false,
     },
     Correo: {
       type: "varchar",
       length: 100,
       nullable: false,
       unique: true,
-    },
-    Rut: {
-      type: "varchar",
-      length: 12,
-      nullable: false,
-      unique: true,
-    },
-    Nombre_Completo: {
-      type: "varchar",
-      length: 150,
-      nullable: false,
     },
     Contrasenia: {
       type: "varchar",
@@ -37,8 +31,28 @@ const UserSchema = new EntitySchema({
       nullable: false,
       default: true,
     },
+    ID_Cargo: {
+      type: "int",
+      nullable: true,
+    },
+    ID_Carrera: {
+      type: "int",
+      nullable: true,
+    },
+    Cod_TipoUsuario: {
+      type: "int",
+      nullable: false,
+    },
   },
   relations: {
+    cargo: {
+      type: "many-to-one",
+      target: "Cargo",
+      joinColumn: {
+        name: "ID_Cargo",
+      },
+      nullable: true,
+    },
     carrera: {
       type: "many-to-one",
       target: "Carrera",
@@ -47,21 +61,36 @@ const UserSchema = new EntitySchema({
       },
       nullable: true,
     },
-    rol: {
+    tipoUsuario: {
       type: "many-to-one",
-      target: "Rol",
+      target: "TipoUsuario",
       joinColumn: {
-        name: "ID_Rol",
+        name: "Cod_TipoUsuario",
       },
       nullable: false,
     },
+    solicitudes: {
+      type: "one-to-many",
+      target: "Solicitud",
+      inverseSide: "usuario",
+    },
+    devoluciones: {
+      type: "one-to-many",
+      target: "Devolucion",
+      inverseSide: "usuario",
+    },
+    autorizaciones: {
+      type: "one-to-many",
+      target: "Autorizacion",
+      inverseSide: "usuario",
+    },
+    penalizaciones: {
+      type: "one-to-many",
+      target: "TienePenalizacion",
+      inverseSide: "usuario",
+    },
   },
   indices: [
-    {
-      name: "IDX_USUARIO",
-      columns: ["ID_Usuario"],
-      unique: true,
-    },
     {
       name: "IDX_USUARIO_RUT",
       columns: ["Rut"],

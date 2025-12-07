@@ -11,14 +11,6 @@ const domainEmailValidator = (value, helper) => {
 };
 
 export const userQueryValidation = Joi.object({
-  id: Joi.number()
-    .integer()
-    .positive()
-    .messages({
-      "number.base": "El id debe ser un número.",
-      "number.integer": "El id debe ser un número entero.",
-      "number.positive": "El id debe ser un número positivo.",
-    }),
   email: Joi.string()
     .min(15)
     .max(35)
@@ -45,7 +37,7 @@ export const userQueryValidation = Joi.object({
       "string.pattern.base": "Formato rut inválido, debe ser xx.xxx.xxx-x o xxxxxxxx-x.",
     }),
 })
-  .or("id", "email", "rut")
+  .or("email", "rut")
   .unknown(false)
   .messages({
     "object.unknown": "No se permiten propiedades adicionales.",
@@ -124,25 +116,31 @@ export const userBodyValidation = Joi.object({
       "string.min": "El rol debe tener como mínimo 4 caracteres.",
       "string.max": "El rol debe tener como máximo 15 caracteres.",
     }),
-  rolId: Joi.number()
-    .integer()
-    .positive()
+  codTipoUsuario: Joi.string()
     .min(1)
     .max(4)
     .messages({
-      "number.base": "El ID del rol debe ser un número.",
-      "number.integer": "El ID del rol debe ser un número entero.",
-      "number.positive": "El ID del rol debe ser un número positivo.",
-      "number.min": "El ID del rol debe ser al menos 1.",
-      "number.max": "El ID del rol debe ser como máximo 4.",
+      "string.base": "El código de tipo de usuario debe ser de tipo string.",
+      "string.min": "El código de tipo de usuario debe tener al menos 1 carácter.",
+      "string.max": "El código de tipo de usuario debe tener como máximo 4 caracteres.",
     }),
-  carreraId: Joi.number()
+  idCargo: Joi.number()
     .integer()
-    .min(0)
+    .positive()
+    .allow(null)
+    .messages({
+      "number.base": "El ID del cargo debe ser un número.",
+      "number.integer": "El ID del cargo debe ser un número entero.",
+      "number.positive": "El ID del cargo debe ser un número positivo.",
+    }),
+  idCarrera: Joi.number()
+    .integer()
+    .positive()
+    .allow(null)
     .messages({
       "number.base": "El ID de la carrera debe ser un número.",
       "number.integer": "El ID de la carrera debe ser un número entero.",
-      "number.min": "El ID de la carrera debe ser 0 o mayor.",
+      "number.positive": "El ID de la carrera debe ser un número positivo.",
     }),
   vigente: Joi.boolean()
     .messages({
@@ -156,8 +154,9 @@ export const userBodyValidation = Joi.object({
     "newPassword",
     "rut",
     "rol",
-    "rolId",
-    "carreraId",
+    "codTipoUsuario",
+    "idCargo",
+    "idCarrera",
     "vigente"
   )
   .unknown(false)

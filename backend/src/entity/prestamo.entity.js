@@ -1,6 +1,12 @@
 "use strict";
 import { EntitySchema } from "typeorm";
 
+/**
+ * Entidad Préstamo - Simplificada en arquitectura 3FN
+ * Ahora solo contiene información del préstamo activo.
+ * Usuario, autorización, devolución y estados ahora son entidades separadas.
+ * Flujo: Solicitud → Autorización → Préstamo → Devolución
+ */
 const PrestamoSchema = new EntitySchema({
   name: "Prestamo",
   tableName: "prestamo",
@@ -15,97 +21,33 @@ const PrestamoSchema = new EntitySchema({
       length: 50,
       nullable: false,
     },
-    Fecha_inicio_prestamo: {
-      type: "timestamp with time zone",
-      nullable: false,
-    },
     Hora_inicio_prestamo: {
       type: "time",
       nullable: false,
     },
-    Fecha_ter_prestamo: {
+    Fecha_inicio_prestamo: {
       type: "timestamp with time zone",
-      nullable: true,
+      nullable: false,
     },
     Hora_fin_prestamo: {
       type: "time",
       nullable: true,
     },
-    Motivo_Rechazo: {
-      type: "text",
-      nullable: true,
-    },
-    Retencion_documento: {
-      type: "varchar",
-      length: 100,
-      nullable: true,
-    },
-    Fecha_devolucion: {
+    Fecha_fin_prestamo: {
       type: "timestamp with time zone",
       nullable: true,
     },
-    Hora_devolucion: {
-      type: "time",
+    Tipo_documento: {
+      type: "varchar",
+      length: 100,
       nullable: true,
     },
     Condiciones_Prestamo: {
       type: "text",
       nullable: true,
     },
-    Observaciones: {
-      type: "text",
-      nullable: true,
-    },
-    ID_Usuario: {
-      type: "int",
-      nullable: false,
-    },
-    ID_Categoria: {
-      type: "int",
-      nullable: false,
-    },
-    ID_Estado_Prestamo: {
-      type: "int",
-      nullable: false,
-    },
-    ID_Tipo_Documento: {
-      type: "int",
-      nullable: true,
-    },
   },
   relations: {
-    usuario: {
-      type: "many-to-one",
-      target: "User",
-      joinColumn: {
-        name: "ID_Usuario",
-      },
-      nullable: false,
-    },
-    categoria: {
-      type: "many-to-one",
-      target: "Categoria",
-      joinColumn: {
-        name: "ID_Categoria",
-      },
-      nullable: false,
-    },
-    estadoPrestamo: {
-      type: "many-to-one",
-      target: "EstadoPrestamo",
-      joinColumn: {
-        name: "ID_Estado_Prestamo",
-      },
-      nullable: false,
-    },
-    tipoDocumento: {
-      type: "many-to-one",
-      target: "TipoDocumento",
-      joinColumn: {
-        name: "ID_Tipo_Documento",
-      },
-      nullable: true,
-    },
     equipos: {
       type: "many-to-one",
       target: "Equipos",
@@ -113,6 +55,26 @@ const PrestamoSchema = new EntitySchema({
         name: "ID_Num_Inv",
       },
       nullable: false,
+    },
+    solicitud: {
+      type: "one-to-one",
+      target: "Solicitud",
+      inverseSide: "prestamo",
+    },
+    devolucion: {
+      type: "one-to-one",
+      target: "Devolucion",
+      inverseSide: "prestamo",
+    },
+    autorizacion: {
+      type: "one-to-one",
+      target: "Autorizacion",
+      inverseSide: "prestamo",
+    },
+    tieneEstados: {
+      type: "one-to-many",
+      target: "TieneEstado",
+      inverseSide: "prestamo",
     },
   },
   indices: [
