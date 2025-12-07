@@ -105,9 +105,9 @@ async function createUsers() {
     const cargoRepository = AppDataSource.getRepository(CargoSchema);
     const carreraRepository = AppDataSource.getRepository(CarreraSchema);
 
-    const count = await userRepository.count();
-    console.log(`* => Usuarios existentes en la base de datos: ${count}`);
-    if (count > 0) return;
+    const countBefore = await userRepository.count();
+    console.log(`* => Usuarios existentes en la base de datos: ${countBefore}`);
+    if (countBefore > 0) return;
 
     // Obtener tipos de usuario y carreras
     const tipoAdmin = await tipoUsuarioRepository.findOne({ where: { Descripcion: "Administrador" } });
@@ -267,7 +267,8 @@ async function createUsers() {
       }),
     );
 
-    console.log("* => Usuarios y cargos creados exitosamente");
+    const countAfter = await userRepository.count();
+    console.log(`* => Usuarios y cargos creados exitosamente (${countAfter} usuarios creados)`);
   } catch (error) {
     console.error("Error al crear usuarios:", error);
   }
@@ -363,9 +364,9 @@ async function createEquipos() {
     const categoriaRepository = AppDataSource.getRepository(CategoriaSchema);
     const estadoRepository = AppDataSource.getRepository(EstadoSchema);
 
-    const count = await equipoRepository.count();
-    console.log(`* => Equipos existentes en la base de datos: ${count}`);
-    if (count > 0) return;
+    const countBefore = await equipoRepository.count();
+    console.log(`* => Equipos existentes en la base de datos: ${countBefore}`);
+    if (countBefore > 0) return;
 
     // Obtener marcas, categorías y estados
     const hp = await marcaRepository.findOne({ where: { Marca: "HP" } });
@@ -461,7 +462,8 @@ async function createEquipos() {
         }),
       ),
     ]);
-    console.log("* => Equipos creados exitosamente");
+    const countAfter = await equipoRepository.count();
+    console.log(`* => Equipos creados exitosamente (${countAfter} equipos creados)`);
   } catch (error) {
     console.error("Error al crear equipos:", error);
   }
@@ -474,9 +476,9 @@ async function createPenalizaciones() {
   try {
     const penalizacionesRepository = AppDataSource.getRepository(PenalizacionesSchema);
 
-    const count = await penalizacionesRepository.count();
-    console.log(`* => Penalizaciones existentes en la base de datos: ${count}`);
-    if (count > 0) return;
+    const countBefore = await penalizacionesRepository.count();
+    console.log(`* => Penalizaciones existentes en la base de datos: ${countBefore}`);
+    if (countBefore > 0) return;
 
     await Promise.all([
       penalizacionesRepository.save(
@@ -510,7 +512,8 @@ async function createPenalizaciones() {
         }),
       ),
     ]);
-    console.log("* => Penalizaciones creadas exitosamente");
+    const countAfter = await penalizacionesRepository.count();
+    console.log(`* => Penalizaciones creadas exitosamente (${countAfter} penalizaciones creadas)`);
   } catch (error) {
     console.error("Error al crear penalizaciones:", error);
   }

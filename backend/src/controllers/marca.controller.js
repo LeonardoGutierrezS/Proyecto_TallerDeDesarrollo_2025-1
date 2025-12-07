@@ -11,7 +11,7 @@ import {
   handleErrorServer,
   handleSuccess,
 } from "../handlers/responseHandlers.js";
-import { marcaValidation } from "../validations/catalogo.validation.js";
+import { marcaValidation } from "../validations/marca.validation.js";
 
 export async function createMarca(req, res) {
   try {

@@ -1,9 +1,9 @@
 "use strict";
 import {
-  registrarDevolucion,
-  getDevoluciones,
-  getDevolucionesPorUsuario,
-  getDevolucion,
+  registrarDevolucionService,
+  getDevolucionesService,
+  getDevolucionesPorUsuarioService,
+  getDevolucionService,
 } from "../services/devolucion.service.js";
 import { devolucionValidation } from "../validations/devolucion.validation.js";
 import {
@@ -22,7 +22,7 @@ export async function registrarDevolucionController(req, res) {
     const { error } = devolucionValidation.validate(body);
     if (error) return handleErrorClient(res, 400, error.message);
 
-    const [devolucion, errorDevolucion] = await registrarDevolucion(body);
+    const [devolucion, errorDevolucion] = await registrarDevolucionService(body);
 
     if (errorDevolucion) return handleErrorClient(res, 400, errorDevolucion);
 
@@ -37,7 +37,7 @@ export async function registrarDevolucionController(req, res) {
  */
 export async function getDevolucionesController(req, res) {
   try {
-    const [devoluciones, errorDevoluciones] = await getDevoluciones();
+    const [devoluciones, errorDevoluciones] = await getDevolucionesService();
 
     if (errorDevoluciones) return handleErrorClient(res, 404, errorDevoluciones);
 
@@ -56,7 +56,7 @@ export async function getDevolucionesPorUsuarioController(req, res) {
   try {
     const { rut } = req.params;
 
-    const [devoluciones, errorDevoluciones] = await getDevolucionesPorUsuario(rut);
+    const [devoluciones, errorDevoluciones] = await getDevolucionesPorUsuarioService(rut);
 
     if (errorDevoluciones) return handleErrorClient(res, 404, errorDevoluciones);
 
@@ -75,7 +75,7 @@ export async function getDevolucionController(req, res) {
   try {
     const { id } = req.params;
 
-    const [devolucion, errorDevolucion] = await getDevolucion(id);
+    const [devolucion, errorDevolucion] = await getDevolucionService(id);
 
     if (errorDevolucion) return handleErrorClient(res, 404, errorDevolucion);
 

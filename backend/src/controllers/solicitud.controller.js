@@ -1,11 +1,11 @@
 "use strict";
 import {
-  createSolicitud,
-  getSolicitudes,
-  getSolicitudesPorUsuario,
-  getSolicitudesPendientes,
-  getSolicitud,
-  deleteSolicitud,
+  createSolicitudService,
+  getSolicitudesService,
+  getSolicitudesPorUsuarioService,
+  getSolicitudesPendientesService,
+  getSolicitudService,
+  deleteSolicitudService,
 } from "../services/solicitud.service.js";
 import { solicitudValidation } from "../validations/solicitud.validation.js";
 import {
@@ -24,7 +24,7 @@ export async function createSolicitudController(req, res) {
     const { error } = solicitudValidation.validate(body);
     if (error) return handleErrorClient(res, 400, error.message);
 
-    const [solicitud, errorSolicitud] = await createSolicitud(body);
+    const [solicitud, errorSolicitud] = await createSolicitudService(body);
 
     if (errorSolicitud) return handleErrorClient(res, 400, errorSolicitud);
 
@@ -39,7 +39,7 @@ export async function createSolicitudController(req, res) {
  */
 export async function getSolicitudesController(req, res) {
   try {
-    const [solicitudes, errorSolicitudes] = await getSolicitudes();
+    const [solicitudes, errorSolicitudes] = await getSolicitudesService();
 
     if (errorSolicitudes) return handleErrorClient(res, 404, errorSolicitudes);
 
@@ -58,7 +58,7 @@ export async function getSolicitudesPorUsuarioController(req, res) {
   try {
     const { rut } = req.params;
 
-    const [solicitudes, errorSolicitudes] = await getSolicitudesPorUsuario(rut);
+    const [solicitudes, errorSolicitudes] = await getSolicitudesPorUsuarioService(rut);
 
     if (errorSolicitudes) return handleErrorClient(res, 404, errorSolicitudes);
 
@@ -75,7 +75,7 @@ export async function getSolicitudesPorUsuarioController(req, res) {
  */
 export async function getSolicitudesPendientesController(req, res) {
   try {
-    const [solicitudes, errorSolicitudes] = await getSolicitudesPendientes();
+    const [solicitudes, errorSolicitudes] = await getSolicitudesPendientesService();
 
     if (errorSolicitudes) return handleErrorClient(res, 404, errorSolicitudes);
 
@@ -94,7 +94,7 @@ export async function getSolicitudController(req, res) {
   try {
     const { id } = req.params;
 
-    const [solicitud, errorSolicitud] = await getSolicitud(id);
+    const [solicitud, errorSolicitud] = await getSolicitudService(id);
 
     if (errorSolicitud) return handleErrorClient(res, 404, errorSolicitud);
 
@@ -111,7 +111,7 @@ export async function deleteSolicitudController(req, res) {
   try {
     const { id } = req.params;
 
-    const [solicitud, errorSolicitud] = await deleteSolicitud(id);
+    const [solicitud, errorSolicitud] = await deleteSolicitudService(id);
 
     if (errorSolicitud) return handleErrorClient(res, 404, errorSolicitud);
 

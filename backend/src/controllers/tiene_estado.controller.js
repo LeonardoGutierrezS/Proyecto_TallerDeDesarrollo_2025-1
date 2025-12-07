@@ -1,8 +1,8 @@
 "use strict";
 import {
-  createTieneEstado,
-  getHistorialEstados,
-  getEstadoActual,
+  createTieneEstadoService,
+  getHistorialEstadosService,
+  getEstadoActualService,
 } from "../services/tiene_estado.service.js";
 import { tieneEstadoValidation } from "../validations/tiene_estado.validation.js";
 import {
@@ -21,7 +21,7 @@ export async function createTieneEstadoController(req, res) {
     const { error } = tieneEstadoValidation.validate(body);
     if (error) return handleErrorClient(res, 400, error.message);
 
-    const [tieneEstado, errorTieneEstado] = await createTieneEstado(body);
+    const [tieneEstado, errorTieneEstado] = await createTieneEstadoService(body);
 
     if (errorTieneEstado) return handleErrorClient(res, 400, errorTieneEstado);
 
@@ -38,7 +38,7 @@ export async function getHistorialEstadosController(req, res) {
   try {
     const { idPrestamo } = req.params;
 
-    const [historial, errorHistorial] = await getHistorialEstados(idPrestamo);
+    const [historial, errorHistorial] = await getHistorialEstadosService(idPrestamo);
 
     if (errorHistorial) return handleErrorClient(res, 404, errorHistorial);
 
@@ -57,7 +57,7 @@ export async function getEstadoActualController(req, res) {
   try {
     const { idPrestamo } = req.params;
 
-    const [estadoActual, errorEstadoActual] = await getEstadoActual(idPrestamo);
+    const [estadoActual, errorEstadoActual] = await getEstadoActualService(idPrestamo);
 
     if (errorEstadoActual) return handleErrorClient(res, 404, errorEstadoActual);
 

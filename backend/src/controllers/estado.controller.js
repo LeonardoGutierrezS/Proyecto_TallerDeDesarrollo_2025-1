@@ -11,7 +11,7 @@ import {
   handleErrorServer,
   handleSuccess,
 } from "../handlers/responseHandlers.js";
-import { estadoValidation } from "../validations/catalogo.validation.js";
+import { estadoValidation } from "../validations/estado.validation.js";
 
 export async function createEstado(req, res) {
   try {

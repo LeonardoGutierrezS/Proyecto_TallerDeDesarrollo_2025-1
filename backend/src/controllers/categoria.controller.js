@@ -12,7 +12,7 @@ import {
   handleErrorServer,
   handleSuccess,
 } from "../handlers/responseHandlers.js";
-import { categoriaValidation } from "../validations/catalogo.validation.js";
+import { categoriaValidation } from "../validations/categoria.validation.js";
 
 export async function createCategoria(req, res) {
   try {

@@ -94,3 +94,36 @@ export const updatePrestamoValidation = Joi.object({
   .messages({
     "object.unknown": "No se permiten propiedades adicionales.",
   });
+
+/**
+ * Validación para finalizar préstamo (registrar devolución)
+ */
+export const finalizarPrestamoValidation = Joi.object({
+  Fecha_devolucion: Joi.date()
+    .messages({
+      "date.base": "La fecha de devolución debe ser una fecha válida.",
+    }),
+  Hora_devolucion: Joi.string()
+    .pattern(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9](:[0-5][0-9])?$/)
+    .messages({
+      "string.pattern.base": "La hora debe tener el formato HH:MM o HH:MM:SS.",
+    }),
+  Observaciones: Joi.string()
+    .max(500)
+    .allow(null, "")
+    .messages({
+      "string.max": "Las observaciones deben tener como máximo 500 caracteres.",
+    }),
+  ID_Estado_Prestamo: Joi.number()
+    .integer()
+    .positive()
+    .messages({
+      "number.base": "El ID del estado debe ser un número.",
+      "number.integer": "El ID del estado debe ser un número entero.",
+      "number.positive": "El ID del estado debe ser positivo.",
+    }),
+})
+  .unknown(false)
+  .messages({
+    "object.unknown": "No se permiten propiedades adicionales.",
+  });

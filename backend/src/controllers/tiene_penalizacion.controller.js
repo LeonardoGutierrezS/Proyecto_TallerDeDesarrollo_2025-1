@@ -1,10 +1,10 @@
 "use strict";
 import {
-  asignarPenalizacion,
-  getTienePenalizaciones,
-  getPenalizacionesPorUsuario,
-  getPenalizacionesActivas,
-  finalizarPenalizacion,
+  asignarPenalizacionService,
+  getTienePenalizacionesService,
+  getPenalizacionesPorUsuarioService,
+  getPenalizacionesActivasService,
+  finalizarPenalizacionService,
 } from "../services/tiene_penalizacion.service.js";
 import {
   asignarPenalizacionValidation,
@@ -26,7 +26,7 @@ export async function asignarPenalizacionController(req, res) {
     const { error } = asignarPenalizacionValidation.validate(body);
     if (error) return handleErrorClient(res, 400, error.message);
 
-    const [tienePenalizacion, errorTienePenalizacion] = await asignarPenalizacion(body);
+    const [tienePenalizacion, errorTienePenalizacion] = await asignarPenalizacionService(body);
 
     if (errorTienePenalizacion) return handleErrorClient(res, 400, errorTienePenalizacion);
 
@@ -41,7 +41,7 @@ export async function asignarPenalizacionController(req, res) {
  */
 export async function getTienePenalizacionesController(req, res) {
   try {
-    const [penalizaciones, errorPenalizaciones] = await getTienePenalizaciones();
+    const [penalizaciones, errorPenalizaciones] = await getTienePenalizacionesService();
 
     if (errorPenalizaciones) return handleErrorClient(res, 404, errorPenalizaciones);
 
@@ -60,7 +60,7 @@ export async function getPenalizacionesPorUsuarioController(req, res) {
   try {
     const { rut } = req.params;
 
-    const [penalizaciones, errorPenalizaciones] = await getPenalizacionesPorUsuario(rut);
+    const [penalizaciones, errorPenalizaciones] = await getPenalizacionesPorUsuarioService(rut);
 
     if (errorPenalizaciones) return handleErrorClient(res, 404, errorPenalizaciones);
 
@@ -79,7 +79,7 @@ export async function getPenalizacionesActivasController(req, res) {
   try {
     const { rut } = req.params;
 
-    const [penalizaciones, errorPenalizaciones] = await getPenalizacionesActivas(rut);
+    const [penalizaciones, errorPenalizaciones] = await getPenalizacionesActivasService(rut);
 
     if (errorPenalizaciones) return handleErrorClient(res, 404, errorPenalizaciones);
 
@@ -102,7 +102,7 @@ export async function finalizarPenalizacionController(req, res) {
     const { error } = finalizarPenalizacionValidation.validate(body);
     if (error) return handleErrorClient(res, 400, error.message);
 
-    const [penalizacion, errorPenalizacion] = await finalizarPenalizacion(id, body.Fecha_Fin);
+    const [penalizacion, errorPenalizacion] = await finalizarPenalizacionService(id, body.Fecha_Fin);
 
     if (errorPenalizacion) return handleErrorClient(res, 400, errorPenalizacion);
 

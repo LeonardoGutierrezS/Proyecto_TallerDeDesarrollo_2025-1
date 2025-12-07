@@ -1,10 +1,10 @@
 "use strict";
 import {
-  createTipoUsuario,
-  getTiposUsuario,
-  getTipoUsuario,
-  updateTipoUsuario,
-  deleteTipoUsuario,
+  createTipoUsuarioService,
+  getTiposUsuarioService,
+  getTipoUsuarioService,
+  updateTipoUsuarioService,
+  deleteTipoUsuarioService,
 } from "../services/tipo_usuario.service.js";
 import {
   tipoUsuarioValidation,
@@ -26,7 +26,7 @@ export async function createTipoUsuarioController(req, res) {
     const { error } = tipoUsuarioValidation.validate(body);
     if (error) return handleErrorClient(res, 400, error.message);
 
-    const [tipoUsuario, errorTipoUsuario] = await createTipoUsuario(body);
+    const [tipoUsuario, errorTipoUsuario] = await createTipoUsuarioService(body);
 
     if (errorTipoUsuario) return handleErrorClient(res, 400, errorTipoUsuario);
 
@@ -41,7 +41,7 @@ export async function createTipoUsuarioController(req, res) {
  */
 export async function getTiposUsuarioController(req, res) {
   try {
-    const [tiposUsuario, errorTiposUsuario] = await getTiposUsuario();
+    const [tiposUsuario, errorTiposUsuario] = await getTiposUsuarioService();
 
     if (errorTiposUsuario) return handleErrorClient(res, 404, errorTiposUsuario);
 
@@ -60,7 +60,7 @@ export async function getTipoUsuarioController(req, res) {
   try {
     const { cod } = req.params;
 
-    const [tipoUsuario, errorTipoUsuario] = await getTipoUsuario(cod);
+    const [tipoUsuario, errorTipoUsuario] = await getTipoUsuarioService(cod);
 
     if (errorTipoUsuario) return handleErrorClient(res, 404, errorTipoUsuario);
 
@@ -81,7 +81,7 @@ export async function updateTipoUsuarioController(req, res) {
     const { error } = updateTipoUsuarioValidation.validate(body);
     if (error) return handleErrorClient(res, 400, error.message);
 
-    const [tipoUsuario, errorTipoUsuario] = await updateTipoUsuario(cod, body);
+    const [tipoUsuario, errorTipoUsuario] = await updateTipoUsuarioService(cod, body);
 
     if (errorTipoUsuario) return handleErrorClient(res, 400, errorTipoUsuario);
 
@@ -98,7 +98,7 @@ export async function deleteTipoUsuarioController(req, res) {
   try {
     const { cod } = req.params;
 
-    const [tipoUsuario, errorTipoUsuario] = await deleteTipoUsuario(cod);
+    const [tipoUsuario, errorTipoUsuario] = await deleteTipoUsuarioService(cod);
 
     if (errorTipoUsuario) return handleErrorClient(res, 404, errorTipoUsuario);
 

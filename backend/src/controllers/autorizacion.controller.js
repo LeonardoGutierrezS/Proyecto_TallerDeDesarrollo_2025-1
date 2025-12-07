@@ -1,8 +1,8 @@
 "use strict";
 import {
-  aprobarSolicitud,
-  rechazarSolicitud,
-  getAutorizaciones,
+  aprobarSolicitudService,
+  rechazarSolicitudService,
+  getAutorizacionesService,
 } from "../services/autorizacion.service.js";
 import {
   aprobarSolicitudValidation,
@@ -24,7 +24,7 @@ export async function aprobarSolicitudController(req, res) {
     const { error } = aprobarSolicitudValidation.validate(body);
     if (error) return handleErrorClient(res, 400, error.message);
 
-    const [resultado, errorResultado] = await aprobarSolicitud(body);
+    const [resultado, errorResultado] = await aprobarSolicitudService(body);
 
     if (errorResultado) return handleErrorClient(res, 400, errorResultado);
 
@@ -44,7 +44,7 @@ export async function rechazarSolicitudController(req, res) {
     const { error } = rechazarSolicitudValidation.validate(body);
     if (error) return handleErrorClient(res, 400, error.message);
 
-    const [autorizacion, errorAutorizacion] = await rechazarSolicitud(body);
+    const [autorizacion, errorAutorizacion] = await rechazarSolicitudService(body);
 
     if (errorAutorizacion) return handleErrorClient(res, 400, errorAutorizacion);
 
@@ -59,7 +59,7 @@ export async function rechazarSolicitudController(req, res) {
  */
 export async function getAutorizacionesController(req, res) {
   try {
-    const [autorizaciones, errorAutorizaciones] = await getAutorizaciones();
+    const [autorizaciones, errorAutorizaciones] = await getAutorizacionesService();
 
     if (errorAutorizaciones) return handleErrorClient(res, 404, errorAutorizaciones);
 

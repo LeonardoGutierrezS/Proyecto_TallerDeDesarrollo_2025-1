@@ -1,10 +1,10 @@
 "use strict";
 import {
-  createCargo,
-  getCargos,
-  getCargo,
-  updateCargo,
-  deleteCargo,
+  createCargoService,
+  getCargosService,
+  getCargoService,
+  updateCargoService,
+  deleteCargoService,
 } from "../services/cargo.service.js";
 import {
   cargoValidation,
@@ -26,7 +26,7 @@ export async function createCargoController(req, res) {
     const { error } = cargoValidation.validate(body);
     if (error) return handleErrorClient(res, 400, error.message);
 
-    const [cargo, errorCargo] = await createCargo(body);
+    const [cargo, errorCargo] = await createCargoService(body);
 
     if (errorCargo) return handleErrorClient(res, 400, errorCargo);
 
@@ -41,7 +41,7 @@ export async function createCargoController(req, res) {
  */
 export async function getCargosController(req, res) {
   try {
-    const [cargos, errorCargos] = await getCargos();
+    const [cargos, errorCargos] = await getCargosService();
 
     if (errorCargos) return handleErrorClient(res, 404, errorCargos);
 
@@ -60,7 +60,7 @@ export async function getCargoController(req, res) {
   try {
     const { id } = req.params;
 
-    const [cargo, errorCargo] = await getCargo(id);
+    const [cargo, errorCargo] = await getCargoService(id);
 
     if (errorCargo) return handleErrorClient(res, 404, errorCargo);
 
@@ -81,7 +81,7 @@ export async function updateCargoController(req, res) {
     const { error } = updateCargoValidation.validate(body);
     if (error) return handleErrorClient(res, 400, error.message);
 
-    const [cargo, errorCargo] = await updateCargo(id, body);
+    const [cargo, errorCargo] = await updateCargoService(id, body);
 
     if (errorCargo) return handleErrorClient(res, 400, errorCargo);
 
@@ -98,7 +98,7 @@ export async function deleteCargoController(req, res) {
   try {
     const { id } = req.params;
 
-    const [cargo, errorCargo] = await deleteCargo(id);
+    const [cargo, errorCargo] = await deleteCargoService(id);
 
     if (errorCargo) return handleErrorClient(res, 404, errorCargo);
 

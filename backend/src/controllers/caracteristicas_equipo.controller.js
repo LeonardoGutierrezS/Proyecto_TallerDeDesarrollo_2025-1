@@ -1,9 +1,9 @@
 "use strict";
 import {
-  createCaracteristica,
-  getCaracteristicasPorEquipo,
-  updateCaracteristica,
-  deleteCaracteristica,
+  createCaracteristicaService,
+  getCaracteristicasPorEquipoService,
+  updateCaracteristicaService,
+  deleteCaracteristicaService,
 } from "../services/caracteristicas_equipo.service.js";
 import {
   caracteristicaEquipoValidation,
@@ -25,7 +25,7 @@ export async function createCaracteristicaController(req, res) {
     const { error } = caracteristicaEquipoValidation.validate(body);
     if (error) return handleErrorClient(res, 400, error.message);
 
-    const [caracteristica, errorCaracteristica] = await createCaracteristica(body);
+    const [caracteristica, errorCaracteristica] = await createCaracteristicaService(body);
 
     if (errorCaracteristica) return handleErrorClient(res, 400, errorCaracteristica);
 
@@ -42,7 +42,7 @@ export async function getCaracteristicasPorEquipoController(req, res) {
   try {
     const { idNumInv } = req.params;
 
-    const [caracteristicas, errorCaracteristicas] = await getCaracteristicasPorEquipo(idNumInv);
+    const [caracteristicas, errorCaracteristicas] = await getCaracteristicasPorEquipoService(idNumInv);
 
     if (errorCaracteristicas) return handleErrorClient(res, 404, errorCaracteristicas);
 
@@ -65,7 +65,7 @@ export async function updateCaracteristicaController(req, res) {
     const { error } = updateCaracteristicaEquipoValidation.validate(body);
     if (error) return handleErrorClient(res, 400, error.message);
 
-    const [caracteristica, errorCaracteristica] = await updateCaracteristica(id, body);
+    const [caracteristica, errorCaracteristica] = await updateCaracteristicaService(id, body);
 
     if (errorCaracteristica) return handleErrorClient(res, 400, errorCaracteristica);
 
@@ -82,7 +82,7 @@ export async function deleteCaracteristicaController(req, res) {
   try {
     const { id } = req.params;
 
-    const [caracteristica, errorCaracteristica] = await deleteCaracteristica(id);
+    const [caracteristica, errorCaracteristica] = await deleteCaracteristicaService(id);
 
     if (errorCaracteristica) return handleErrorClient(res, 404, errorCaracteristica);
 

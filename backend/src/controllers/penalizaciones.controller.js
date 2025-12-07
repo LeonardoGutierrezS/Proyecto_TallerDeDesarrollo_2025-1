@@ -1,10 +1,10 @@
 "use strict";
 import {
-  createPenalizacion,
-  getPenalizaciones,
-  getPenalizacion,
-  updatePenalizacion,
-  deletePenalizacion,
+  createPenalizacionService,
+  getPenalizacionesService,
+  getPenalizacionService,
+  updatePenalizacionService,
+  deletePenalizacionService,
 } from "../services/penalizaciones.service.js";
 import {
   penalizacionValidation,
@@ -26,7 +26,7 @@ export async function createPenalizacionController(req, res) {
     const { error } = penalizacionValidation.validate(body);
     if (error) return handleErrorClient(res, 400, error.message);
 
-    const [penalizacion, errorPenalizacion] = await createPenalizacion(body);
+    const [penalizacion, errorPenalizacion] = await createPenalizacionService(body);
 
     if (errorPenalizacion) return handleErrorClient(res, 400, errorPenalizacion);
 
@@ -41,7 +41,7 @@ export async function createPenalizacionController(req, res) {
  */
 export async function getPenalizacionesController(req, res) {
   try {
-    const [penalizaciones, errorPenalizaciones] = await getPenalizaciones();
+    const [penalizaciones, errorPenalizaciones] = await getPenalizacionesService();
 
     if (errorPenalizaciones) return handleErrorClient(res, 404, errorPenalizaciones);
 
@@ -60,7 +60,7 @@ export async function getPenalizacionController(req, res) {
   try {
     const { id } = req.params;
 
-    const [penalizacion, errorPenalizacion] = await getPenalizacion(id);
+    const [penalizacion, errorPenalizacion] = await getPenalizacionService(id);
 
     if (errorPenalizacion) return handleErrorClient(res, 404, errorPenalizacion);
 
@@ -81,7 +81,7 @@ export async function updatePenalizacionController(req, res) {
     const { error } = updatePenalizacionValidation.validate(body);
     if (error) return handleErrorClient(res, 400, error.message);
 
-    const [penalizacion, errorPenalizacion] = await updatePenalizacion(id, body);
+    const [penalizacion, errorPenalizacion] = await updatePenalizacionService(id, body);
 
     if (errorPenalizacion) return handleErrorClient(res, 400, errorPenalizacion);
 
@@ -98,7 +98,7 @@ export async function deletePenalizacionController(req, res) {
   try {
     const { id } = req.params;
 
-    const [penalizacion, errorPenalizacion] = await deletePenalizacion(id);
+    const [penalizacion, errorPenalizacion] = await deletePenalizacionService(id);
 
     if (errorPenalizacion) return handleErrorClient(res, 404, errorPenalizacion);
 
