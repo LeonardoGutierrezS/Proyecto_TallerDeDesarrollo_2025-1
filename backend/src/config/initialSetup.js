@@ -80,12 +80,12 @@ async function createCarreras() {
     await Promise.all([
       carreraRepository.save(
         carreraRepository.create({
-          Carrera: "Ingeniería Civil en Informática",
+          Carrera: "Ingeniería de Ejecución en Computación e Informática",
         }),
       ),
       carreraRepository.save(
         carreraRepository.create({
-          Carrera: "Ingeniería Ejecución en Computación e Informática",
+          Carrera: "Ingeniería Civil Informática",
         }),
       ),
     ]);
@@ -116,10 +116,10 @@ async function createUsers() {
     const tipoDirector = await tipoUsuarioRepository.findOne({ where: { Descripcion: "Director de Escuela" } });
     
     const carreraInformatica = await carreraRepository.findOne({ 
-      where: { Carrera: "Ingeniería Civil en Informática" } 
+      where: { Carrera: "Ingeniería Civil Informática" } 
     });
     const carreraEjecucion = await carreraRepository.findOne({ 
-      where: { Carrera: "Ingeniería Ejecución en Computación e Informática" } 
+      where: { Carrera: "Ingeniería de Ejecución en Computación e Informática" } 
     });
 
     if (!tipoAdmin || !tipoAlumno || !tipoProfesor || !tipoDirector || !carreraInformatica) {

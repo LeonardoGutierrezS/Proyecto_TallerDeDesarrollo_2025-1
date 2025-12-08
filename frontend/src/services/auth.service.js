@@ -12,13 +12,13 @@ export async function login(dataUser) {
         const { status, data } = response;
         if (status === 200) {
             const decodedToken = jwtDecode(data.data.token);
-            const { id, nombreCompleto, email, rut, rol, carrera, vigente } = decodedToken;
+            const { rut, nombreCompleto, email, tipoUsuario, cargo, carrera, vigente } = decodedToken;
             const userData = { 
-                id,
+                rut,
                 nombreCompleto, 
                 email, 
-                rut, 
-                rol: rol.toLowerCase(),
+                tipoUsuario: tipoUsuario?.toLowerCase() || 'alumno',
+                cargo,
                 carrera,
                 vigente
             };

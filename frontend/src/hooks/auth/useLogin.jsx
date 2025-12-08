@@ -11,10 +11,17 @@ const useLogin = () => {
     }, [inputData.email, inputData.password]);
 
     const errorData = (dataMessage) => {
-        if (dataMessage.dataInfo === 'email') {
+        // Clear previous errors
+        setErrorEmail('');
+        setErrorPassword('');
+        
+        if (dataMessage && dataMessage.dataInfo === 'email') {
             setErrorEmail(dataMessage.message);
-        } else if (dataMessage.dataInfo === 'password') {
+        } else if (dataMessage && dataMessage.dataInfo === 'password') {
             setErrorPassword(dataMessage.message);
+        } else if (typeof dataMessage === 'string') {
+            // Generic error message
+            setErrorPassword(dataMessage);
         }
     };
 
@@ -25,12 +32,18 @@ const useLogin = () => {
         }));
     };
 
+    const clearErrors = () => {
+        setErrorEmail('');
+        setErrorPassword('');
+    };
+
     return {
         errorEmail,
         errorPassword,
         inputData,
         errorData,
         handleInputChange,
+        clearErrors,
     };
 };
 

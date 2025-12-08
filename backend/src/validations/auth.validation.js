@@ -1,20 +1,10 @@
 "use strict";
 import Joi from "joi";
 
-const domainEmailValidator = (value, helper) => {
-  if (!value.endsWith("@gmail.cl")) {
-    return helper.message(
-      "El correo electrónico debe finalizar en @gmail.cl."
-    );
-  }
-  return value;
-};
-
 export const authValidation = Joi.object({
   email: Joi.string()
     .email()
     .required()
-    .custom(domainEmailValidator, "Validación dominio email")
     .messages({
       "string.empty": "El correo electrónico no puede estar vacío.",
       "any.required": "El correo electrónico es obligatorio.",
@@ -52,7 +42,7 @@ export const registerValidation = Joi.object({
       "string.max": "El nombre completo debe tener como máximo 50 caracteres.",
       "string.pattern.base": "El nombre completo solo puede contener letras y espacios.",
     }),
-    rut: Joi.string()
+  rut: Joi.string()
     .min(9)
     .max(12)
     .required()
@@ -65,19 +55,14 @@ export const registerValidation = Joi.object({
       "string.pattern.base": "Formato rut inválido, debe ser xx.xxx.xxx-x o xxxxxxxx-x.",
     }),
   email: Joi.string()
-    .min(15)
-    .max(35)
     .email()
     .required()
     .messages({
       "string.empty": "El correo electrónico no puede estar vacío.",
       "any.required": "El correo electrónico es obligatorio.",
       "string.base": "El correo electrónico debe ser de tipo texto.",
-      "string.email": "El correo electrónico debe finalizar en @gmail.cl.",
-      "string.min": "El correo electrónico debe tener al menos 15 caracteres.",
-      "string.max": "El correo electrónico debe tener como máximo 35 caracteres.",
-    })
-    .custom(domainEmailValidator, "Validación dominio email"),
+      "string.email": "El correo electrónico debe ser un email válido.",
+    }),
   password: Joi.string()
     .min(8)
     .max(26)
@@ -91,18 +76,47 @@ export const registerValidation = Joi.object({
       "string.max": "La contraseña debe tener como máximo 26 caracteres.",
       "string.pattern.base": "La contraseña solo puede contener letras y números.",
     }),
+  tipoUsuario: Joi.string()
+    .valid('Alumno', 'Profesor')
+    .required()
+    .messages({
+      "string.empty": "El tipo de usuario no puede estar vacío.",
+      "any.required": "El tipo de usuario es obligatorio.",
+      "any.only": "El tipo de usuario debe ser Alumno o Profesor.",
+    }),
   carreraId: Joi.number()
     .integer()
     .positive()
-    .required()
+    .when('tipoUsuario', {
+      is: 'Alumno',
+      then: Joi.required(),
+      otherwise: Joi.forbidden()
+    })
     .messages({
       "number.base": "La carrera debe ser un número.",
       "number.integer": "La carrera debe ser un número entero.",
       "number.positive": "La carrera debe ser un número positivo.",
-      "any.required": "La carrera es obligatoria.",
+      "any.required": "La carrera es obligatoria para alumnos.",
+      "any.unknown": "La carrera no es válida para profesores.",
+    }),
+  cargo: Joi.string()
+    .min(3)
+    .max(100)
+    .when('tipoUsuario', {
+      is: 'Profesor',
+      then: Joi.required(),
+      otherwise: Joi.forbidden()
+    })
+    .messages({
+      "string.empty": "El cargo no puede estar vacío.",
+      "any.required": "El cargo es obligatorio para profesores.",
+      "string.base": "El cargo debe ser de tipo texto.",
+      "string.min": "El cargo debe tener al menos 3 caracteres.",
+      "string.max": "El cargo debe tener como máximo 100 caracteres.",
+      "any.unknown": "El cargo no es válido para alumnos.",
     }),
 })
   .unknown(false)
   .messages({
-  "object.unknown": "No se permiten propiedades adicionales.",
-});
+    "object.unknown": "No se permiten propiedades adicionales.",
+  });

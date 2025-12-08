@@ -64,8 +64,9 @@ export async function registerService(user) {
     const userRepository = AppDataSource.getRepository(User);
     const TipoUsuarioSchema = AppDataSource.getRepository("TipoUsuario");
     const CarreraSchema = AppDataSource.getRepository("Carrera");
+    const CargoSchema = AppDataSource.getRepository("Cargo");
 
-    const { nombreCompleto, rut, email, carreraId } = user;
+    const { nombreCompleto, rut, email, tipoUsuario, carreraId, cargo } = user;
 
     const createErrorMessage = (dataInfo, message) => ({
       dataInfo,
@@ -74,7 +75,7 @@ export async function registerService(user) {
 
     const existingEmailUser = await userRepository.findOne({
       where: {
-        email,
+        Correo: email,
       },
     });
     
@@ -82,37 +83,54 @@ export async function registerService(user) {
 
     const existingRutUser = await userRepository.findOne({
       where: {
-        rut,
+        Rut: rut,
       },
     });
 
     if (existingRutUser) return [null, createErrorMessage("rut", "Rut ya asociado a una cuenta")];
 
-    // Obtener tipo de usuario Alumno (usuarios registrados desde el frontend son alumnos)
-    const tipoAlumno = await TipoUsuarioSchema.findOne({ where: { Descripcion: "Alumno" } });
+    // Obtener tipo de usuario según lo indicado
+    const tipoUsuarioObj = await TipoUsuarioSchema.findOne({ where: { Descripcion: tipoUsuario } });
     
-    if (!tipoAlumno) {
-      return [null, "Error: Tipo de usuario Alumno no encontrado en el sistema"];
+    if (!tipoUsuarioObj) {
+      return [null, "Error: Tipo de usuario no encontrado en el sistema"];
     }
 
-    // Verificar que la carrera exista
-    const carrera = await CarreraSchema.findOne({ where: { ID_Carrera: carreraId } });
-    
-    if (!carrera) {
-      return [null, createErrorMessage("carrera", "La carrera seleccionada no existe")];
-    }
-
-    const newUser = userRepository.create({
+    const userData = {
       Rut: rut,
       Nombre_Completo: nombreCompleto,
       Correo: email,
       Contrasenia: await encryptPassword(user.password),
-      Vigente: false, // Los alumnos registrados quedan inactivos hasta ser aprobados
-      Cod_TipoUsuario: tipoAlumno.Cod_TipoUsuario,
-      ID_Carrera: carrera.ID_Carrera,
-    });
+      Vigente: false, // Los usuarios registrados quedan inactivos hasta ser aprobados
+      Cod_TipoUsuario: tipoUsuarioObj.Cod_TipoUsuario,
+    };
 
+    // Si es alumno, verificar y asignar carrera
+    if (tipoUsuario === 'Alumno') {
+      const carrera = await CarreraSchema.findOne({ where: { ID_Carrera: carreraId } });
+      
+      if (!carrera) {
+        return [null, createErrorMessage("carreraId", "La carrera seleccionada no existe")];
+      }
+      
+      userData.ID_Carrera = carrera.ID_Carrera;
+    }
+
+    const newUser = userRepository.create(userData);
     await userRepository.save(newUser);
+
+    // Si es profesor, crear el cargo asociado
+    if (tipoUsuario === 'Profesor' && cargo) {
+      const newCargo = CargoSchema.create({
+        Rut: rut,
+        Desc_Cargo: cargo,
+      });
+      await CargoSchema.save(newCargo);
+      
+      // Actualizar el usuario con el ID del cargo
+      newUser.ID_Cargo = newCargo.ID_Cargo;
+      await userRepository.save(newUser);
+    }
 
     const { Contrasenia, ...dataUser } = newUser;
 
