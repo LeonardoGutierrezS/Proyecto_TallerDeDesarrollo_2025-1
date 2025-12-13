@@ -38,7 +38,7 @@ const Users = () => {
     { title: "Nombre", field: "nombreCompleto", width: 350, responsive: 0 },
     { title: "Correo electrónico", field: "email", width: 300, responsive: 3 },
     { title: "Rut", field: "rut", width: 150, responsive: 2 },
-    { title: "Rol", field: "rol", width: 200, responsive: 2 },
+    { title: "Tipo de Usuario", field: "tipoUsuario", width: 200, responsive: 2 },
     { title: "Creado", field: "createdAt", width: 200, responsive: 2 }
   ];
 

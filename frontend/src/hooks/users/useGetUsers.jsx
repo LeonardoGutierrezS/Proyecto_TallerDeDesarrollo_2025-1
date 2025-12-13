@@ -11,7 +11,7 @@ const useUsers = () => {
                 nombreCompleto: user.nombreCompleto,
                 rut: user.rut,
                 email: user.email,
-                rol: user.rol,
+                tipoUsuario: user.tipoUsuario?.Descripcion || 'Sin tipo',
                 createdAt: user.createdAt
             }));
             dataLogged(formattedData);

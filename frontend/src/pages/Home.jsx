@@ -3,7 +3,7 @@ import '@styles/styles.css';
 const Home = () => {
   const user = JSON.parse(sessionStorage.getItem('usuario')) || '';
   const userName = user?.nombreCompleto || 'Usuario';
-  const userRole = user?.rol || 'Sin rol';
+  const userRole = user?.tipoUsuario || 'Sin tipo de usuario';
 
   return (
     <div className="main-container">

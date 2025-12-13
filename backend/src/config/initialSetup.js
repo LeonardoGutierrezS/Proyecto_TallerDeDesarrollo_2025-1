@@ -341,10 +341,8 @@ async function createEstados() {
     if (count > 0) return;
 
     await Promise.all([
-      estadoRepository.save(estadoRepository.create({ Estado: "Nuevo" })),
-      estadoRepository.save(estadoRepository.create({ Estado: "Bueno" })),
-      estadoRepository.save(estadoRepository.create({ Estado: "Regular" })),
-      estadoRepository.save(estadoRepository.create({ Estado: "Malo" })),
+      estadoRepository.save(estadoRepository.create({ Estado: "Disponible" })),
+      estadoRepository.save(estadoRepository.create({ Estado: "Ocupado" })),
       estadoRepository.save(estadoRepository.create({ Estado: "En Reparación" })),
       estadoRepository.save(estadoRepository.create({ Estado: "Dado de Baja" })),
     ]);
@@ -380,10 +378,10 @@ async function createEquipos() {
     const proyector = await categoriaRepository.findOne({ where: { Categoria: "Proyector" } });
     const impresora = await categoriaRepository.findOne({ where: { Categoria: "Impresora" } });
 
-    const bueno = await estadoRepository.findOne({ where: { Estado: "Bueno" } });
-    const nuevo = await estadoRepository.findOne({ where: { Estado: "Nuevo" } });
+    const disponible = await estadoRepository.findOne({ where: { Estado: "Disponible" } });
+    const ocupado = await estadoRepository.findOne({ where: { Estado: "Ocupado" } });
 
-    if (!hp || !notebook || !bueno) {
+    if (!hp || !notebook || !disponible) {
       console.error("Error: No se encontraron las entidades necesarias para crear equipos");
       return;
     }
@@ -398,7 +396,7 @@ async function createEquipos() {
           Disponible: true,
           marca: hp,
           categoria: notebook,
-          estado: bueno,
+          estado: disponible,
         }),
       ),
       equipoRepository.save(
@@ -410,7 +408,7 @@ async function createEquipos() {
           Disponible: true,
           marca: dell,
           categoria: notebook,
-          estado: nuevo,
+          estado: disponible,
         }),
       ),
       equipoRepository.save(
@@ -422,7 +420,7 @@ async function createEquipos() {
           Disponible: false,
           marca: lenovo,
           categoria: notebook,
-          estado: bueno,
+          estado: ocupado,
         }),
       ),
       equipoRepository.save(
@@ -434,7 +432,7 @@ async function createEquipos() {
           Disponible: true,
           marca: asus,
           categoria: desktop,
-          estado: bueno,
+          estado: disponible,
         }),
       ),
       equipoRepository.save(
@@ -446,7 +444,7 @@ async function createEquipos() {
           Disponible: true,
           marca: epson,
           categoria: proyector,
-          estado: bueno,
+          estado: disponible,
         }),
       ),
       equipoRepository.save(
@@ -458,7 +456,7 @@ async function createEquipos() {
           Disponible: true,
           marca: epson,
           categoria: impresora,
-          estado: nuevo,
+          estado: disponible,
         }),
       ),
     ]);

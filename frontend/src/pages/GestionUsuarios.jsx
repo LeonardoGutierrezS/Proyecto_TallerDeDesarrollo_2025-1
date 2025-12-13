@@ -145,10 +145,10 @@ const AllUsersSection = () => {
                 />
                 <select
                     className="filter-select"
-                    value={filters.rol}
-                    onChange={(e) => setFilters({ ...filters, rol: e.target.value })}
+                    value={filters.tipoUsuario}
+                    onChange={(e) => setFilters({ ...filters, tipoUsuario: e.target.value })}
                 >
-                    <option value="">Todos los roles</option>
+                    <option value="">Todos los tipos de usuario</option>
                     <option value="Administrador">Administrador</option>
                     <option value="Alumno">Alumno</option>
                     <option value="Profesor">Profesor</option>
@@ -174,7 +174,7 @@ const AllUsersSection = () => {
                             <th>Nombre</th>
                             <th>Correo</th>
                             <th>RUT</th>
-                            <th>Rol</th>
+                            <th>Tipo de Usuario</th>
                             <th>Carrera</th>
                             <th>Estado</th>
                             <th>Acciones</th>
@@ -186,7 +186,7 @@ const AllUsersSection = () => {
                                 <td>{user.Nombre_Completo}</td>
                                 <td>{user.Correo}</td>
                                 <td>{user.Rut}</td>
-                                <td>{user.rol?.Rol || 'N/A'}</td>
+                                <td>{user.tipoUsuario?.Descripcion || 'N/A'}</td>
                                 <td>{user.carrera?.Carrera || 'N/A'}</td>
                                 <td>
                                     <span className={`status-badge ${user.Vigente ? 'active' : 'inactive'}`}>

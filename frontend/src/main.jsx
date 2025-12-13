@@ -27,7 +27,7 @@ const router = createBrowserRouter([
       {
         path: '/users',
         element: (
-        <ProtectedRoute allowedRoles={['administrador']}>
+        <ProtectedRoute allowedRoles={['Administrador']}>
           <Users />
         </ProtectedRoute>
         ),
@@ -35,7 +35,7 @@ const router = createBrowserRouter([
       {
         path: '/gestion-usuarios',
         element: (
-        <ProtectedRoute allowedRoles={['administrador']}>
+        <ProtectedRoute allowedRoles={['Administrador']}>
           <GestionUsuarios />
         </ProtectedRoute>
         ),
@@ -43,7 +43,7 @@ const router = createBrowserRouter([
       {
         path: '/gestion-equipos',
         element: (
-        <ProtectedRoute allowedRoles={['administrador']}>
+        <ProtectedRoute allowedRoles={['Administrador']}>
           <GestionEquipos />
         </ProtectedRoute>
         ),
@@ -51,7 +51,7 @@ const router = createBrowserRouter([
       {
         path: '/gestion-solicitudes',
         element: (
-        <ProtectedRoute allowedRoles={['administrador']}>
+        <ProtectedRoute allowedRoles={['Administrador']}>
           <GestionSolicitudes />
         </ProtectedRoute>
         ),
@@ -59,7 +59,7 @@ const router = createBrowserRouter([
       {
         path: '/generar-solicitud',
         element: (
-        <ProtectedRoute allowedRoles={['alumno', 'profesor']}>
+        <ProtectedRoute allowedRoles={['Alumno', 'Profesor']}>
           <GenerarSolicitud />
         </ProtectedRoute>
         ),
@@ -67,7 +67,7 @@ const router = createBrowserRouter([
       {
         path: '/estado-solicitud',
         element: (
-        <ProtectedRoute allowedRoles={['alumno', 'profesor']}>
+        <ProtectedRoute allowedRoles={['Alumno', 'Profesor']}>
           <EstadoSolicitud />
         </ProtectedRoute>
         ),

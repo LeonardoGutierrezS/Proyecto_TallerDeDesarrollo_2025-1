@@ -7,7 +7,7 @@ const useAllUsers = () => {
     const [loading, setLoading] = useState(true);
     const [filters, setFilters] = useState({
         search: '',
-        rol: '',
+        tipoUsuario: '',
         vigente: ''
     });
 
@@ -69,13 +69,13 @@ const useAllUsers = () => {
             user.Correo?.toLowerCase().includes(filters.search.toLowerCase()) ||
             user.Rut?.includes(filters.search);
         
-        const matchRol = !filters.rol || user.rol?.Rol === filters.rol;
+        const matchTipoUsuario = !filters.tipoUsuario || user.tipoUsuario?.Descripcion === filters.tipoUsuario;
         
         const matchVigente = filters.vigente === '' || 
             (filters.vigente === 'true' && user.Vigente) ||
             (filters.vigente === 'false' && !user.Vigente);
 
-        return matchSearch && matchRol && matchVigente;
+        return matchSearch && matchTipoUsuario && matchVigente;
     });
 
     useEffect(() => {

@@ -17,7 +17,7 @@ export async function login(dataUser) {
                 rut,
                 nombreCompleto, 
                 email, 
-                tipoUsuario: tipoUsuario?.toLowerCase() || 'alumno',
+                tipoUsuario: tipoUsuario || 'Alumno',
                 cargo,
                 carrera,
                 vigente

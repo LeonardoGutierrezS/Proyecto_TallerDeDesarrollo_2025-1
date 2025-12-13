@@ -2,6 +2,7 @@ import { NavLink, useNavigate } from "react-router-dom";
 import { logout } from '@services/auth.service.js';
 import '@styles/navbar.css';
 import { useState } from "react";
+import SirecLogo from '../Images/SIREC LOGO.png';
 
 const Navbar = () => {
     const navigate = useNavigate();
@@ -27,7 +28,7 @@ const Navbar = () => {
         <>
             <div className={`sidebar ${menuOpen ? 'open' : ''}`}>
                 <div className="sidebar-header">
-                    <h2>SIREC</h2>
+                    <img src={SirecLogo} alt="SIREC" className="sidebar-logo" />
                     <div className="user-info">
                         <p className="user-name">{userName}</p>
                         <p className="user-role">{userRole}</p>
@@ -47,7 +48,7 @@ const Navbar = () => {
                             </NavLink>
                         </li>
                         
-                        {userRole === 'administrador' && (
+                        {userRole === 'Administrador' && (
                             <>
                                 <li>
                                     <NavLink 
@@ -82,7 +83,7 @@ const Navbar = () => {
                             </>
                         )}
                         
-                        {(userRole === 'alumno' || userRole === 'profesor') && (
+                        {(userRole === 'Alumno' || userRole === 'Profesor') && (
                             <>
                                 <li>
                                     <NavLink 
