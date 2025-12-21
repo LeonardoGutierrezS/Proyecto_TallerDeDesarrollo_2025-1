@@ -4,6 +4,7 @@ import Login from '@pages/Login';
 import Home from '@pages/Home';
 import Users from '@pages/Users';
 import Register from '@pages/Register';
+import RecoverPassword from '@pages/RecoverPassword';
 import GestionUsuarios from '@pages/GestionUsuarios';
 import GestionEquipos from '@pages/GestionEquipos';
 import GestionSolicitudes from '@pages/GestionSolicitudes';
@@ -81,6 +82,10 @@ const router = createBrowserRouter([
   {
     path: '/register',
     element: <Register/>
+  },
+  {
+    path: '/recover-password',
+    element: <RecoverPassword/>
   }
 ])
 

@@ -1,16 +1,33 @@
 import Form from './Form';
 import '@styles/popup.css';
 import CloseIcon from '@assets/XIcon.svg';
-import QuestionIcon from '@assets/QuestionCircleIcon.svg';
+import { useState, useEffect } from 'react';
+import { getCarreras } from '@services/carrera.service.js';
 
 export default function Popup({ show, setShow, data, action }) {
     const userData = data && data.length > 0 ? data[0] : {};
+    const [carreras, setCarreras] = useState([]);
+
+    useEffect(() => {
+        const fetchCarreras = async () => {
+            const carrerasData = await getCarreras();
+            setCarreras(carrerasData);
+        };
+        if (show) {
+            fetchCarreras();
+        }
+    }, [show]);
 
     const handleSubmit = (formData) => {
         action(formData);
     };
 
     const patternRut = new RegExp(/^(?:(?:[1-9]\d{0}|[1-2]\d{1})(\.\d{3}){2}|[1-9]\d{6}|[1-2]\d{7}|29\.999\.999|29999999)-[\dkK]$/);
+    
+    const carreraOptions = carreras.map(carrera => ({
+        value: carrera.ID_Carrera,
+        label: carrera.Nombre_Carrera
+    }));
     return (
         <div>
             { show && (
@@ -60,35 +77,25 @@ export default function Popup({ show, setShow, data, action }) {
                                 required: true,
                             },
                             {
-                                label: "Rol",
-                                name: "rol",
+                                label: "Tipo de Usuario",
+                                name: "codTipoUsuario",
                                 fieldType: 'select',
                                 options: [
-                                    { value: 'administrador', label: 'Administrador' },
-                                    { value: 'usuario', label: 'Usuario' },
+                                    { value: 1, label: 'Administrador' },
+                                    { value: 2, label: 'Alumno' },
+                                    { value: 3, label: 'Profesor' },
+                                    { value: 4, label: 'Director de Escuela' },
                                 ],
                                 required: true,
-                                defaultValue: userData.rol || "",
+                                defaultValue: userData.codTipoUsuario || "",
                             },
                             {
-                                label: (
-                                    <span>
-                                        Nueva contraseña
-                                        <span className='tooltip-icon'>
-                                            <img src={QuestionIcon} />
-                                            <span className='tooltip-text'>Este campo es opcional</span>
-                                        </span>
-                                    </span>
-                                ),
-                                name: "newPassword",
-                                placeholder: "**********",
-                                fieldType: 'input',
-                                type: "password",
+                                label: "Carrera",
+                                name: "idCarrera",
+                                fieldType: 'select',
+                                options: carreraOptions,
                                 required: false,
-                                minLength: 8,
-                                maxLength: 26,
-                                pattern: /^[a-zA-Z0-9]+$/,
-                                patternMessage: "Debe contener solo letras y números",
+                                defaultValue: userData.idCarrera || userData.ID_Carrera || "",
                             }
                         ]}
                         onSubmit={handleSubmit}

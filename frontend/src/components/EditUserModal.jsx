@@ -9,10 +9,8 @@ const EditUserModal = ({ user, onClose, onSuccess }) => {
         nombreCompleto: user.Nombre_Completo || '',
         correo: user.Correo || '',
         rut: user.Rut || '',
-        password: '',
-        newPassword: '',
-        rolId: user.rol?.ID_Rol || '',
-        carreraId: user.carrera?.ID_Carrera || '0',
+        codTipoUsuario: user.Cod_TipoUsuario || user.tipoUsuario?.Cod_TipoUsuario || '',
+        idCarrera: user.ID_Carrera || user.carrera?.ID_Carrera || '',
         vigente: user.Vigente
     });
     const [carreras, setCarreras] = useState([]);
@@ -48,22 +46,10 @@ const EditUserModal = ({ user, onClose, onSuccess }) => {
             const userData = {
                 nombreCompleto: formData.nombreCompleto,
                 email: formData.correo,
-                rut: formData.rut,
                 vigente: formData.vigente,
-                rolId: parseInt(formData.rolId)
+                codTipoUsuario: parseInt(formData.codTipoUsuario),
+                idCarrera: formData.idCarrera && formData.idCarrera !== '' ? parseInt(formData.idCarrera) : null
             };
-
-            // Siempre incluir carreraId (0 para "Ninguna")
-            const carreraIdValue = parseInt(formData.carreraId);
-            userData.carreraId = carreraIdValue;
-
-            // Solo incluir contraseñas si se proporcionaron
-            if (formData.password) {
-                userData.password = formData.password;
-            }
-            if (formData.newPassword) {
-                userData.newPassword = formData.newPassword;
-            }
 
             const response = await updateUser(userData, user.Rut);
 
@@ -139,46 +125,15 @@ const EditUserModal = ({ user, onClose, onSuccess }) => {
                     </div>
 
                     <div className="form-group">
-                        <label htmlFor="password">Contraseña Actual</label>
-                        <input
-                            type="password"
-                            id="password"
-                            name="password"
-                            value={formData.password}
-                            onChange={handleChange}
-                            minLength={8}
-                            maxLength={26}
-                            placeholder="Solo si desea cambiar la contraseña"
-                            autoComplete="new-password"
-                        />
-                        <small style={{ color: '#666', fontSize: '0.85em' }}>Dejar en blanco para mantener la contraseña actual</small>
-                    </div>
-
-                    <div className="form-group">
-                        <label htmlFor="newPassword">Nueva Contraseña</label>
-                        <input
-                            type="password"
-                            id="newPassword"
-                            name="newPassword"
-                            value={formData.newPassword}
-                            onChange={handleChange}
-                            minLength={8}
-                            maxLength={26}
-                            placeholder="Nueva contraseña"
-                            autoComplete="new-password"
-                        />
-                    </div>
-
-                    <div className="form-group">
-                        <label htmlFor="rolId">Rol *</label>
+                        <label htmlFor="codTipoUsuario">Tipo de Usuario *</label>
                         <select
-                            id="rolId"
-                            name="rolId"
-                            value={formData.rolId}
+                            id="codTipoUsuario"
+                            name="codTipoUsuario"
+                            value={formData.codTipoUsuario}
                             onChange={handleChange}
                             required
                         >
-                            <option value="">Seleccione un rol</option>
+                            <option value="">Seleccione un tipo de usuario</option>
                             <option value="1">Administrador</option>
                             <option value="2">Alumno</option>
                             <option value="3">Profesor</option>
@@ -187,35 +142,20 @@ const EditUserModal = ({ user, onClose, onSuccess }) => {
                     </div>
 
                     <div className="form-group">
-                        <label htmlFor="carreraId">Carrera *</label>
+                        <label htmlFor="idCarrera">Carrera</label>
                         <select
-                            id="carreraId"
-                            name="carreraId"
-                            value={formData.carreraId}
+                            id="idCarrera"
+                            name="idCarrera"
+                            value={formData.idCarrera}
                             onChange={handleChange}
-                            required
                         >
-                            <option value="">Seleccione una carrera</option>
-                            <option value="0">Ninguna</option>
+                            <option value="">Sin carrera</option>
                             {carreras.map(carrera => (
                                 <option key={carrera.ID_Carrera} value={carrera.ID_Carrera}>
-                                    {carrera.Carrera}
+                                    {carrera.Nombre_Carrera}
                                 </option>
                             ))}
                         </select>
-                    </div>
-
-                    <div className="form-group">
-                        <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }}>
-                            <input
-                                type="checkbox"
-                                name="vigente"
-                                checked={formData.vigente}
-                                onChange={handleChange}
-                                style={{ width: 'auto', cursor: 'pointer' }}
-                            />
-                            <span>Usuario activo</span>
-                        </label>
                     </div>
 
                     <div className="modal-actions">

@@ -76,7 +76,7 @@ const PendingUsersSection = () => {
                         </div>
                         <div className="info-item">
                             <span className="info-label">Carrera</span>
-                            <span className="info-value">{user.carrera?.Carrera || 'N/A'}</span>
+                            <span className="info-value">{user.carrera?.Nombre_Carrera || 'Sin carrera'}</span>
                         </div>
                     </div>
                     <div className="action-buttons">
@@ -182,12 +182,12 @@ const AllUsersSection = () => {
                     </thead>
                     <tbody>
                         {users.map(user => (
-                            <tr key={user.ID_Usuario}>
+                            <tr key={user.Rut || user.ID_Usuario}>
                                 <td>{user.Nombre_Completo}</td>
                                 <td>{user.Correo}</td>
                                 <td>{user.Rut}</td>
                                 <td>{user.tipoUsuario?.Descripcion || 'N/A'}</td>
-                                <td>{user.carrera?.Carrera || 'N/A'}</td>
+                                <td>{user.carrera?.Nombre_Carrera || 'Sin carrera'}</td>
                                 <td>
                                     <span className={`status-badge ${user.Vigente ? 'active' : 'inactive'}`}>
                                         {user.Vigente ? 'Activo' : 'Inactivo'}

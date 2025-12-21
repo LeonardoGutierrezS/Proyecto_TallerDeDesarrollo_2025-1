@@ -87,10 +87,14 @@ export async function updateUserService(query, body) {
     if (body.vigente !== undefined) userFound.Vigente = body.vigente;
 
     // Actualizar tipo de usuario si se proporciona
-    if (body.codTipoUsuario) {
+    if (body.codTipoUsuario !== undefined) {
+      console.log('Actualizando tipo de usuario. Valor recibido:', body.codTipoUsuario);
+      console.log('Tipo de usuario actual:', userFound.Cod_TipoUsuario);
+      
       const tipoUsuario = await TipoUsuarioSchema.findOne({ where: { Cod_TipoUsuario: body.codTipoUsuario } });
       if (!tipoUsuario) return [null, "Tipo de usuario no encontrado"];
       userFound.Cod_TipoUsuario = tipoUsuario.Cod_TipoUsuario;
+      console.log('Tipo de usuario establecido a:', tipoUsuario.Cod_TipoUsuario);
     }
 
     // Actualizar cargo si se proporciona
@@ -106,12 +110,17 @@ export async function updateUserService(query, body) {
 
     // Actualizar carrera si se proporciona
     if (body.idCarrera !== undefined) {
+      console.log('Actualizando carrera. Valor recibido:', body.idCarrera);
+      console.log('Carrera actual del usuario:', userFound.ID_Carrera);
+      
       if (body.idCarrera === null) {
         userFound.ID_Carrera = null;
+        console.log('Carrera establecida a null');
       } else {
         const carrera = await CarreraSchema.findOne({ where: { ID_Carrera: body.idCarrera } });
         if (!carrera) return [null, "Carrera no encontrada"];
         userFound.ID_Carrera = carrera.ID_Carrera;
+        console.log('Carrera establecida a:', carrera.ID_Carrera);
       }
     }
 
@@ -121,13 +130,47 @@ export async function updateUserService(query, body) {
     }
 
     // Guardar los cambios
+    console.log('Antes de guardar - userFound.ID_Carrera:', userFound.ID_Carrera);
+    console.log('Antes de guardar - userFound.Cod_TipoUsuario:', userFound.Cod_TipoUsuario);
     const savedUser = await userRepository.save(userFound);
+    console.log('Usuario guardado. ID_Carrera:', savedUser.ID_Carrera);
+    console.log('Usuario guardado. Cod_TipoUsuario:', savedUser.Cod_TipoUsuario);
+
+    // Forzar actualización con query directa si es necesario
+    if (body.idCarrera === null || body.codTipoUsuario !== undefined) {
+      const updates = [];
+      const params = [];
+      let paramIndex = 1;
+
+      if (body.idCarrera === null) {
+        updates.push(`"ID_Carrera" = NULL`);
+        console.log('Añadido ID_Carrera = NULL al update');
+      }
+
+      if (body.codTipoUsuario !== undefined) {
+        updates.push(`"Cod_TipoUsuario" = $${paramIndex}`);
+        params.push(body.codTipoUsuario);
+        paramIndex++;
+        console.log('Añadido Cod_TipoUsuario =', body.codTipoUsuario, 'al update');
+      }
+
+      if (updates.length > 0) {
+        params.push(savedUser.Rut);
+        const query = `UPDATE usuario SET ${updates.join(', ')} WHERE "Rut" = $${paramIndex}`;
+        console.log('Ejecutando query:', query, 'con params:', params);
+        await AppDataSource.query(query, params);
+        console.log('Forzado UPDATE con query directa');
+      }
+    }
 
     // Recargar el usuario con las relaciones
     const userData = await userRepository.findOne({
       where: { Rut: savedUser.Rut },
       relations: ["tipoUsuario", "carrera", "cargo"],
     });
+
+    console.log('Usuario recargado. ID_Carrera:', userData.ID_Carrera);
+    console.log('Usuario recargado. carrera:', userData.carrera);
 
     if (!userData) {
       return [null, "Usuario no encontrado después de actualizar"];

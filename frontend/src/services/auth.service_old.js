@@ -59,34 +59,3 @@ export async function logout() {
         console.error('Error al cerrar sesión:', error);
     }
 }
-
-export async function forgotPassword(email) {
-    try {
-        const response = await axios.post('/auth/forgot-password', { email });
-        return response.data;
-    } catch (error) {
-        return error.response?.data || { status: 'Error', message: 'Error al procesar solicitud' };
-    }
-}
-
-export async function validateResetToken(token) {
-    try {
-        const response = await axios.get(`/auth/validate-reset-token?token=${token}`);
-        return response.data;
-    } catch (error) {
-        return error.response?.data || { status: 'Error', message: 'Token inválido' };
-    }
-}
-
-export async function resetPassword(token, password, confirmPassword) {
-    try {
-        const response = await axios.post('/auth/reset-password', {
-            token,
-            password,
-            confirmPassword
-        });
-        return response.data;
-    } catch (error) {
-        return error.response?.data || { status: 'Error', message: 'Error al actualizar contraseña' };
-    }
-}

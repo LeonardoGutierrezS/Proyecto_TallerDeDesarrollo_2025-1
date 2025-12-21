@@ -116,13 +116,13 @@ export const userBodyValidation = Joi.object({
       "string.min": "El rol debe tener como mínimo 4 caracteres.",
       "string.max": "El rol debe tener como máximo 15 caracteres.",
     }),
-  codTipoUsuario: Joi.string()
-    .min(1)
-    .max(4)
+  codTipoUsuario: Joi.number()
+    .integer()
+    .positive()
     .messages({
-      "string.base": "El código de tipo de usuario debe ser de tipo string.",
-      "string.min": "El código de tipo de usuario debe tener al menos 1 carácter.",
-      "string.max": "El código de tipo de usuario debe tener como máximo 4 caracteres.",
+      "number.base": "El código de tipo de usuario debe ser un número.",
+      "number.integer": "El código de tipo de usuario debe ser un número entero.",
+      "number.positive": "El código de tipo de usuario debe ser un número positivo.",
     }),
   idCargo: Joi.number()
     .integer()
@@ -137,6 +137,7 @@ export const userBodyValidation = Joi.object({
     .integer()
     .positive()
     .allow(null)
+    .optional()
     .messages({
       "number.base": "El ID de la carrera debe ser un número.",
       "number.integer": "El ID de la carrera debe ser un número entero.",

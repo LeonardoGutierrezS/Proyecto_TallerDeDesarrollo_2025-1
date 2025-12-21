@@ -3,13 +3,36 @@ import { format as formatRut } from 'rut.js';
 import { format as formatTempo } from "@formkit/tempo";
 
 export function formatUserData(user) {
+    // Extraer nombre de la carrera
+    let nombreCarrera = 'Sin carrera';
+    if (user.carrera) {
+        if (typeof user.carrera === 'object' && user.carrera.Nombre_Carrera) {
+            nombreCarrera = user.carrera.Nombre_Carrera;
+        } else if (typeof user.carrera === 'string') {
+            nombreCarrera = user.carrera;
+        }
+    }
+
+    // Extraer tipo de usuario
+    let tipoUsuarioDesc = 'Sin tipo';
+    if (user.tipoUsuario) {
+        if (typeof user.tipoUsuario === 'object' && user.tipoUsuario.Descripcion) {
+            tipoUsuarioDesc = user.tipoUsuario.Descripcion;
+        } else if (typeof user.tipoUsuario === 'string') {
+            tipoUsuarioDesc = user.tipoUsuario;
+        }
+    }
+
     return {
-        ...user,
-        nombreCompleto: startCase(user.nombreCompleto || user.Nombre_Completo),
-        tipoUsuario: user.tipoUsuario?.Descripcion || user.tipoUsuario || 'Sin tipo',
-        rut: formatRut(user.rut || user.Rut),
-        email: user.email || user.Correo,
-        createdAt: formatTempo(user.createdAt, "DD-MM-YYYY")
+        nombreCompleto: startCase(user.Nombre_Completo || user.nombreCompleto),
+        rut: formatRut(user.Rut || user.rut),
+        email: user.Correo || user.email,
+        tipoUsuario: tipoUsuarioDesc,
+        codTipoUsuario: user.Cod_TipoUsuario || user.codTipoUsuario,
+        carrera: nombreCarrera,
+        idCarrera: user.ID_Carrera || user.idCarrera,
+        vigente: user.Vigente !== undefined ? user.Vigente : user.vigente,
+        createdAt: user.createdAt || new Date().toISOString()
     };
 }
 
@@ -24,10 +47,15 @@ export function convertirMinusculas(obj) {
 
 export function formatPostUpdate(user) {
     return {
-        nombreCompleto: startCase(user.nombreCompleto),
-        tipoUsuario: user.tipoUsuario?.Descripcion || user.tipoUsuario || 'Sin tipo',
-        rut: formatRut(user.rut),
-        email: user.email,
-        createdAt: formatTempo(user.createdAt, "DD-MM-YYYY")
+        ...user,
+        nombreCompleto: startCase(user.Nombre_Completo || user.nombreCompleto),
+        tipoUsuario: user.tipoUsuario?.Descripcion || 'Sin tipo',
+        codTipoUsuario: user.Cod_TipoUsuario || user.codTipoUsuario,
+        carrera: user.carrera?.Nombre_Carrera || user.carrera || 'Sin carrera',
+        idCarrera: user.ID_Carrera || user.idCarrera,
+        rut: formatRut(user.Rut || user.rut),
+        email: user.Correo || user.email,
+        vigente: user.Vigente !== undefined ? user.Vigente : user.vigente,
+        createdAt: user.createdAt || new Date().toISOString()
     };
 }

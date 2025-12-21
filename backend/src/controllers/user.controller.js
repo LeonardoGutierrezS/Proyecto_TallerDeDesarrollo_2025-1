@@ -61,16 +61,12 @@ export async function updateUser(req, res) {
     const { rut, email } = req.query;
     const { body } = req;
 
-    console.log("updateUser - Query params:", { rut, email });
-    console.log("updateUser - Body:", body);
-
     const { error: queryError } = userQueryValidation.validate({
       rut,
       email,
     });
 
     if (queryError) {
-      console.error("updateUser - Query validation error:", queryError.message);
       return handleErrorClient(
         res,
         400,
@@ -82,7 +78,6 @@ export async function updateUser(req, res) {
     const { error: bodyError } = userBodyValidation.validate(body);
 
     if (bodyError) {
-      console.error("updateUser - Body validation error:", bodyError.message);
       return handleErrorClient(
         res,
         400,
@@ -94,13 +89,11 @@ export async function updateUser(req, res) {
     const [user, userError] = await updateUserService({ rut, email }, body);
 
     if (userError) {
-      console.error("updateUser - Service error:", userError);
       return handleErrorClient(res, 400, "Error modificando al usuario", userError);
     }
 
     handleSuccess(res, 200, "Usuario modificado correctamente", user);
   } catch (error) {
-    console.error("updateUser - Exception:", error);
     handleErrorServer(res, 500, error.message);
   }
 }
