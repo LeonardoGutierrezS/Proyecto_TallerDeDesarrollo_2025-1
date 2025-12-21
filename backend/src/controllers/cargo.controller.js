@@ -1,10 +1,10 @@
 "use strict";
 import {
   createCargoService,
-  getCargosService,
-  getCargoService,
-  updateCargoService,
   deleteCargoService,
+  getCargoService,
+  getCargosService,
+  updateCargoService,
 } from "../services/cargo.service.js";
 import {
   cargoValidation,

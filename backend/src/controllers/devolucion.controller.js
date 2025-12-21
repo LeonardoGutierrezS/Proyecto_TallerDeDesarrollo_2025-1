@@ -1,9 +1,9 @@
 "use strict";
 import {
-  registrarDevolucionService,
-  getDevolucionesService,
   getDevolucionesPorUsuarioService,
+  getDevolucionesService,
   getDevolucionService,
+  registrarDevolucionService,
 } from "../services/devolucion.service.js";
 import { devolucionValidation } from "../validations/devolucion.validation.js";
 import {

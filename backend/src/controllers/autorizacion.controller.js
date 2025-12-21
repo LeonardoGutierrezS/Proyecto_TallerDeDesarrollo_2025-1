@@ -1,8 +1,8 @@
 "use strict";
 import {
   aprobarSolicitudService,
-  rechazarSolicitudService,
   getAutorizacionesService,
+  rechazarSolicitudService,
 } from "../services/autorizacion.service.js";
 import {
   aprobarSolicitudValidation,
