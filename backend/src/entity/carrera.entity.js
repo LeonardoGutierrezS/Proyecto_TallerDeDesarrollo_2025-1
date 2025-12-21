@@ -10,10 +10,22 @@ const CarreraSchema = new EntitySchema({
       primary: true,
       generated: true,
     },
-    Carrera: {
+    Nombre_Carrera: {
       type: "varchar",
       length: 100,
       nullable: false,
+    },
+  },
+  relations: {
+    poseeCarreras: {
+      type: "one-to-many",
+      target: "PoseeCarrera",
+      inverseSide: "carrera",
+    },
+    users: {
+      type: "one-to-many",
+      target: "User",
+      inverseSide: "carrera",
     },
   },
   indices: [

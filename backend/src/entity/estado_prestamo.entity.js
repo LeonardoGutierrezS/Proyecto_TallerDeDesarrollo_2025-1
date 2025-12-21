@@ -10,21 +10,28 @@ const EstadoPrestamoSchema = new EntitySchema({
   name: "EstadoPrestamo",
   tableName: "estado_prestamo",
   columns: {
-    ID_Estado_Prestamo: {
+    ID_Estado: {
       type: "int",
       primary: true,
       generated: true,
     },
-    Estado_Prestamo: {
+    Descripcion: {
       type: "varchar",
-      length: 50,
+      length: 100,
       nullable: false,
+    },
+  },
+  relations: {
+    tieneEstados: {
+      type: "one-to-many",
+      target: "TieneEstado",
+      inverseSide: "estadoPrestamo",
     },
   },
   indices: [
     {
       name: "IDX_ESTADO_PRESTAMO",
-      columns: ["ID_Estado_Prestamo"],
+      columns: ["ID_Estado"],
       unique: true,
     },
   ],

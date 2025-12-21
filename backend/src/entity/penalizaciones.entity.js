@@ -19,6 +19,13 @@ const PenalizacionesSchema = new EntitySchema({
       nullable: false,
     },
   },
+  relations: {
+    tienePenalizaciones: {
+      type: "one-to-many",
+      target: "TienePenalizacion",
+      inverseSide: "penalizacion",
+    },
+  },
   indices: [
     {
       name: "IDX_PENALIZACIONES",

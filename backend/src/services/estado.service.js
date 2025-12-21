@@ -7,7 +7,7 @@ export async function createEstadoService(body) {
     const estadoRepository = AppDataSource.getRepository(Estado);
 
     const existingEstado = await estadoRepository.findOne({
-      where: { Estado: body.Estado },
+      where: { Descripcion: body.Descripcion },
     });
 
     if (existingEstado) {
@@ -15,7 +15,7 @@ export async function createEstadoService(body) {
     }
 
     const newEstado = estadoRepository.create({
-      Estado: body.Estado,
+      Descripcion: body.Descripcion,
     });
 
     const estadoSaved = await estadoRepository.save(newEstado);
@@ -32,7 +32,7 @@ export async function getEstadoService(id) {
     const estadoRepository = AppDataSource.getRepository(Estado);
 
     const estadoFound = await estadoRepository.findOne({
-      where: { ID_Estado: id },
+      where: { Cod_Estado: id },
     });
 
     if (!estadoFound) return [null, "Estado no encontrado"];
@@ -64,16 +64,16 @@ export async function updateEstadoService(id, body) {
     const estadoRepository = AppDataSource.getRepository(Estado);
 
     const estadoFound = await estadoRepository.findOne({
-      where: { ID_Estado: id },
+      where: { Cod_Estado: id },
     });
 
     if (!estadoFound) return [null, "Estado no encontrado"];
 
     const existingEstado = await estadoRepository.findOne({
-      where: { Estado: body.Estado },
+      where: { Descripcion: body.Descripcion },
     });
 
-    if (existingEstado && existingEstado.ID_Estado !== id) {
+    if (existingEstado && existingEstado.Cod_Estado !== id) {
       return [null, "Ya existe otro estado con el mismo nombre"];
     }
 

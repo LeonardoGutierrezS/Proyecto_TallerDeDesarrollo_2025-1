@@ -2,9 +2,9 @@
 import Joi from "joi";
 
 /**
- * Validación para crear característica de equipo
+ * Validación para crear especificación de hardware
  */
-export const caracteristicaEquipoValidation = Joi.object({
+export const especificacionHWValidation = Joi.object({
   ID_Num_Inv: Joi.string()
     .min(3)
     .max(50)
@@ -16,16 +16,16 @@ export const caracteristicaEquipoValidation = Joi.object({
       "string.min": "El número de inventario debe tener al menos 3 caracteres.",
       "string.max": "El número de inventario debe tener como máximo 50 caracteres.",
     }),
-  Tipo_Caracteristica: Joi.string()
+  Tipo_Especificacion_HW: Joi.string()
     .min(3)
     .max(100)
     .required()
     .messages({
-      "string.empty": "El tipo de característica no puede estar vacío.",
-      "any.required": "El tipo de característica es obligatorio.",
-      "string.base": "El tipo de característica debe ser de tipo texto.",
-      "string.min": "El tipo de característica debe tener al menos 3 caracteres.",
-      "string.max": "El tipo de característica debe tener como máximo 100 caracteres.",
+      "string.empty": "El tipo de especificación no puede estar vacío.",
+      "any.required": "El tipo de especificación es obligatorio.",
+      "string.base": "El tipo de especificación debe ser de tipo texto.",
+      "string.min": "El tipo de especificación debe tener al menos 3 caracteres.",
+      "string.max": "El tipo de especificación debe tener como máximo 100 caracteres.",
     }),
   Descripcion: Joi.string()
     .max(500)
@@ -41,17 +41,17 @@ export const caracteristicaEquipoValidation = Joi.object({
   });
 
 /**
- * Validación para actualizar característica de equipo
+ * Validación para actualizar especificación de hardware
  */
-export const updateCaracteristicaEquipoValidation = Joi.object({
-  Tipo_Caracteristica: Joi.string()
+export const updateEspecificacionHWValidation = Joi.object({
+  Tipo_Especificacion_HW: Joi.string()
     .min(3)
     .max(100)
     .messages({
-      "string.empty": "El tipo de característica no puede estar vacío.",
-      "string.base": "El tipo de característica debe ser de tipo texto.",
-      "string.min": "El tipo de característica debe tener al menos 3 caracteres.",
-      "string.max": "El tipo de característica debe tener como máximo 100 caracteres.",
+      "string.empty": "El tipo de especificación no puede estar vacío.",
+      "string.base": "El tipo de especificación debe ser de tipo texto.",
+      "string.min": "El tipo de especificación debe tener al menos 3 caracteres.",
+      "string.max": "El tipo de especificación debe tener como máximo 100 caracteres.",
     }),
   Descripcion: Joi.string()
     .max(500)

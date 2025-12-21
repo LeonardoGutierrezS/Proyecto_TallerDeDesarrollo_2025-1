@@ -13,7 +13,7 @@ router.use(authenticateJwt);
 
 router
   .post("/", createTieneEstadoController)
-  .get("/historial/:idPrestamo", getHistorialEstadosController)
-  .get("/actual/:idPrestamo", getEstadoActualController);
+  .get("/historial/:idEquipo", getHistorialEstadosController)
+  .get("/actual/:idEquipo", getEstadoActualController);
 
 export default router;

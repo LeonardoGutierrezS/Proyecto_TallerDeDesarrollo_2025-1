@@ -89,6 +89,16 @@ const UserSchema = new EntitySchema({
       target: "TienePenalizacion",
       inverseSide: "usuario",
     },
+    poseesCargos: {
+      type: "one-to-many",
+      target: "PoseeCargo",
+      inverseSide: "usuario",
+    },
+    poseesCarreras: {
+      type: "one-to-many",
+      target: "PoseeCarrera",
+      inverseSide: "usuario",
+    },
   },
   indices: [
     {

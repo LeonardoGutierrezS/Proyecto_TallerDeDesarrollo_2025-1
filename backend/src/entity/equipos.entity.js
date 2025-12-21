@@ -30,6 +30,14 @@ const EquiposSchema = new EntitySchema({
       nullable: false,
       default: true,
     },
+    ID_Estado: {
+      type: "int",
+      nullable: false,
+    },
+    ID_Categoria: {
+      type: "int",
+      nullable: false,
+    },
   },
   relations: {
     marca: {
@@ -56,15 +64,20 @@ const EquiposSchema = new EntitySchema({
       },
       nullable: false,
     },
-    caracteristicas: {
+    especificaciones: {
       type: "one-to-many",
-      target: "CaracteristicasEquipo",
+      target: "EspecificacionesHW",
       inverseSide: "equipo",
     },
     prestamos: {
       type: "one-to-many",
       target: "Prestamo",
       inverseSide: "equipos",
+    },
+    tieneEstados: {
+      type: "one-to-many",
+      target: "TieneEstado",
+      inverseSide: "equipo",
     },
   },
   indices: [

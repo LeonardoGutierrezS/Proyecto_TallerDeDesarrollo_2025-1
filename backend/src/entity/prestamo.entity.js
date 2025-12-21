@@ -56,8 +56,8 @@ const PrestamoSchema = new EntitySchema({
       },
       nullable: false,
     },
-    solicitud: {
-      type: "one-to-one",
+    solicitudes: {
+      type: "one-to-many",
       target: "Solicitud",
       inverseSide: "prestamo",
     },

@@ -2,15 +2,15 @@
 import { EntitySchema } from "typeorm";
 
 /**
- * Entidad CaracterísticasEquipo - Características adicionales de equipos
- * Normaliza las características técnicas de los equipos en tabla separada.
- * Permite múltiples características por equipo.
+ * Entidad EspecificacionesHW - Especificaciones de hardware de equipos
+ * Normaliza las especificaciones técnicas de los equipos en tabla separada.
+ * Permite múltiples especificaciones por equipo.
  */
-const CaracteristicasEquipoSchema = new EntitySchema({
-  name: "CaracteristicasEquipo",
-  tableName: "caracteristicas_equipo",
+const EspecificacionesHWSchema = new EntitySchema({
+  name: "EspecificacionesHW",
+  tableName: "especificaciones_hw",
   columns: {
-    ID_Caracteristicas: {
+    ID_Especificaciones_HW: {
       type: "int",
       primary: true,
       generated: true,
@@ -20,7 +20,7 @@ const CaracteristicasEquipoSchema = new EntitySchema({
       length: 50,
       nullable: false,
     },
-    Tipo_Caracteristica: {
+    Tipo_Especificacion_HW: {
       type: "varchar",
       length: 100,
       nullable: false,
@@ -42,11 +42,11 @@ const CaracteristicasEquipoSchema = new EntitySchema({
   },
   indices: [
     {
-      name: "IDX_CARACTERISTICAS_EQUIPO",
-      columns: ["ID_Caracteristicas"],
+      name: "IDX_ESPECIFICACIONES_HW",
+      columns: ["ID_Especificaciones_HW"],
       unique: true,
     },
   ],
 });
 
-export default CaracteristicasEquipoSchema;
+export default EspecificacionesHWSchema;

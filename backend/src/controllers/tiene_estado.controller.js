@@ -32,13 +32,13 @@ export async function createTieneEstadoController(req, res) {
 }
 
 /**
- * Obtener historial completo de estados de un préstamo
+ * Obtener historial completo de estados de un equipo
  */
 export async function getHistorialEstadosController(req, res) {
   try {
-    const { idPrestamo } = req.params;
+    const { idEquipo } = req.params;
 
-    const [historial, errorHistorial] = await getHistorialEstadosService(idPrestamo);
+    const [historial, errorHistorial] = await getHistorialEstadosService(idEquipo);
 
     if (errorHistorial) return handleErrorClient(res, 404, errorHistorial);
 
@@ -51,13 +51,13 @@ export async function getHistorialEstadosController(req, res) {
 }
 
 /**
- * Obtener el estado actual de un préstamo (último registro)
+ * Obtener el estado actual de un equipo (último registro)
  */
 export async function getEstadoActualController(req, res) {
   try {
-    const { idPrestamo } = req.params;
+    const { idEquipo } = req.params;
 
-    const [estadoActual, errorEstadoActual] = await getEstadoActualService(idPrestamo);
+    const [estadoActual, errorEstadoActual] = await getEstadoActualService(idEquipo);
 
     if (errorEstadoActual) return handleErrorClient(res, 404, errorEstadoActual);
 

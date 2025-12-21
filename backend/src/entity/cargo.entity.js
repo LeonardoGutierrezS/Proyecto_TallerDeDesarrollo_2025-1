@@ -14,11 +14,6 @@ const CargoSchema = new EntitySchema({
       primary: true,
       generated: true,
     },
-    Rut: {
-      type: "varchar",
-      length: 12,
-      nullable: false,
-    },
     Desc_Cargo: {
       type: "varchar",
       length: 100,
@@ -26,14 +21,15 @@ const CargoSchema = new EntitySchema({
     },
   },
   relations: {
-    usuario: {
-      type: "many-to-one",
+    poseesCargos: {
+      type: "one-to-many",
+      target: "PoseeCargo",
+      inverseSide: "cargo",
+    },
+    users: {
+      type: "one-to-many",
       target: "User",
-      joinColumn: {
-        name: "Rut",
-        referencedColumnName: "Rut",
-      },
-      nullable: false,
+      inverseSide: "cargo",
     },
   },
   indices: [

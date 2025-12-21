@@ -23,9 +23,9 @@ export async function createEquipoService(body) {
       Numero_Serie: body.Numero_Serie,
       Comentarios: body.Comentarios || null,
       Disponible: body.Disponible !== undefined ? body.Disponible : true,
-      marca: { ID_Marca: body.ID_Marca },
-      categoria: { ID_Categoria: body.ID_Categoria },
-      estado: { ID_Estado: body.ID_Estado },
+      ID_Marca: body.ID_Marca,
+      ID_Categoria: body.ID_Categoria,
+      ID_Estado: body.ID_Estado,
     });
 
     const equipoSaved = await equipoRepository.save(newEquipo);
@@ -143,13 +143,13 @@ export async function updateEquipoService(id, body) {
     };
 
     if (body.ID_Marca) {
-      dataEquipoUpdate.marca = { ID_Marca: body.ID_Marca };
+      dataEquipoUpdate.ID_Marca = body.ID_Marca;
     }
     if (body.ID_Categoria) {
-      dataEquipoUpdate.categoria = { ID_Categoria: body.ID_Categoria };
+      dataEquipoUpdate.ID_Categoria = body.ID_Categoria;
     }
     if (body.ID_Estado) {
-      dataEquipoUpdate.estado = { ID_Estado: body.ID_Estado };
+      dataEquipoUpdate.ID_Estado = body.ID_Estado;
     }
 
     await equipoRepository.save({

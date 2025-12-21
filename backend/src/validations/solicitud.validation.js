@@ -14,16 +14,15 @@ export const solicitudValidation = Joi.object({
       "string.base": "El RUT debe ser de tipo texto.",
       "string.pattern.base": "El RUT debe tener el formato 12345678-9.",
     }),
-  ID_Num_Inv: Joi.string()
-    .min(3)
-    .max(50)
+  ID_Prestamo: Joi.number()
+    .integer()
+    .positive()
     .required()
     .messages({
-      "string.empty": "El número de inventario no puede estar vacío.",
-      "any.required": "El número de inventario es obligatorio.",
-      "string.base": "El número de inventario debe ser de tipo texto.",
-      "string.min": "El número de inventario debe tener al menos 3 caracteres.",
-      "string.max": "El número de inventario debe tener como máximo 50 caracteres.",
+      "number.base": "El ID de préstamo debe ser un número.",
+      "number.integer": "El ID de préstamo debe ser un número entero.",
+      "number.positive": "El ID de préstamo debe ser un número positivo.",
+      "any.required": "El ID de préstamo es obligatorio.",
     }),
   Fecha_Sol: Joi.date()
     .messages({

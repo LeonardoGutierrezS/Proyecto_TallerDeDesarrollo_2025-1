@@ -80,12 +80,12 @@ async function createCarreras() {
     await Promise.all([
       carreraRepository.save(
         carreraRepository.create({
-          Carrera: "Ingeniería de Ejecución en Computación e Informática",
+          Nombre_Carrera: "Ingeniería de Ejecución en Computación e Informática",
         }),
       ),
       carreraRepository.save(
         carreraRepository.create({
-          Carrera: "Ingeniería Civil Informática",
+          Nombre_Carrera: "Ingeniería Civil Informática",
         }),
       ),
     ]);
@@ -116,10 +116,10 @@ async function createUsers() {
     const tipoDirector = await tipoUsuarioRepository.findOne({ where: { Descripcion: "Director de Escuela" } });
     
     const carreraInformatica = await carreraRepository.findOne({ 
-      where: { Carrera: "Ingeniería Civil Informática" } 
+      where: { Nombre_Carrera: "Ingeniería Civil Informática" } 
     });
     const carreraEjecucion = await carreraRepository.findOne({ 
-      where: { Carrera: "Ingeniería de Ejecución en Computación e Informática" } 
+      where: { Nombre_Carrera: "Ingeniería de Ejecución en Computación e Informática" } 
     });
 
     if (!tipoAdmin || !tipoAlumno || !tipoProfesor || !tipoDirector || !carreraInformatica) {
@@ -285,16 +285,16 @@ async function createMarcas() {
     if (count > 0) return;
 
     await Promise.all([
-      marcaRepository.save(marcaRepository.create({ Marca: "HP" })),
-      marcaRepository.save(marcaRepository.create({ Marca: "Dell" })),
-      marcaRepository.save(marcaRepository.create({ Marca: "Lenovo" })),
-      marcaRepository.save(marcaRepository.create({ Marca: "Asus" })),
-      marcaRepository.save(marcaRepository.create({ Marca: "Acer" })),
-      marcaRepository.save(marcaRepository.create({ Marca: "Apple" })),
-      marcaRepository.save(marcaRepository.create({ Marca: "Samsung" })),
-      marcaRepository.save(marcaRepository.create({ Marca: "Epson" })),
-      marcaRepository.save(marcaRepository.create({ Marca: "Canon" })),
-      marcaRepository.save(marcaRepository.create({ Marca: "Logitech" })),
+      marcaRepository.save(marcaRepository.create({ Descripcion: "HP" })),
+      marcaRepository.save(marcaRepository.create({ Descripcion: "Dell" })),
+      marcaRepository.save(marcaRepository.create({ Descripcion: "Lenovo" })),
+      marcaRepository.save(marcaRepository.create({ Descripcion: "Asus" })),
+      marcaRepository.save(marcaRepository.create({ Descripcion: "Acer" })),
+      marcaRepository.save(marcaRepository.create({ Descripcion: "Apple" })),
+      marcaRepository.save(marcaRepository.create({ Descripcion: "Samsung" })),
+      marcaRepository.save(marcaRepository.create({ Descripcion: "Epson" })),
+      marcaRepository.save(marcaRepository.create({ Descripcion: "Canon" })),
+      marcaRepository.save(marcaRepository.create({ Descripcion: "Logitech" })),
     ]);
     console.log("* => Marcas creadas exitosamente");
   } catch (error) {
@@ -313,16 +313,16 @@ async function createCategorias() {
     if (count > 0) return;
 
     await Promise.all([
-      categoriaRepository.save(categoriaRepository.create({ Categoria: "Notebook" })),
-      categoriaRepository.save(categoriaRepository.create({ Categoria: "Desktop" })),
-      categoriaRepository.save(categoriaRepository.create({ Categoria: "Tablet" })),
-      categoriaRepository.save(categoriaRepository.create({ Categoria: "Proyector" })),
-      categoriaRepository.save(categoriaRepository.create({ Categoria: "Impresora" })),
-      categoriaRepository.save(categoriaRepository.create({ Categoria: "Monitor" })),
-      categoriaRepository.save(categoriaRepository.create({ Categoria: "Teclado" })),
-      categoriaRepository.save(categoriaRepository.create({ Categoria: "Mouse" })),
-      categoriaRepository.save(categoriaRepository.create({ Categoria: "Cámara Web" })),
-      categoriaRepository.save(categoriaRepository.create({ Categoria: "Otro" })),
+      categoriaRepository.save(categoriaRepository.create({ Descripcion: "Notebook" })),
+      categoriaRepository.save(categoriaRepository.create({ Descripcion: "Desktop" })),
+      categoriaRepository.save(categoriaRepository.create({ Descripcion: "Tablet" })),
+      categoriaRepository.save(categoriaRepository.create({ Descripcion: "Proyector" })),
+      categoriaRepository.save(categoriaRepository.create({ Descripcion: "Impresora" })),
+      categoriaRepository.save(categoriaRepository.create({ Descripcion: "Monitor" })),
+      categoriaRepository.save(categoriaRepository.create({ Descripcion: "Teclado" })),
+      categoriaRepository.save(categoriaRepository.create({ Descripcion: "Mouse" })),
+      categoriaRepository.save(categoriaRepository.create({ Descripcion: "Cámara Web" })),
+      categoriaRepository.save(categoriaRepository.create({ Descripcion: "Otro" })),
     ]);
     console.log("* => Categorías creadas exitosamente");
   } catch (error) {
@@ -341,10 +341,10 @@ async function createEstados() {
     if (count > 0) return;
 
     await Promise.all([
-      estadoRepository.save(estadoRepository.create({ Estado: "Disponible" })),
-      estadoRepository.save(estadoRepository.create({ Estado: "Ocupado" })),
-      estadoRepository.save(estadoRepository.create({ Estado: "En Reparación" })),
-      estadoRepository.save(estadoRepository.create({ Estado: "Dado de Baja" })),
+      estadoRepository.save(estadoRepository.create({ Descripcion: "Disponible" })),
+      estadoRepository.save(estadoRepository.create({ Descripcion: "Ocupado" })),
+      estadoRepository.save(estadoRepository.create({ Descripcion: "En Reparación" })),
+      estadoRepository.save(estadoRepository.create({ Descripcion: "Dado de Baja" })),
     ]);
     console.log("* => Estados creados exitosamente");
   } catch (error) {
@@ -367,19 +367,19 @@ async function createEquipos() {
     if (countBefore > 0) return;
 
     // Obtener marcas, categorías y estados
-    const hp = await marcaRepository.findOne({ where: { Marca: "HP" } });
-    const dell = await marcaRepository.findOne({ where: { Marca: "Dell" } });
-    const lenovo = await marcaRepository.findOne({ where: { Marca: "Lenovo" } });
-    const asus = await marcaRepository.findOne({ where: { Marca: "Asus" } });
-    const epson = await marcaRepository.findOne({ where: { Marca: "Epson" } });
+    const hp = await marcaRepository.findOne({ where: { Descripcion: "HP" } });
+    const dell = await marcaRepository.findOne({ where: { Descripcion: "Dell" } });
+    const lenovo = await marcaRepository.findOne({ where: { Descripcion: "Lenovo" } });
+    const asus = await marcaRepository.findOne({ where: { Descripcion: "Asus" } });
+    const epson = await marcaRepository.findOne({ where: { Descripcion: "Epson" } });
 
-    const notebook = await categoriaRepository.findOne({ where: { Categoria: "Notebook" } });
-    const desktop = await categoriaRepository.findOne({ where: { Categoria: "Desktop" } });
-    const proyector = await categoriaRepository.findOne({ where: { Categoria: "Proyector" } });
-    const impresora = await categoriaRepository.findOne({ where: { Categoria: "Impresora" } });
+    const notebook = await categoriaRepository.findOne({ where: { Descripcion: "Notebook" } });
+    const desktop = await categoriaRepository.findOne({ where: { Descripcion: "Desktop" } });
+    const proyector = await categoriaRepository.findOne({ where: { Descripcion: "Proyector" } });
+    const impresora = await categoriaRepository.findOne({ where: { Descripcion: "Impresora" } });
 
-    const disponible = await estadoRepository.findOne({ where: { Estado: "Disponible" } });
-    const ocupado = await estadoRepository.findOne({ where: { Estado: "Ocupado" } });
+    const disponible = await estadoRepository.findOne({ where: { Descripcion: "Disponible" } });
+    const ocupado = await estadoRepository.findOne({ where: { Descripcion: "Ocupado" } });
 
     if (!hp || !notebook || !disponible) {
       console.error("Error: No se encontraron las entidades necesarias para crear equipos");

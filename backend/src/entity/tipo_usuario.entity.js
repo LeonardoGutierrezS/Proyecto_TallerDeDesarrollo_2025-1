@@ -21,6 +21,13 @@ const TipoUsuarioSchema = new EntitySchema({
       nullable: false,
     },
   },
+  relations: {
+    users: {
+      type: "one-to-many",
+      target: "User",
+      inverseSide: "tipoUsuario",
+    },
+  },
   indices: [
     {
       name: "IDX_TIPO_USUARIO",

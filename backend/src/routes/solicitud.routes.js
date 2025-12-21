@@ -5,7 +5,7 @@ import {
   createSolicitudController,
   getSolicitudesController,
   getSolicitudesPorUsuarioController,
-  getSolicitudesPendientesController,
+  getSolicitudesPorPrestamoController,
   getSolicitudController,
   deleteSolicitudController,
 } from "../controllers/solicitud.controller.js";
@@ -17,9 +17,9 @@ router.use(authenticateJwt);
 router
   .post("/", createSolicitudController)
   .get("/", getSolicitudesController)
-  .get("/pendientes", getSolicitudesPendientesController)
+  .get("/prestamo/:idPrestamo", getSolicitudesPorPrestamoController)
   .get("/usuario/:rut", getSolicitudesPorUsuarioController)
-  .get("/:id", getSolicitudController)
-  .delete("/:id", deleteSolicitudController);
+  .get("/:rut/:idPrestamo", getSolicitudController)
+  .delete("/:rut/:idPrestamo", deleteSolicitudController);
 
 export default router;

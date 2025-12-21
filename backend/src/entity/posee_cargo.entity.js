@@ -2,20 +2,19 @@
 import { EntitySchema } from "typeorm";
 
 /**
- * Entidad TienePenalizacion - Asignación de penalizaciones a usuarios
- * Registra penalizaciones activas e históricas. Actualiza automáticamente
- * el estado 'Vigente' del usuario cuando se asigna/finaliza.
+ * Entidad PoseeCargo - Relación entre Usuario y Cargo con fechas
+ * Representa el historial de cargos de un usuario profesor.
  */
-const TienePenalizacionSchema = new EntitySchema({
-  name: "TienePenalizacion",
-  tableName: "tiene_penalizacion",
+const PoseeCargoSchema = new EntitySchema({
+  name: "PoseeCargo",
+  tableName: "posee_cargo",
   columns: {
-    Rut: {
+    Rut_profesor: {
       type: "varchar",
       length: 12,
       primary: true,
     },
-    ID_Penalizaciones: {
+    ID_Cargo: {
       type: "int",
       primary: true,
     },
@@ -27,37 +26,33 @@ const TienePenalizacionSchema = new EntitySchema({
       type: "timestamp with time zone",
       nullable: true,
     },
-    Motivo_Obs: {
-      type: "text",
-      nullable: true,
-    },
   },
   relations: {
     usuario: {
       type: "many-to-one",
       target: "User",
       joinColumn: {
-        name: "Rut",
+        name: "Rut_profesor",
         referencedColumnName: "Rut",
       },
       nullable: false,
     },
-    penalizacion: {
+    cargo: {
       type: "many-to-one",
-      target: "Penalizaciones",
+      target: "Cargo",
       joinColumn: {
-        name: "ID_Penalizaciones",
+        name: "ID_Cargo",
       },
       nullable: false,
     },
   },
   indices: [
     {
-      name: "IDX_TIENE_PENALIZACION",
-      columns: ["Rut", "ID_Penalizaciones"],
+      name: "IDX_POSEE_CARGO",
+      columns: ["Rut_profesor", "ID_Cargo"],
       unique: true,
     },
   ],
 });
 
-export default TienePenalizacionSchema;
+export default PoseeCargoSchema;

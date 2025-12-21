@@ -13,7 +13,7 @@ import categoriaRoutes from "./categoria.routes.js";
 
 // Rutas de equipos
 import equiposRoutes from "./equipos.routes.js";
-import caracteristicasEquipoRoutes from "./caracteristicas_equipo.routes.js";
+import especificacionesHWRoutes from "./especificaciones_hw.routes.js";
 
 // Rutas del sistema de préstamos (3FN)
 import solicitudRoutes from "./solicitud.routes.js";
@@ -28,6 +28,8 @@ import tienePenalizacionRoutes from "./tiene_penalizacion.routes.js";
 
 // Rutas de clasificaciones de usuarios
 import cargoRoutes from "./cargo.routes.js";
+import poseeCargoRoutes from "./posee_cargo.routes.js";
+import poseeCarreraRoutes from "./posee_carrera.routes.js";
 import tipoUsuarioRoutes from "./tipo_usuario.routes.js";
 
 const router = Router();
@@ -47,7 +49,7 @@ router
 // Equipos
 router
   .use("/equipos", equiposRoutes)
-  .use("/caracteristicas-equipo", caracteristicasEquipoRoutes);
+  .use("/especificaciones-hw", especificacionesHWRoutes);
 
 // Sistema de préstamos (3FN)
 router
@@ -65,6 +67,8 @@ router
 // Clasificaciones de usuarios
 router
   .use("/cargo", cargoRoutes)
+  .use("/posee-cargo", poseeCargoRoutes)
+  .use("/posee-carrera", poseeCarreraRoutes)
   .use("/tipo-usuario", tipoUsuarioRoutes);
 
 export default router;

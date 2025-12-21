@@ -5,16 +5,16 @@ import Joi from "joi";
  * Validación para crear/actualizar carrera
  */
 export const carreraValidation = Joi.object({
-  Carrera: Joi.string()
+  Nombre_Carrera: Joi.string()
     .min(5)
     .max(100)
     .required()
     .messages({
-      "string.empty": "La carrera no puede estar vacía.",
-      "any.required": "La carrera es obligatoria.",
-      "string.base": "La carrera debe ser de tipo texto.",
-      "string.min": "La carrera debe tener al menos 5 caracteres.",
-      "string.max": "La carrera debe tener como máximo 100 caracteres.",
+      "string.empty": "El nombre de la carrera no puede estar vacío.",
+      "any.required": "El nombre de la carrera es obligatorio.",
+      "string.base": "El nombre de la carrera debe ser de tipo texto.",
+      "string.min": "El nombre de la carrera debe tener al menos 5 caracteres.",
+      "string.max": "El nombre de la carrera debe tener como máximo 100 caracteres.",
     }),
 })
   .unknown(false)

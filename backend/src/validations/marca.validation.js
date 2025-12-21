@@ -5,7 +5,7 @@ import Joi from "joi";
  * Validación para crear o actualizar una marca
  */
 export const marcaValidation = Joi.object({
-  Marca: Joi.string()
+  Descripcion: Joi.string()
     .min(2)
     .max(100)
     .required()
@@ -26,7 +26,7 @@ export const marcaValidation = Joi.object({
  * Validación para actualizar una marca
  */
 export const updateMarcaValidation = Joi.object({
-  Marca: Joi.string()
+  Descripcion: Joi.string()
     .min(2)
     .max(100)
     .messages({

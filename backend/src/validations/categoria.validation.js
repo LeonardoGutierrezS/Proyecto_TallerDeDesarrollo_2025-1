@@ -5,7 +5,7 @@ import Joi from "joi";
  * Validación para crear o actualizar una categoría
  */
 export const categoriaValidation = Joi.object({
-  Desc_Categoria: Joi.string()
+  Descripcion: Joi.string()
     .min(2)
     .max(200)
     .required()
@@ -26,7 +26,7 @@ export const categoriaValidation = Joi.object({
  * Validación para actualizar una categoría
  */
 export const updateCategoriaValidation = Joi.object({
-  Desc_Categoria: Joi.string()
+  Descripcion: Joi.string()
     .min(2)
     .max(200)
     .messages({

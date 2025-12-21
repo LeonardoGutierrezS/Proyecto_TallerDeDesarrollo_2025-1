@@ -1,7 +1,7 @@
 {
-  "name": "plantillaisw2024",
-  "version": "1.0.0",
-  "description": "Plantilla de proyecto para Ingenieria de Software 2024-2",
+  "name": "sirec_ubb",
+  "version": "5.0.0",
+  "description": "Sistema de Registro y Control de Equipos Computacionales - Universidad del Bío-Bío",
   "type": "module",
   "main": "index.js",
   "scripts": {
@@ -11,7 +11,7 @@
     "lint:fix": "eslint . --fix",
     "format": "prettier --write \"**/*.{js,jsx,json,md}\""
   },
-  "author": "Diego Salazar Jara",
+  "author": "Leonardo Gutiérrez S.",
   "license": "ISC",
   "dependencies": {
     "bcryptjs": "^2.4.3",

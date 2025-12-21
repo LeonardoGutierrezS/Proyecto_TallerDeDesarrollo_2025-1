@@ -14,10 +14,17 @@ const CategoriaSchema = new EntitySchema({
       primary: true,
       generated: true,
     },
-    Categoria: {
+    Descripcion: {
       type: "varchar",
-      length: 50,
+      length: 100,
       nullable: false,
+    },
+  },
+  relations: {
+    equipos: {
+      type: "one-to-many",
+      target: "Equipos",
+      inverseSide: "categoria",
     },
   },
   indices: [

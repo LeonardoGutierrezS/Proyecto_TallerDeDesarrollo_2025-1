@@ -7,7 +7,7 @@ export async function createCategoriaService(body) {
     const categoriaRepository = AppDataSource.getRepository(Categoria);
 
     const existingCategoria = await categoriaRepository.findOne({
-      where: { Categoria: body.Categoria },
+      where: { Descripcion: body.Descripcion },
     });
 
     if (existingCategoria) {
@@ -15,7 +15,7 @@ export async function createCategoriaService(body) {
     }
 
     const newCategoria = categoriaRepository.create({
-      Categoria: body.Categoria,
+      Descripcion: body.Descripcion,
     });
 
     const categoriaSaved = await categoriaRepository.save(newCategoria);
@@ -72,7 +72,7 @@ export async function updateCategoriaService(id, body) {
     if (!categoriaFound) return [null, "Categoría no encontrada"];
 
     const existingCategoria = await categoriaRepository.findOne({
-      where: { Categoria: body.Categoria },
+      where: { Descripcion: body.Descripcion },
     });
 
     if (existingCategoria && existingCategoria.ID_Categoria !== id) {

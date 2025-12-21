@@ -3,7 +3,7 @@ import {
   createSolicitudService,
   getSolicitudesService,
   getSolicitudesPorUsuarioService,
-  getSolicitudesPendientesService,
+  getSolicitudesPorPrestamoService,
   getSolicitudService,
   deleteSolicitudService,
 } from "../services/solicitud.service.js";
@@ -71,30 +71,32 @@ export async function getSolicitudesPorUsuarioController(req, res) {
 }
 
 /**
- * Obtener solicitudes pendientes (sin préstamo asignado)
+ * Obtener solicitudes por préstamo
  */
-export async function getSolicitudesPendientesController(req, res) {
+export async function getSolicitudesPorPrestamoController(req, res) {
   try {
-    const [solicitudes, errorSolicitudes] = await getSolicitudesPendientesService();
+    const { idPrestamo } = req.params;
+
+    const [solicitudes, errorSolicitudes] = await getSolicitudesPorPrestamoService(idPrestamo);
 
     if (errorSolicitudes) return handleErrorClient(res, 404, errorSolicitudes);
 
     solicitudes.length === 0
       ? handleSuccess(res, 204)
-      : handleSuccess(res, 200, "Solicitudes pendientes encontradas", solicitudes);
+      : handleSuccess(res, 200, "Solicitudes del préstamo encontradas", solicitudes);
   } catch (error) {
     handleErrorServer(res, 500, error.message);
   }
 }
 
 /**
- * Obtener una solicitud por ID
+ * Obtener una solicitud por Rut e ID de Préstamo
  */
 export async function getSolicitudController(req, res) {
   try {
-    const { id } = req.params;
+    const { rut, idPrestamo } = req.params;
 
-    const [solicitud, errorSolicitud] = await getSolicitudService(id);
+    const [solicitud, errorSolicitud] = await getSolicitudService(rut, idPrestamo);
 
     if (errorSolicitud) return handleErrorClient(res, 404, errorSolicitud);
 
@@ -109,9 +111,9 @@ export async function getSolicitudController(req, res) {
  */
 export async function deleteSolicitudController(req, res) {
   try {
-    const { id } = req.params;
+    const { rut, idPrestamo } = req.params;
 
-    const [solicitud, errorSolicitud] = await deleteSolicitudService(id);
+    const [solicitud, errorSolicitud] = await deleteSolicitudService(rut, idPrestamo);
 
     if (errorSolicitud) return handleErrorClient(res, 404, errorSolicitud);
 

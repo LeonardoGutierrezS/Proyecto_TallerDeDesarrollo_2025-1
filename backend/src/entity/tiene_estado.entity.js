@@ -10,23 +10,22 @@ const TieneEstadoSchema = new EntitySchema({
   name: "TieneEstado",
   tableName: "tiene_estado",
   columns: {
-    ID_Tiene_Estado: {
+    ID_Num_Inv: {
+      type: "varchar",
+      length: 50,
+      primary: true,
+    },
+    ID_Estado: {
       type: "int",
       primary: true,
-      generated: true,
-    },
-    ID_Prestamo: {
-      type: "int",
-      nullable: false,
     },
     Cod_Estado: {
       type: "int",
-      nullable: false,
+      primary: true,
     },
     Fecha_Estado: {
       type: "timestamp with time zone",
       nullable: false,
-      default: () => "CURRENT_TIMESTAMP",
     },
     Hora_Estado: {
       type: "time",
@@ -38,11 +37,19 @@ const TieneEstadoSchema = new EntitySchema({
     },
   },
   relations: {
-    prestamo: {
+    equipo: {
       type: "many-to-one",
-      target: "Prestamo",
+      target: "Equipos",
       joinColumn: {
-        name: "ID_Prestamo",
+        name: "ID_Num_Inv",
+      },
+      nullable: false,
+    },
+    estadoPrestamo: {
+      type: "many-to-one",
+      target: "EstadoPrestamo",
+      joinColumn: {
+        name: "ID_Estado",
       },
       nullable: false,
     },
@@ -58,7 +65,7 @@ const TieneEstadoSchema = new EntitySchema({
   indices: [
     {
       name: "IDX_TIENE_ESTADO",
-      columns: ["ID_Tiene_Estado"],
+      columns: ["ID_Num_Inv", "ID_Estado", "Cod_Estado"],
       unique: true,
     },
   ],

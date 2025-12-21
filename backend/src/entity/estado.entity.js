@@ -5,21 +5,33 @@ const EstadoSchema = new EntitySchema({
   name: "Estado",
   tableName: "estado",
   columns: {
-    ID_Estado: {
+    Cod_Estado: {
       type: "int",
       primary: true,
       generated: true,
     },
-    Estado: {
+    Descripcion: {
       type: "varchar",
-      length: 50,
+      length: 100,
       nullable: false,
+    },
+  },
+  relations: {
+    tieneEstados: {
+      type: "one-to-many",
+      target: "TieneEstado",
+      inverseSide: "estado",
+    },
+    equipos: {
+      type: "one-to-many",
+      target: "Equipos",
+      inverseSide: "estado",
     },
   },
   indices: [
     {
       name: "IDX_ESTADO",
-      columns: ["ID_Estado"],
+      columns: ["Cod_Estado"],
       unique: true,
     },
   ],

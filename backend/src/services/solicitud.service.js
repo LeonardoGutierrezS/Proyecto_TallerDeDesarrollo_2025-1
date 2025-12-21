@@ -42,9 +42,24 @@ export async function createSolicitudService(body) {
       return [null, "El equipo no está disponible para préstamo"];
     }
 
+    // Verificar que el préstamo existe
+    if (!body.ID_Prestamo) {
+      return [null, "ID_Prestamo es requerido"];
+    }
+
+    const prestamoRepository = AppDataSource.getRepository(Prestamo);
+    const prestamoFound = await prestamoRepository.findOne({
+      where: { ID_Prestamo: body.ID_Prestamo },
+    });
+
+    if (!prestamoFound) {
+      return [null, "El préstamo no existe"];
+    }
+
     // Crear la solicitud
     const newSolicitud = solicitudRepository.create({
       Rut: body.Rut,
+      ID_Prestamo: body.ID_Prestamo,
       Fecha_Sol: body.Fecha_Sol || new Date(),
       Hora_Sol: body.Hora_Sol,
       Motivo_Sol: body.Motivo_Sol || null,
@@ -53,8 +68,8 @@ export async function createSolicitudService(body) {
     const solicitudSaved = await solicitudRepository.save(newSolicitud);
 
     const solicitudWithRelations = await solicitudRepository.findOne({
-      where: { ID_Solicitud: solicitudSaved.ID_Solicitud },
-      relations: ["usuario", "usuario.cargo", "usuario.carrera", "usuario.tipoUsuario"],
+      where: { Rut: solicitudSaved.Rut, ID_Prestamo: solicitudSaved.ID_Prestamo },
+      relations: ["usuario", "usuario.cargo", "usuario.carrera", "usuario.tipoUsuario", "prestamo"],
     });
 
     return [solicitudWithRelations, null];
@@ -104,15 +119,15 @@ export async function getSolicitudesPorUsuarioService(rut) {
 }
 
 /**
- * Obtener solicitudes pendientes (sin préstamo asociado)
+ * Obtener solicitudes por préstamo
  */
-export async function getSolicitudesPendientesService() {
+export async function getSolicitudesPorPrestamoService(prestamoId) {
   try {
     const solicitudRepository = AppDataSource.getRepository(Solicitud);
 
     const solicitudes = await solicitudRepository.find({
-      where: { ID_Prestamo: null },
-      relations: ["usuario", "usuario.cargo", "usuario.carrera", "usuario.tipoUsuario"],
+      where: { prestamo: { ID_Prestamo: prestamoId } },
+      relations: ["usuario", "usuario.cargo", "usuario.carrera", "usuario.tipoUsuario", "prestamo"],
       order: { Fecha_Sol: "DESC" },
     });
 
@@ -124,14 +139,14 @@ export async function getSolicitudesPendientesService() {
 }
 
 /**
- * Obtener una solicitud por ID
+ * Obtener una solicitud por Rut y ID_Prestamo
  */
-export async function getSolicitudService(id) {
+export async function getSolicitudService(rut, idPrestamo) {
   try {
     const solicitudRepository = AppDataSource.getRepository(Solicitud);
 
     const solicitudFound = await solicitudRepository.findOne({
-      where: { ID_Solicitud: id },
+      where: { Rut: rut, ID_Prestamo: idPrestamo },
       relations: ["usuario", "usuario.cargo", "usuario.carrera", "usuario.tipoUsuario", "prestamo"],
     });
 
@@ -147,12 +162,12 @@ export async function getSolicitudService(id) {
 /**
  * Eliminar una solicitud
  */
-export async function deleteSolicitudService(id) {
+export async function deleteSolicitudService(rut, idPrestamo) {
   try {
     const solicitudRepository = AppDataSource.getRepository(Solicitud);
 
     const solicitudFound = await solicitudRepository.findOne({
-      where: { ID_Solicitud: id },
+      where: { Rut: rut, ID_Prestamo: idPrestamo },
     });
 
     if (!solicitudFound) return [null, "Solicitud no encontrada"];
