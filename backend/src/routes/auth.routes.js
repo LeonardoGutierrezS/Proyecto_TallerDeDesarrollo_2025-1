@@ -3,10 +3,7 @@ import { Router } from "express";
 import { 
   login, 
   logout, 
-  register, 
-  forgotPassword, 
-  validateResetToken, 
-  resetPassword 
+  register
 } from "../controllers/auth.controller.js";
 
 const router = Router();
@@ -14,9 +11,6 @@ const router = Router();
 router
   .post("/login", login)
   .post("/register", register)
-  .post("/logout", logout)
-  .post("/forgot-password", forgotPassword)
-  .get("/validate-reset-token", validateResetToken)
-  .post("/reset-password", resetPassword);
+  .post("/logout", logout);
 
 export default router;

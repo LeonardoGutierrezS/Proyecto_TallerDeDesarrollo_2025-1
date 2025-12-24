@@ -19,6 +19,7 @@ const Login = () => {
     const {
         errorEmail,
         errorPassword,
+        generalError,
         errorData,
         handleInputChange
     } = useLogin();
@@ -98,7 +99,7 @@ const Login = () => {
                             placeholder="ejemplo@correo.com"
                             value={formData.email}
                             onChange={handleChange}
-                            className={formErrors.email || errorEmail ? 'error' : ''}
+                            className={formErrors.email || errorEmail || generalError ? 'error' : ''}
                             disabled={isSubmitting}
                             autoComplete="email"
                         />
@@ -117,7 +118,7 @@ const Login = () => {
                                 placeholder="••••••••"
                                 value={formData.password}
                                 onChange={handleChange}
-                                className={formErrors.password || errorPassword ? 'error' : ''}
+                                className={formErrors.password || errorPassword || generalError ? 'error' : ''}
                                 disabled={isSubmitting}
                                 autoComplete="current-password"
                             />
@@ -130,7 +131,10 @@ const Login = () => {
                                 <img src={showPassword ? ViewIcon : HideIcon} alt="Ver contraseña" />
                             </button>
                         </div>
-                        {(formErrors.password || errorPassword) && (
+                        {generalError && (
+                            <span className="error-text">⚠ {generalError}</span>
+                        )}
+                        {!generalError && (formErrors.password || errorPassword) && (
                             <span className="error-text">⚠ {formErrors.password || errorPassword}</span>
                         )}
                     </div>

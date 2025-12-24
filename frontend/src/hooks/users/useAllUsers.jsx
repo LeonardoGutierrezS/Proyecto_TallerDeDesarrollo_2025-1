@@ -26,10 +26,10 @@ const useAllUsers = () => {
         }
     };
 
-    const handleDeactivate = async (userId, currentStatus) => {
+    const handleDeactivate = async (rut, currentStatus) => {
         try {
             const newStatus = !currentStatus;
-            const response = await updateUserStatus(userId, newStatus);
+            const response = await updateUserStatus(rut, newStatus);
             if (response.status === 'Success') {
                 showSuccessAlert(
                     newStatus ? '¡Activado!' : '¡Desactivado!', 

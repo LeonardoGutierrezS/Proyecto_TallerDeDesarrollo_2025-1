@@ -102,11 +102,11 @@ const EditUserModal = ({ user, onClose, onSuccess }) => {
                             name="correo"
                             value={formData.correo}
                             onChange={handleChange}
-                            required
+                            disabled
                             placeholder="ejemplo@gmail.cl"
-                            autoComplete="chrome-off"
-                            data-lpignore="true"
+                            style={{ backgroundColor: '#f5f5f5', cursor: 'not-allowed' }}
                         />
+                        <small style={{ color: '#666', fontSize: '0.85em' }}>El correo no se puede modificar</small>
                     </div>
 
                     <div className="form-group">

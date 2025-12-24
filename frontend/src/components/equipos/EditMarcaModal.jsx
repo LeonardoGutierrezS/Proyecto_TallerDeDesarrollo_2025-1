@@ -1,10 +1,17 @@
 import { useForm } from 'react-hook-form';
+import { useEffect } from 'react';
 import '@styles/modal.css';
 import { showErrorAlert, showSuccessAlert } from '@helpers/sweetAlert.js';
-import { createMarca } from '@services/catalogo.service.js';
+import { updateMarca } from '@services/catalogo.service.js';
 
-const CreateMarcaModal = ({ show, onClose, onSuccess }) => {
-    const { register, handleSubmit, formState: { errors }, reset } = useForm();
+const EditMarcaModal = ({ show, onClose, onSuccess, marca }) => {
+    const { register, handleSubmit, formState: { errors }, reset, setValue } = useForm();
+
+    useEffect(() => {
+        if (marca) {
+            setValue('Marca', marca.Descripcion);
+        }
+    }, [marca, setValue]);
 
     const onSubmit = async (data) => {
         try {
@@ -13,21 +20,26 @@ const CreateMarcaModal = ({ show, onClose, onSuccess }) => {
                 Descripcion: data.Marca
             };
             
-            const response = await createMarca(marcaData);
+            console.log('Enviando actualización de marca:', {
+                id: marca.ID_Marca,
+                data: marcaData
+            });
             
-            console.log('Response from createMarca:', response);
+            const response = await updateMarca(marca.ID_Marca, marcaData);
+            
+            console.log('Respuesta del servidor:', response);
             
             if (response.status === 'Success') {
-                showSuccessAlert('¡Marca creada!', 'La marca ha sido creada exitosamente.');
+                showSuccessAlert('¡Marca actualizada!', 'La marca ha sido actualizada exitosamente.');
                 reset();
                 onSuccess();
                 onClose();
             } else {
-                showErrorAlert('Error', response.message || 'No se pudo crear la marca');
+                showErrorAlert('Error', response.message || 'No se pudo actualizar la marca');
             }
         } catch (error) {
-            console.error('Error al crear marca:', error);
-            showErrorAlert('Error', 'Ocurrió un error al crear la marca');
+            console.error('Error al actualizar marca:', error);
+            showErrorAlert('Error', 'Ocurrió un error al actualizar la marca');
         }
     };
 
@@ -36,19 +48,19 @@ const CreateMarcaModal = ({ show, onClose, onSuccess }) => {
         onClose();
     };
 
-    if (!show) return null;
+    if (!show || !marca) return null;
 
     return (
         <div className="modal-overlay" onClick={handleClose}>
             <div className="modal-content modal-content-small" onClick={(e) => e.stopPropagation()}>
                 <div className="modal-header">
-                    <h2>Crear Nueva Marca</h2>
+                    <h2>Editar Marca</h2>
                     <button className="modal-close" onClick={handleClose}>&times;</button>
                 </div>
 
                 <form onSubmit={handleSubmit(onSubmit)}>
                     <div className="modal-description">
-                        <p>🏷️ Ingresa el nombre de la nueva marca que deseas agregar al sistema.</p>
+                        <p>🏷️ Modifica el nombre de la marca.</p>
                     </div>
                     
                     <div className="form-group">
@@ -66,8 +78,8 @@ const CreateMarcaModal = ({ show, onClose, onSuccess }) => {
                                     message: 'El nombre debe tener al menos 2 caracteres'
                                 },
                                 maxLength: {
-                                    value: 50,
-                                    message: 'El nombre debe tener máximo 50 caracteres'
+                                    value: 100,
+                                    message: 'El nombre debe tener máximo 100 caracteres'
                                 }
                             })}
                         />
@@ -79,7 +91,7 @@ const CreateMarcaModal = ({ show, onClose, onSuccess }) => {
                             Cancelar
                         </button>
                         <button type="submit" className="btn-submit">
-                            Crear Marca
+                            Actualizar Marca
                         </button>
                     </div>
                 </form>
@@ -88,4 +100,4 @@ const CreateMarcaModal = ({ show, onClose, onSuccess }) => {
     );
 };
 
-export default CreateMarcaModal;
+export default EditMarcaModal;

@@ -12,6 +12,19 @@ export async function deleteDataAlert() {
   })
 }
 
+export async function showConfirmAlert(title, text) {
+  return Swal.fire({
+    title: title,
+    text: text,
+    icon: "warning",
+    showCancelButton: true,
+    confirmButtonColor: "#3085d6",
+    cancelButtonColor: "#d33",
+    confirmButtonText: "Sí, eliminar",
+    cancelButtonText: "Cancelar"
+  })
+}
+
 export const showSuccessAlert = (titleMessage, message) => {
   Swal.fire(
     titleMessage,
@@ -20,10 +33,27 @@ export const showSuccessAlert = (titleMessage, message) => {
   );
 };
 
-export const showErrorAlert = (titleMessage, message) => {
-  Swal.fire(
-    titleMessage,
-    message,
-    'error'
-  );
+export const showErrorAlert = (titleMessage, message, showConfirmButton = false, onConfirm = null) => {
+  if (showConfirmButton && onConfirm) {
+    Swal.fire({
+      title: titleMessage,
+      text: message,
+      icon: 'error',
+      showCancelButton: true,
+      confirmButtonColor: '#3085d6',
+      cancelButtonColor: '#d33',
+      confirmButtonText: 'Sí, registrarme',
+      cancelButtonText: 'Cancelar'
+    }).then((result) => {
+      if (result.isConfirmed) {
+        onConfirm();
+      }
+    });
+  } else {
+    Swal.fire(
+      titleMessage,
+      message,
+      'error'
+    );
+  }
 };

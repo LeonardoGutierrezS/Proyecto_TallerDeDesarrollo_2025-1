@@ -7,9 +7,9 @@ export async function getCarreras() {
     try {
         const response = await axios.get('/carrera');
         // El backend retorna { status: 'Success', data: [...carreras] }
-        return response.data.data || response.data || [];
+        return response.data;
     } catch (error) {
         console.error('Error al obtener carreras:', error);
-        return [];
+        return { status: 'Error', data: [] };
     }
 }

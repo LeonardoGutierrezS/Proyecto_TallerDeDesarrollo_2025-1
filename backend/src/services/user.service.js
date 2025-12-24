@@ -262,7 +262,7 @@ export async function approveUserService(rut) {
   }
 }
 
-export async function rejectUserService(rut) {
+export async function rejectUserService(rut, motivo) {
   try {
     const userRepository = AppDataSource.getRepository(User);
 
@@ -283,7 +283,7 @@ export async function rejectUserService(rut) {
 
     const { Contrasenia, ...dataUser } = userDeleted;
 
-    return [dataUser, null];
+    return [{ ...dataUser, motivo }, null];
   } catch (error) {
     console.error("Error al rechazar usuario:", error);
     return [null, "Error interno del servidor"];
@@ -333,7 +333,7 @@ export async function createUserByAdminService(data) {
 
     // Verificar si el usuario ya existe
     const existingUser = await userRepository.findOne({
-      where: [{ Rut: data.rut }, { Correo: data.correo }],
+      where: [{ Rut: data.rut }, { Correo: data.email }],
     });
 
     if (existingUser) {
@@ -358,14 +358,32 @@ export async function createUserByAdminService(data) {
       if (!carrera) return [null, "Carrera no encontrada"];
     }
 
+    // Generar contraseña provisional automática (8 caracteres: letras y números)
+    const generatePassword = () => {
+      const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789';
+      let password = '';
+      // Asegurar al menos una mayúscula, una minúscula y un número
+      password += 'ABCDEFGHJKLMNPQRSTUVWXYZ'[Math.floor(Math.random() * 24)];
+      password += 'abcdefghijkmnpqrstuvwxyz'[Math.floor(Math.random() * 23)];
+      password += '23456789'[Math.floor(Math.random() * 8)];
+      // Completar con caracteres aleatorios
+      for (let i = 0; i < 5; i++) {
+        password += chars[Math.floor(Math.random() * chars.length)];
+      }
+      // Mezclar caracteres
+      return password.split('').sort(() => Math.random() - 0.5).join('');
+    };
+
+    const provisionalPassword = generatePassword();
+
     // Encriptar contraseña
-    const hashedPassword = await encryptPassword(data.password);
+    const hashedPassword = await encryptPassword(provisionalPassword);
 
     // Crear nuevo usuario
     const newUser = userRepository.create({
       Rut: data.rut,
       Nombre_Completo: data.nombreCompleto,
-      Correo: data.correo,
+      Correo: data.email,
       Contrasenia: hashedPassword,
       Vigente: true, // Usuarios creados por admin se aprueban automáticamente
       Cod_TipoUsuario: data.codTipoUsuario,
@@ -380,9 +398,10 @@ export async function createUserByAdminService(data) {
       relations: ["tipoUsuario", "carrera", "cargo"],
     });
 
+    // Retornar también la contraseña provisional para enviarla por correo
     const { Contrasenia, ...userData } = userCreated;
 
-    return [userData, null];
+    return [{ ...userData, provisionalPassword }, null];
   } catch (error) {
     console.error("Error al crear usuario:", error);
     return [null, "Error interno del servidor"];

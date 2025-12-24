@@ -349,6 +349,110 @@
   gap: 10px;
 }
 
+/* Estilos específicos para marcas */
+.id-badge {
+  display: inline-block;
+  padding: 6px 14px;
+  background: linear-gradient(135deg, #006edf 0%, #003366 100%);
+  color: white;
+  border-radius: 20px;
+  font-size: 0.9rem;
+  font-weight: 700;
+  box-shadow: 0 2px 6px rgba(0, 110, 223, 0.3);
+  min-width: 45px;
+  text-align: center;
+}
+
+.marca-name {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.marca-icon {
+  font-size: 1.4rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  background: linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%);
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.marca-text {
+  font-weight: 600;
+  font-size: 1.05rem;
+  color: #1a1a1a;
+}
+
+/* Estilos específicos para categorías */
+.categoria-name {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.categoria-icon {
+  font-size: 1.4rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.categoria-text {
+  font-weight: 600;
+  font-size: 1.05rem;
+  color: #1a1a1a;
+}
+
+/* Estilos específicos para estados */
+.estado-name {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.estado-icon {
+  font-size: 1.4rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%);
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.estado-text {
+  font-weight: 600;
+  font-size: 1.05rem;
+  color: #1a1a1a;
+}
+
+.btn-details {
+  padding: 6px 12px;
+  border: none;
+  border-radius: 5px;
+  font-size: 1.1em;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  background: none;
+  color: #2196f3;
+}
+
+.btn-details:hover {
+  background-color: #e3f2fd;
+  transform: translateY(-2px);
+}
+
 .catalog-name-icon {
   font-size: 1.3rem;
   opacity: 0.7;

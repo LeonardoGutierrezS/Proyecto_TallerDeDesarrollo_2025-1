@@ -343,3 +343,179 @@ input::-webkit-outer-spin-button {
         width: 100%;
     }
 }
+
+/* Modal large for details view */
+.modal-large {
+    max-width: 900px;
+}
+
+/* Details Modal Styles */
+.details-container {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+.detail-section {
+    background: #f8fafc;
+    border-radius: 8px;
+    padding: 20px;
+    border: 1px solid #e2e8f0;
+}
+
+.section-title {
+    color: #003b7a;
+    font-size: 18px;
+    font-weight: 600;
+    margin: 0 0 16px 0;
+    padding-bottom: 12px;
+    border-bottom: 2px solid #003b7a;
+}
+
+.detail-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 12px;
+}
+
+.detail-row {
+    display: grid;
+    grid-template-columns: 200px 1fr;
+    gap: 16px;
+    align-items: center;
+    padding: 10px;
+    background: white;
+    border-radius: 6px;
+    border: 1px solid #e2e8f0;
+    transition: all 0.2s ease;
+}
+
+.detail-row:hover {
+    border-color: #cbd5e1;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.detail-row.full-width {
+    grid-column: 1 / -1;
+    grid-template-columns: 200px 1fr;
+}
+
+.detail-label {
+    font-weight: 600;
+    color: #475569;
+    font-size: 14px;
+}
+
+.detail-value {
+    color: #1e293b;
+    font-size: 14px;
+}
+
+.status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.status-active {
+    background-color: #dcfce7;
+    color: #166534;
+}
+
+.status-inactive {
+    background-color: #fee2e2;
+    color: #991b1b;
+}
+
+.spec-card {
+    background: white;
+    padding: 16px;
+    border-radius: 8px;
+    margin-bottom: 16px;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.spec-card:last-child {
+    margin-bottom: 0;
+}
+
+.spec-card .detail-grid {
+    gap: 8px;
+}
+
+.spec-card .detail-row {
+    padding: 8px 12px;
+    border: none;
+    background: #f8fafc;
+}
+
+.comentarios-box {
+    background: white;
+    padding: 16px;
+    border-radius: 8px;
+    line-height: 1.6;
+    color: #475569;
+    border: 1px solid #e2e8f0;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+}
+
+/* Responsive for details modal */
+@media (min-width: 768px) {
+    .detail-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    
+    .detail-row.full-width {
+        grid-column: 1 / -1;
+    }
+}
+
+@media (max-width: 768px) {
+    .modal-large {
+        max-width: 95%;
+    }
+
+    .detail-row {
+        grid-template-columns: 1fr;
+        gap: 8px;
+    }
+
+    .detail-row.full-width {
+        grid-template-columns: 1fr;
+    }
+
+    .detail-label {
+        font-size: 13px;
+    }
+
+    .detail-value {
+        font-size: 13px;
+    }
+}
+
+/* Estilos para especificaciones de Notebook */
+.notebook-specs {
+    margin-top: 25px;
+    padding: 20px;
+    background: #f8fafc;
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+}
+
+.specs-title {
+    color: #003b7a;
+    font-size: 16px;
+    font-weight: 600;
+    margin: 0 0 15px 0;
+    padding-bottom: 10px;
+    border-bottom: 2px solid #003b7a;
+}
+

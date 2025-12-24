@@ -82,13 +82,13 @@ const PendingUsersSection = () => {
                     <div className="action-buttons">
                         <button 
                             className="btn-approve"
-                            onClick={() => handleApprove(user.ID_Usuario)}
+                            onClick={() => handleApprove(user.Rut)}
                         >
                             ✓ Aprobar
                         </button>
                         <button 
                             className="btn-reject"
-                            onClick={() => handleReject(user.ID_Usuario)}
+                            onClick={() => handleReject(user.Rut)}
                         >
                             ✗ Rechazar
                         </button>
@@ -203,7 +203,7 @@ const AllUsersSection = () => {
                                         </button>
                                         <button 
                                             className={user.Vigente ? 'btn-deactivate' : 'btn-approve'}
-                                            onClick={() => handleDeactivate(user.ID_Usuario, user.Vigente)}
+                                            onClick={() => handleDeactivate(user.Rut, user.Vigente)}
                                         >
                                             {user.Vigente ? '⊗ Desactivar' : '✓ Activar'}
                                         </button>

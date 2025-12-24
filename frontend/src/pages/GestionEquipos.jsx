@@ -1,12 +1,13 @@
 import '@styles/styles.css';
 import '@styles/gestion-equipos.css';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useGetEquipos } from '@hooks/equipos/useGetEquipos';
 import Search from '@components/Search';
 import MarcasSection from '@components/equipos/MarcasSection';
 import CategoriasSection from '@components/equipos/CategoriasSection';
 import EstadosSection from '@components/equipos/EstadosSection';
 import CreateEquipoModal from '@components/equipos/CreateEquipoModal';
+import EquipoDetailsModal from '@components/equipos/EquipoDetailsModal';
 
 const GestionEquipos = () => {
     const [activeTab, setActiveTab] = useState('equipos');
@@ -16,6 +17,15 @@ const GestionEquipos = () => {
     const [filterCategoria, setFilterCategoria] = useState('');
     const [filterDisponible, setFilterDisponible] = useState('');
     const [showCreateEquipoModal, setShowCreateEquipoModal] = useState(false);
+    const [selectedEquipo, setSelectedEquipo] = useState(null);
+    const [showDetailsModal, setShowDetailsModal] = useState(false);
+
+    // Refrescar equipos solo cuando se navega a la pestaña de equipos
+    useEffect(() => {
+        if (activeTab === 'equipos') {
+            refetch();
+        }
+    }, [activeTab]);
 
     // Filtrar equipos según los filtros aplicados
     const filteredEquipos = equipos.filter((equipo) => {
@@ -25,10 +35,10 @@ const GestionEquipos = () => {
             equipo.Numero_Serie?.toLowerCase().includes(searchText.toLowerCase());
 
         const matchesMarca = filterMarca === '' || 
-            equipo.marca?.Marca === filterMarca;
+            equipo.marca?.Descripcion === filterMarca;
 
         const matchesCategoria = filterCategoria === '' || 
-            equipo.categoria?.Categoria === filterCategoria;
+            equipo.categoria?.Descripcion === filterCategoria;
 
         const matchesDisponible = filterDisponible === '' || 
             (filterDisponible === 'Disponible' ? equipo.Disponible === true : equipo.Disponible === false);
@@ -37,8 +47,8 @@ const GestionEquipos = () => {
     });
 
     // Obtener valores únicos para los filtros
-    const marcas = [...new Set(equipos.map(e => e.marca?.Marca).filter(Boolean))];
-    const categorias = [...new Set(equipos.map(e => e.categoria?.Categoria).filter(Boolean))];
+    const marcas = [...new Set(equipos.map(e => e.marca?.Descripcion).filter(Boolean))];
+    const categorias = [...new Set(equipos.map(e => e.categoria?.Descripcion).filter(Boolean))];
 
     // Renderizar tabs
     const renderTabContent = () => {
@@ -58,6 +68,16 @@ const GestionEquipos = () => {
 
     const handleCreateEquipoSuccess = () => {
         refetch();
+    };
+
+    const handleViewDetails = (equipo) => {
+        setSelectedEquipo(equipo);
+        setShowDetailsModal(true);
+    };
+
+    const handleCloseDetailsModal = () => {
+        setShowDetailsModal(false);
+        setSelectedEquipo(null);
     };
 
     const renderEquiposSection = () => {
@@ -132,14 +152,13 @@ const GestionEquipos = () => {
                                 <th>Categoría</th>
                                 <th>Estado</th>
                                 <th>Disponible</th>
-                                <th>Comentarios</th>
                                 <th>Acciones</th>
                             </tr>
                         </thead>
                         <tbody>
                             {filteredEquipos.length === 0 ? (
                                 <tr>
-                                    <td colSpan="9" className="no-data">No hay equipos que mostrar</td>
+                                    <td colSpan="8" className="no-data">No hay equipos que mostrar</td>
                                 </tr>
                             ) : (
                                 filteredEquipos.map((equipo) => (
@@ -147,19 +166,23 @@ const GestionEquipos = () => {
                                         <td>{equipo.ID_Num_Inv}</td>
                                         <td>{equipo.Modelo}</td>
                                         <td>{equipo.Numero_Serie}</td>
-                                        <td>{equipo.marca?.Marca || 'N/A'}</td>
-                                        <td>{equipo.categoria?.Categoria || 'N/A'}</td>
-                                        <td>{equipo.estado?.Estado || 'N/A'}</td>
+                                        <td>{equipo.marca?.Descripcion || 'N/A'}</td>
+                                        <td>{equipo.categoria?.Descripcion || 'N/A'}</td>
+                                        <td>{equipo.estado?.Descripcion || 'N/A'}</td>
                                         <td>
                                             <span className={`disponible-badge ${equipo.Disponible ? 'disponible' : 'no-disponible'}`}>
                                                 {equipo.Disponible ? 'Sí' : 'No'}
                                             </span>
                                         </td>
-                                        <td className="comentarios-cell">
-                                            {equipo.Comentarios || '-'}
-                                        </td>
                                         <td>
                                             <div className="actions-buttons">
+                                                <button 
+                                                    className="btn-details"
+                                                    onClick={() => handleViewDetails(equipo)}
+                                                    title="Ver detalles"
+                                                >
+                                                    👁️
+                                                </button>
                                                 <button 
                                                     className="btn-edit"
                                                     title="Editar equipo"
@@ -180,6 +203,13 @@ const GestionEquipos = () => {
                         </tbody>
                     </table>
                 </div>
+
+                {showDetailsModal && (
+                    <EquipoDetailsModal 
+                        equipo={selectedEquipo}
+                        onClose={handleCloseDetailsModal}
+                    />
+                )}
             </>
         );
     };

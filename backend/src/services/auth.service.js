@@ -23,18 +23,18 @@ export async function loginService(user) {
 
     console.log("Usuario encontrado:", userFound ? "Sí" : "No");
     if (!userFound) {
-      return [null, createErrorMessage("email", "El correo electrónico es incorrecto")];
+      return [null, createErrorMessage("email", "Usuario y/o contraseña incorrectos")];
     }
 
-    // Verificar si el usuario está vigente (aprobado)
+    // Verificar si el usuario está vigente (aprobado y activo)
     if (!userFound.Vigente) {
-      return [null, createErrorMessage("email", "Tu cuenta está pendiente de aprobación por el administrador")];
+      return [null, createErrorMessage("email", "Usuario inactivo. Contáctese con el administrador del sistema")];
     }
 
     const isMatch = await comparePassword(password, userFound.Contrasenia);
 
     if (!isMatch) {
-      return [null, createErrorMessage("password", "La contraseña es incorrecta")];
+      return [null, createErrorMessage("password", "Usuario y/o contraseña incorrectos")];
     }
 
     const payload = {

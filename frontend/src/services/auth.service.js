@@ -34,15 +34,27 @@ export async function login(dataUser) {
 
 export async function register(data) {
     try {
-        const dataRegister = convertirMinusculas(data);
-        const { nombreCompleto, email, rut, password, carreraId } = dataRegister;
-        const response = await axios.post('/auth/register', {
+        const { nombreCompleto, email, rut, password, tipoUsuario, carreraId, cargo } = data;
+        
+        const requestData = {
             nombreCompleto,
-            email,
+            email: email.toLowerCase(), // Solo el email en minúsculas
             rut,
             password,
-            carreraId: parseInt(carreraId)
-        });
+            tipoUsuario
+        };
+
+        // Agregar carreraId solo si es Alumno
+        if (tipoUsuario === 'Alumno' && carreraId) {
+            requestData.carreraId = parseInt(carreraId);
+        }
+
+        // Agregar cargo solo si es Profesor
+        if (tipoUsuario === 'Profesor' && cargo) {
+            requestData.cargo = cargo;
+        }
+
+        const response = await axios.post('/auth/register', requestData);
         return response.data;
     } catch (error) {
         return error.response.data;

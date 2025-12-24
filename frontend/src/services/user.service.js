@@ -29,27 +29,29 @@ export async function getPendingUsers() {
     }
 }
 
-export async function approveUser(userId) {
+export async function approveUser(rut) {
     try {
-        const response = await axios.patch(`/user/${userId}/approve`);
+        const response = await axios.patch(`/user/${rut}/approve`);
         return response.data;
     } catch (error) {
         return error.response?.data || { status: 'Error', message: 'Error al aprobar usuario' };
     }
 }
 
-export async function rejectUser(userId) {
+export async function rejectUser(rut, motivo) {
     try {
-        const response = await axios.delete(`/user/${userId}/reject`);
+        const response = await axios.delete(`/user/${rut}/reject`, {
+            data: { motivo }
+        });
         return response.data;
     } catch (error) {
         return error.response?.data || { status: 'Error', message: 'Error al rechazar usuario' };
     }
 }
 
-export async function updateUserStatus(userId, vigente) {
+export async function updateUserStatus(rut, vigente) {
     try {
-        const response = await axios.patch(`/user/${userId}/status`, { vigente });
+        const response = await axios.patch(`/user/${rut}/status`, { vigente });
         return response.data;
     } catch (error) {
         return error.response?.data || { status: 'Error', message: 'Error al actualizar estado' };

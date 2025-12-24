@@ -6,17 +6,33 @@ import { createEquipo } from '@services/equipo.service.js';
 import { getMarcas, getCategorias, getEstados } from '@services/catalogo.service.js';
 
 const CreateEquipoModal = ({ show, onClose, onSuccess }) => {
-    const { register, handleSubmit, formState: { errors }, reset } = useForm();
+    const { register, handleSubmit, formState: { errors }, reset, watch } = useForm();
     const [marcas, setMarcas] = useState([]);
     const [categorias, setCategorias] = useState([]);
     const [estados, setEstados] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [isNotebook, setIsNotebook] = useState(false);
+
+    // Observar cambios en la categoría seleccionada
+    const selectedCategoria = watch('ID_Categoria');
 
     useEffect(() => {
         if (show) {
             fetchCatalogos();
         }
     }, [show]);
+
+    // Detectar si la categoría seleccionada es "Notebook"
+    useEffect(() => {
+        if (selectedCategoria && categorias.length > 0) {
+            const categoriaSeleccionada = categorias.find(
+                cat => cat.ID_Categoria === parseInt(selectedCategoria)
+            );
+            setIsNotebook(categoriaSeleccionada?.Descripcion === 'Notebook');
+        } else {
+            setIsNotebook(false);
+        }
+    }, [selectedCategoria, categorias]);
 
     const fetchCatalogos = async () => {
         try {
@@ -50,6 +66,15 @@ const CreateEquipoModal = ({ show, onClose, onSuccess }) => {
                 ID_Categoria: parseInt(data.ID_Categoria),
                 ID_Estado: parseInt(data.ID_Estado)
             };
+
+            // Si es Notebook, agregar especificaciones
+            if (isNotebook) {
+                equipoData.especificaciones = {
+                    Procesador: data.Procesador?.trim() || null,
+                    RAM: data.RAM?.trim() || null,
+                    Almacenamiento: data.Almacenamiento?.trim() || null
+                };
+            }
 
             const response = await createEquipo(equipoData);
             
@@ -171,7 +196,7 @@ const CreateEquipoModal = ({ show, onClose, onSuccess }) => {
                                     <option value="">Seleccione una marca</option>
                                     {marcas.map((marca) => (
                                         <option key={marca.ID_Marca} value={marca.ID_Marca}>
-                                            {marca.Marca}
+                                            {marca.Descripcion}
                                         </option>
                                     ))}
                                 </select>
@@ -189,7 +214,7 @@ const CreateEquipoModal = ({ show, onClose, onSuccess }) => {
                                     <option value="">Seleccione una categoría</option>
                                     {categorias.map((categoria) => (
                                         <option key={categoria.ID_Categoria} value={categoria.ID_Categoria}>
-                                            {categoria.Categoria}
+                                            {categoria.Descripcion}
                                         </option>
                                     ))}
                                 </select>
@@ -208,8 +233,8 @@ const CreateEquipoModal = ({ show, onClose, onSuccess }) => {
                                 >
                                     <option value="">Seleccione un estado</option>
                                     {estados.map((estado) => (
-                                        <option key={estado.ID_Estado} value={estado.ID_Estado}>
-                                            {estado.Estado}
+                                        <option key={estado.Cod_Estado} value={estado.Cod_Estado}>
+                                            {estado.Descripcion}
                                         </option>
                                     ))}
                                 </select>
@@ -246,6 +271,68 @@ const CreateEquipoModal = ({ show, onClose, onSuccess }) => {
                             />
                             {errors.Comentarios && <span className="error-message">{errors.Comentarios.message}</span>}
                         </div>
+
+                        {/* Campos adicionales para Notebook */}
+                        {isNotebook && (
+                            <div className="notebook-specs">
+                                <h3 className="specs-title">Especificaciones de Hardware</h3>
+                                <div className="form-row">
+                                    <div className="form-group">
+                                        <label htmlFor="Procesador">Procesador</label>
+                                        <input
+                                            type="text"
+                                            id="Procesador"
+                                            placeholder="Ej: Intel Core i5-10210U"
+                                            autoComplete="chrome-off"
+                                            data-lpignore="true"
+                                            {...register('Procesador', {
+                                                maxLength: {
+                                                    value: 200,
+                                                    message: 'Debe tener máximo 200 caracteres'
+                                                }
+                                            })}
+                                        />
+                                        {errors.Procesador && <span className="error-message">{errors.Procesador.message}</span>}
+                                    </div>
+
+                                    <div className="form-group">
+                                        <label htmlFor="RAM">Memoria RAM</label>
+                                        <input
+                                            type="text"
+                                            id="RAM"
+                                            placeholder="Ej: 8GB DDR4"
+                                            autoComplete="chrome-off"
+                                            data-lpignore="true"
+                                            {...register('RAM', {
+                                                maxLength: {
+                                                    value: 100,
+                                                    message: 'Debe tener máximo 100 caracteres'
+                                                }
+                                            })}
+                                        />
+                                        {errors.RAM && <span className="error-message">{errors.RAM.message}</span>}
+                                    </div>
+                                </div>
+
+                                <div className="form-group">
+                                    <label htmlFor="Almacenamiento">Almacenamiento</label>
+                                    <input
+                                        type="text"
+                                        id="Almacenamiento"
+                                        placeholder="Ej: 256GB SSD"
+                                        autoComplete="chrome-off"
+                                        data-lpignore="true"
+                                        {...register('Almacenamiento', {
+                                            maxLength: {
+                                                value: 100,
+                                                message: 'Debe tener máximo 100 caracteres'
+                                            }
+                                        })}
+                                    />
+                                    {errors.Almacenamiento && <span className="error-message">{errors.Almacenamiento.message}</span>}
+                                </div>
+                            </div>
+                        )}
 
                         <div className="modal-actions">
                             <button type="button" onClick={handleClose} className="btn-cancel">

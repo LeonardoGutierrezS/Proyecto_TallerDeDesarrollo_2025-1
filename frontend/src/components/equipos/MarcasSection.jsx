@@ -1,13 +1,17 @@
 import { useState, useEffect } from 'react';
-import { getMarcas } from '@services/catalogo.service';
+import { getMarcas, deleteMarca } from '@services/catalogo.service';
 import Search from '@components/Search';
 import CreateMarcaModal from './CreateMarcaModal';
+import EditMarcaModal from './EditMarcaModal';
+import { showErrorAlert, showSuccessAlert, showConfirmAlert } from '@helpers/sweetAlert.js';
 
 const MarcasSection = () => {
     const [marcas, setMarcas] = useState([]);
     const [loading, setLoading] = useState(true);
     const [searchText, setSearchText] = useState('');
     const [showCreateModal, setShowCreateModal] = useState(false);
+    const [showEditModal, setShowEditModal] = useState(false);
+    const [selectedMarca, setSelectedMarca] = useState(null);
 
     useEffect(() => {
         fetchMarcas();
@@ -30,11 +34,49 @@ const MarcasSection = () => {
     };
 
     const filteredMarcas = marcas.filter((marca) =>
-        searchText === '' || marca.Marca?.toLowerCase().includes(searchText.toLowerCase())
+        searchText === '' || marca.Descripcion?.toLowerCase().includes(searchText.toLowerCase())
     );
 
     const handleCreateSuccess = () => {
         fetchMarcas();
+    };
+
+    const handleEdit = (marca) => {
+        setSelectedMarca(marca);
+        setShowEditModal(true);
+    };
+
+    const handleEditSuccess = () => {
+        fetchMarcas();
+        setSelectedMarca(null);
+    };
+
+    const handleCloseEdit = () => {
+        setShowEditModal(false);
+        setSelectedMarca(null);
+    };
+
+    const handleDelete = async (marca) => {
+        const result = await showConfirmAlert(
+            '¿Eliminar marca?',
+            `¿Estás seguro de que deseas eliminar la marca "${marca.Descripcion}"? Esta acción no se puede deshacer.`
+        );
+
+        if (result.isConfirmed) {
+            try {
+                const response = await deleteMarca(marca.ID_Marca);
+                
+                if (response.status === 'Success') {
+                    showSuccessAlert('¡Marca eliminada!', 'La marca ha sido eliminada exitosamente.');
+                    fetchMarcas();
+                } else {
+                    showErrorAlert('Error', response.message || 'No se pudo eliminar la marca');
+                }
+            } catch (error) {
+                console.error('Error al eliminar marca:', error);
+                showErrorAlert('Error', 'Ocurrió un error al eliminar la marca');
+            }
+        }
     };
 
     if (loading) return <div className="loading-message"><p>Cargando marcas...</p></div>;
@@ -45,6 +87,13 @@ const MarcasSection = () => {
                 show={showCreateModal}
                 onClose={() => setShowCreateModal(false)}
                 onSuccess={handleCreateSuccess}
+            />
+
+            <EditMarcaModal
+                show={showEditModal}
+                onClose={handleCloseEdit}
+                onSuccess={handleEditSuccess}
+                marca={selectedMarca}
             />
 
             <div className="section-header-with-button">
@@ -62,8 +111,8 @@ const MarcasSection = () => {
                 />
             </div>
 
-            <div className="catalog-table-container">
-                <table className="catalog-table">
+            <div className="equipos-table-container">
+                <table className="equipos-table">
                     <thead>
                         <tr>
                             <th>ID</th>
@@ -80,24 +129,26 @@ const MarcasSection = () => {
                             filteredMarcas.map((marca) => (
                                 <tr key={marca.ID_Marca}>
                                     <td>
-                                        <span className="catalog-id-badge">{marca.ID_Marca}</span>
+                                        <span className="id-badge">{marca.ID_Marca}</span>
                                     </td>
                                     <td>
-                                        <div className="catalog-name">
-                                            <span className="catalog-name-icon">🏷️</span>
-                                            <span>{marca.Marca}</span>
+                                        <div className="marca-name">
+                                            <span className="marca-icon">🏷️</span>
+                                            <span className="marca-text">{marca.Descripcion}</span>
                                         </div>
                                     </td>
                                     <td>
                                         <div className="actions-buttons">
                                             <button 
                                                 className="btn-edit"
+                                                onClick={() => handleEdit(marca)}
                                                 title="Editar marca"
                                             >
                                                 ✏️
                                             </button>
                                             <button 
                                                 className="btn-delete"
+                                                onClick={() => handleDelete(marca)}
                                                 title="Eliminar marca"
                                             >
                                                 🗑️

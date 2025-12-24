@@ -30,7 +30,7 @@ const EstadosSection = () => {
     };
 
     const filteredEstados = estados.filter((estado) =>
-        searchText === '' || estado.Estado?.toLowerCase().includes(searchText.toLowerCase())
+        searchText === '' || estado.Descripcion?.toLowerCase().includes(searchText.toLowerCase())
     );
 
     const handleCreateSuccess = () => {
@@ -62,8 +62,8 @@ const EstadosSection = () => {
                 />
             </div>
 
-            <div className="catalog-table-container">
-                <table className="catalog-table">
+            <div className="equipos-table-container">
+                <table className="equipos-table">
                     <thead>
                         <tr>
                             <th>ID</th>
@@ -78,14 +78,14 @@ const EstadosSection = () => {
                             </tr>
                         ) : (
                             filteredEstados.map((estado) => (
-                                <tr key={estado.ID_Estado}>
+                                <tr key={estado.Cod_Estado}>
                                     <td>
-                                        <span className="catalog-id-badge">{estado.ID_Estado}</span>
+                                        <span className="id-badge">{estado.Cod_Estado}</span>
                                     </td>
                                     <td>
-                                        <div className="catalog-name">
-                                            <span className="catalog-name-icon">🔧</span>
-                                            <span>{estado.Estado}</span>
+                                        <div className="estado-name">
+                                            <span className="estado-icon">🔧</span>
+                                            <span className="estado-text">{estado.Descripcion}</span>
                                         </div>
                                     </td>
                                     <td>

@@ -30,6 +30,10 @@ const EquiposSchema = new EntitySchema({
       nullable: false,
       default: true,
     },
+    ID_Marca: {
+      type: "int",
+      nullable: false,
+    },
     ID_Estado: {
       type: "int",
       nullable: false,
@@ -61,6 +65,7 @@ const EquiposSchema = new EntitySchema({
       target: "Estado",
       joinColumn: {
         name: "ID_Estado",
+        referencedColumnName: "Cod_Estado",
       },
       nullable: false,
     },

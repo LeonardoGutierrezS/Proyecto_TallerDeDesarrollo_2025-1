@@ -1,13 +1,18 @@
 import { useState, useEffect } from 'react';
-import { getCategorias } from '@services/catalogo.service';
+import { getCategorias, deleteCategoria } from '@services/catalogo.service';
+import { showSuccessAlert, showErrorAlert } from '@helpers/sweetAlert';
+import { showConfirmAlert } from '@helpers/sweetAlert';
 import Search from '@components/Search';
 import CreateCategoriaModal from './CreateCategoriaModal';
+import EditCategoriaModal from './EditCategoriaModal';
 
 const CategoriasSection = () => {
     const [categorias, setCategorias] = useState([]);
     const [loading, setLoading] = useState(true);
     const [searchText, setSearchText] = useState('');
     const [showCreateModal, setShowCreateModal] = useState(false);
+    const [showEditModal, setShowEditModal] = useState(false);
+    const [selectedCategoria, setSelectedCategoria] = useState(null);
 
     useEffect(() => {
         fetchCategorias();
@@ -30,11 +35,43 @@ const CategoriasSection = () => {
     };
 
     const filteredCategorias = categorias.filter((categoria) =>
-        searchText === '' || categoria.Categoria?.toLowerCase().includes(searchText.toLowerCase())
+        searchText === '' || categoria.Descripcion?.toLowerCase().includes(searchText.toLowerCase())
     );
 
     const handleCreateSuccess = () => {
         fetchCategorias();
+    };
+
+    const handleEdit = (categoria) => {
+        setSelectedCategoria(categoria);
+        setShowEditModal(true);
+    };
+
+    const handleEditSuccess = () => {
+        fetchCategorias();
+    };
+
+    const handleDelete = async (categoria) => {
+        const confirmed = await showConfirmAlert(
+            `¿Eliminar categoría "${categoria.Descripcion}"?`,
+            'Esta acción no se puede deshacer'
+        );
+
+        if (!confirmed) return;
+
+        try {
+            const response = await deleteCategoria(categoria.ID_Categoria);
+            
+            if (response.status === 'Success') {
+                showSuccessAlert('Categoría eliminada', 'La categoría se ha eliminado correctamente');
+                fetchCategorias();
+            } else {
+                showErrorAlert('Error', response.message || 'No se pudo eliminar la categoría');
+            }
+        } catch (error) {
+            console.error('Error al eliminar categoría:', error);
+            showErrorAlert('Error', 'Ocurrió un error al eliminar la categoría');
+        }
     };
 
     if (loading) return <div className="loading-message"><p>Cargando categorías...</p></div>;
@@ -45,6 +82,13 @@ const CategoriasSection = () => {
                 show={showCreateModal}
                 onClose={() => setShowCreateModal(false)}
                 onSuccess={handleCreateSuccess}
+            />
+
+            <EditCategoriaModal
+                show={showEditModal}
+                onClose={() => setShowEditModal(false)}
+                onSuccess={handleEditSuccess}
+                categoria={selectedCategoria}
             />
 
             <div className="section-header-with-button">
@@ -62,8 +106,8 @@ const CategoriasSection = () => {
                 />
             </div>
 
-            <div className="catalog-table-container">
-                <table className="catalog-table">
+            <div className="equipos-table-container">
+                <table className="equipos-table">
                     <thead>
                         <tr>
                             <th>ID</th>
@@ -80,24 +124,26 @@ const CategoriasSection = () => {
                             filteredCategorias.map((categoria) => (
                                 <tr key={categoria.ID_Categoria}>
                                     <td>
-                                        <span className="catalog-id-badge">{categoria.ID_Categoria}</span>
+                                        <span className="id-badge">{categoria.ID_Categoria}</span>
                                     </td>
                                     <td>
-                                        <div className="catalog-name">
-                                            <span className="catalog-name-icon">📦</span>
-                                            <span>{categoria.Categoria}</span>
+                                        <div className="categoria-name">
+                                            <span className="categoria-icon">📦</span>
+                                            <span className="categoria-text">{categoria.Descripcion}</span>
                                         </div>
                                     </td>
                                     <td>
                                         <div className="actions-buttons">
                                             <button 
                                                 className="btn-edit"
+                                                onClick={() => handleEdit(categoria)}
                                                 title="Editar categoría"
                                             >
                                                 ✏️
                                             </button>
                                             <button 
                                                 className="btn-delete"
+                                                onClick={() => handleDelete(categoria)}
                                                 title="Eliminar categoría"
                                             >
                                                 🗑️

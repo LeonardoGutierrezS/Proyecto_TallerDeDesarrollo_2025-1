@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { getEquipos } from '../../services/equipo.service.js';
 
 export function useGetEquipos() {
@@ -6,7 +6,7 @@ export function useGetEquipos() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  const fetchEquipos = async () => {
+  const fetchEquipos = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -32,11 +32,11 @@ export function useGetEquipos() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     fetchEquipos();
-  }, []);
+  }, [fetchEquipos]);
 
   return { equipos, loading, error, refetch: fetchEquipos };
 }

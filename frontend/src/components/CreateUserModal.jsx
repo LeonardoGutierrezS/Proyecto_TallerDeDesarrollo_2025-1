@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { createUser } from '@services/user.service.js';
 import { getCarreras } from '@services/carrera.service.js';
 import { showErrorAlert, showSuccessAlert } from '@helpers/sweetAlert.js';
+import { formatRut } from '@helpers/rutFormatter.js';
 import '@styles/modal.css';
 
 const CreateUserModal = ({ onClose, onSuccess }) => {
@@ -9,9 +10,8 @@ const CreateUserModal = ({ onClose, onSuccess }) => {
         nombreCompleto: '',
         correo: '',
         rut: '',
-        password: '',
-        rolId: '',
-        carreraId: ''
+        codTipoUsuario: '',
+        idCarrera: ''
     });
     const [carreras, setCarreras] = useState([]);
     const [loading, setLoading] = useState(false);
@@ -32,10 +32,20 @@ const CreateUserModal = ({ onClose, onSuccess }) => {
 
     const handleChange = (e) => {
         const { name, value } = e.target;
-        setFormData({
-            ...formData,
-            [name]: value
-        });
+        
+        // Si es el campo RUT, formatear automáticamente
+        if (name === 'rut') {
+            const formattedRut = formatRut(value);
+            setFormData({
+                ...formData,
+                [name]: formattedRut
+            });
+        } else {
+            setFormData({
+                ...formData,
+                [name]: value
+            });
+        }
     };
 
     const handleSubmit = async (e) => {
@@ -44,22 +54,23 @@ const CreateUserModal = ({ onClose, onSuccess }) => {
 
         try {
             const userData = {
-                ...formData,
-                rolId: parseInt(formData.rolId)
+                nombreCompleto: formData.nombreCompleto,
+                email: formData.correo,
+                rut: formData.rut,
+                codTipoUsuario: parseInt(formData.codTipoUsuario),
+                idCarrera: formData.idCarrera && formData.idCarrera !== '' ? parseInt(formData.idCarrera) : null
             };
-
-            // Solo incluir carreraId si no es "Ninguna" (0)
-            if (formData.carreraId && parseInt(formData.carreraId) !== 0) {
-                userData.carreraId = parseInt(formData.carreraId);
-            }
 
             const response = await createUser(userData);
 
             if (response.status === 'Success') {
-                showSuccessAlert('¡Éxito!', 'Usuario creado correctamente');
+                showSuccessAlert(
+                    '¡Éxito!', 
+                    'Usuario creado correctamente. Se ha generado una contraseña provisional y se ha enviado al correo del usuario.'
+                );
                 onSuccess();
             } else {
-                showErrorAlert('Error', response.details?.message || 'Error al crear usuario');
+                showErrorAlert('Error', response.details?.message || response.message || 'Error al crear usuario');
             }
         } catch (error) {
             console.error('Error:', error);
@@ -128,31 +139,15 @@ const CreateUserModal = ({ onClose, onSuccess }) => {
                     </div>
 
                     <div className="form-group">
-                        <label htmlFor="password">Contraseña *</label>
-                        <input
-                            type="password"
-                            id="password"
-                            name="password"
-                            value={formData.password}
-                            onChange={handleChange}
-                            required
-                            minLength={8}
-                            maxLength={26}
-                            placeholder="Mínimo 8 caracteres"
-                            autoComplete="new-password"
-                        />
-                    </div>
-
-                    <div className="form-group">
-                        <label htmlFor="rolId">Rol *</label>
+                        <label htmlFor="codTipoUsuario">Tipo de Usuario *</label>
                         <select
-                            id="rolId"
-                            name="rolId"
-                            value={formData.rolId}
+                            id="codTipoUsuario"
+                            name="codTipoUsuario"
+                            value={formData.codTipoUsuario}
                             onChange={handleChange}
                             required
                         >
-                            <option value="">Seleccione un rol</option>
+                            <option value="">Seleccione un tipo de usuario</option>
                             <option value="2">Alumno</option>
                             <option value="3">Profesor</option>
                             <option value="4">Director de Escuela</option>
@@ -160,19 +155,17 @@ const CreateUserModal = ({ onClose, onSuccess }) => {
                     </div>
 
                     <div className="form-group">
-                        <label htmlFor="carreraId">Carrera *</label>
+                        <label htmlFor="idCarrera">Carrera</label>
                         <select
-                            id="carreraId"
-                            name="carreraId"
-                            value={formData.carreraId}
+                            id="idCarrera"
+                            name="idCarrera"
+                            value={formData.idCarrera}
                             onChange={handleChange}
-                            required
                         >
-                            <option value="">Seleccione una carrera</option>
-                            <option value="0">Ninguna</option>
+                            <option value="">Sin carrera</option>
                             {carreras.map(carrera => (
                                 <option key={carrera.ID_Carrera} value={carrera.ID_Carrera}>
-                                    {carrera.Carrera}
+                                    {carrera.Nombre_Carrera}
                                 </option>
                             ))}
                         </select>

@@ -1,5 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import { useState } from 'react';
+import { showErrorAlert, showSuccessAlert } from '@helpers/sweetAlert.js';
+import axios from 'axios';
 import '@styles/login.css';
 import SirecLogo from '../Images/SIREC LOGO.png';
 import UbbLogo from '../Images/UBB_degradado_letras_blancas.png';
@@ -40,17 +42,34 @@ const RecoverPassword = () => {
 
         setIsSubmitting(true);
         try {
-            // TODO: Implementar servicio de recuperación de contraseña
-            console.log('Solicitud de recuperación para:', formData.email);
+            const response = await axios.post('http://localhost:3000/api/password-recovery/request', {
+                email: formData.email
+            });
             
-            // Simulación temporal
-            setTimeout(() => {
-                alert('Se ha enviado un correo con instrucciones para recuperar tu contraseña');
-                navigate('/');
-            }, 1000);
+            if (response.data.status === 'Success') {
+                showSuccessAlert(
+                    '¡Correo Enviado!', 
+                    'Se ha enviado un correo con instrucciones para recuperar tu contraseña'
+                );
+                setTimeout(() => navigate('/'), 2000);
+            }
         } catch (error) {
             console.error('Error al solicitar recuperación:', error);
-            setFormErrors({ email: 'Error al conectar con el servidor' });
+            
+            if (error.response?.status === 404) {
+                // El correo no está registrado
+                showErrorAlert(
+                    'Correo No Registrado', 
+                    'No existe una cuenta con este correo. ¿Deseas registrarte?',
+                    true,
+                    () => navigate('/register')
+                );
+            } else {
+                showErrorAlert(
+                    'Error', 
+                    error.response?.data?.message || 'Error al conectar con el servidor'
+                );
+            }
         } finally {
             setIsSubmitting(false);
         }
@@ -88,7 +107,7 @@ const RecoverPassword = () => {
                     </div>
 
                     <button type="submit" className="submit-button" disabled={isSubmitting}>
-                        {isSubmitting ? 'Enviando...' : 'Enviar Instrucciones'}
+                        {isSubmitting ? 'Enviando...' : 'Recuperar Contraseña'}
                     </button>
                 </form>
 

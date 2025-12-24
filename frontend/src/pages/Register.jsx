@@ -2,6 +2,7 @@ import { useNavigate } from 'react-router-dom';
 import { register } from '@services/auth.service.js';
 import useRegister from '@hooks/auth/useRegister.jsx';
 import { showErrorAlert, showSuccessAlert } from '@helpers/sweetAlert.js';
+import { formatRut } from '@helpers/rutFormatter.js';
 import { useState, useEffect } from 'react';
 import '@styles/register.css';
 import HideIcon from '../assets/HideIcon.svg';
@@ -79,8 +80,16 @@ const validateNombreCompleto = (nombre) => {
 
 	const handleChange = (e) => {
 		const { name, value } = e.target;
-		setFormData(prev => ({ ...prev, [name]: value }));
-		handleInputChange(name, value);
+		
+		// Si es el campo RUT, formatear automáticamente
+		if (name === 'rut') {
+			const formattedRut = formatRut(value);
+			setFormData(prev => ({ ...prev, [name]: formattedRut }));
+			handleInputChange(name, formattedRut);
+		} else {
+			setFormData(prev => ({ ...prev, [name]: value }));
+			handleInputChange(name, value);
+		}
 		
 		if (formErrors[name]) {
 			setFormErrors(prev => ({ ...prev, [name]: '' }));
@@ -255,7 +264,7 @@ const validateNombreCompleto = (nombre) => {
 								<option value="">Selecciona una carrera</option>
 								{carreras.map(carrera => (
 									<option key={carrera.ID_Carrera} value={carrera.ID_Carrera}>
-										{carrera.Carrera}
+										{carrera.Nombre_Carrera}
 									</option>
 								))}
 							</select>

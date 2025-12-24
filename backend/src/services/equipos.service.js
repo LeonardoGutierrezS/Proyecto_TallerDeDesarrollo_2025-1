@@ -1,10 +1,12 @@
 "use strict";
 import Equipos from "../entity/equipos.entity.js";
+import EspecificacionesHW from "../entity/especificaciones_hw.entity.js";
 import { AppDataSource } from "../config/configDb.js";
 
 export async function createEquipoService(body) {
   try {
     const equipoRepository = AppDataSource.getRepository(Equipos);
+    const especificacionesRepository = AppDataSource.getRepository(EspecificacionesHW);
 
     const existingEquipo = await equipoRepository.findOne({
       where: [
@@ -30,9 +32,49 @@ export async function createEquipoService(body) {
 
     const equipoSaved = await equipoRepository.save(newEquipo);
 
+    // Si hay especificaciones (para Notebooks), crearlas
+    if (body.especificaciones) {
+      const specs = body.especificaciones;
+      const especificacionesToCreate = [];
+
+      if (specs.Procesador) {
+        especificacionesToCreate.push(
+          especificacionesRepository.create({
+            ID_Num_Inv: equipoSaved.ID_Num_Inv,
+            Tipo_Especificacion_HW: "Procesador",
+            Descripcion: specs.Procesador,
+          })
+        );
+      }
+
+      if (specs.RAM) {
+        especificacionesToCreate.push(
+          especificacionesRepository.create({
+            ID_Num_Inv: equipoSaved.ID_Num_Inv,
+            Tipo_Especificacion_HW: "RAM",
+            Descripcion: specs.RAM,
+          })
+        );
+      }
+
+      if (specs.Almacenamiento) {
+        especificacionesToCreate.push(
+          especificacionesRepository.create({
+            ID_Num_Inv: equipoSaved.ID_Num_Inv,
+            Tipo_Especificacion_HW: "Almacenamiento",
+            Descripcion: specs.Almacenamiento,
+          })
+        );
+      }
+
+      if (especificacionesToCreate.length > 0) {
+        await especificacionesRepository.save(especificacionesToCreate);
+      }
+    }
+
     const equipoWithRelations = await equipoRepository.findOne({
       where: { ID_Num_Inv: equipoSaved.ID_Num_Inv },
-      relations: ["marca", "categoria", "estado"],
+      relations: ["marca", "categoria", "estado", "especificaciones"],
     });
 
     return [equipoWithRelations, null];
@@ -48,7 +90,7 @@ export async function getEquipoService(id) {
 
     const equipoFound = await equipoRepository.findOne({
       where: { ID_Num_Inv: id },
-      relations: ["marca", "categoria", "estado"],
+      relations: ["marca", "categoria", "estado", "especificaciones"],
     });
 
     if (!equipoFound) return [null, "Equipo no encontrado"];
@@ -65,7 +107,7 @@ export async function getEquiposService() {
     const equipoRepository = AppDataSource.getRepository(Equipos);
 
     const equipos = await equipoRepository.find({
-      relations: ["marca", "categoria", "estado"],
+      relations: ["marca", "categoria", "estado", "especificaciones"],
     });
 
     return [equipos || [], null];
@@ -81,7 +123,7 @@ export async function getEquiposDisponiblesService() {
 
     const equiposDisponibles = await equipoRepository.find({
       where: { Disponible: true },
-      relations: ["marca", "categoria", "estado"],
+      relations: ["marca", "categoria", "estado", "especificaciones"],
     });
 
     if (!equiposDisponibles || equiposDisponibles.length === 0) {
@@ -101,7 +143,7 @@ export async function getEquiposPorCategoriaService(categoriaId) {
 
     const equipos = await equipoRepository.find({
       where: { categoria: { ID_Categoria: categoriaId } },
-      relations: ["marca", "categoria", "estado"],
+      relations: ["marca", "categoria", "estado", "especificaciones"],
     });
 
     if (!equipos || equipos.length === 0) {
@@ -159,7 +201,7 @@ export async function updateEquipoService(id, body) {
 
     const equipoUpdated = await equipoRepository.findOne({
       where: { ID_Num_Inv: id },
-      relations: ["marca", "categoria", "estado"],
+      relations: ["marca", "categoria", "estado", "especificaciones"],
     });
 
     return [equipoUpdated, null];
@@ -175,7 +217,7 @@ export async function deleteEquipoService(id) {
 
     const equipoFound = await equipoRepository.findOne({
       where: { ID_Num_Inv: id },
-      relations: ["marca", "categoria", "estado"],
+      relations: ["marca", "categoria", "estado", "especificaciones"],
     });
 
     if (!equipoFound) return [null, "Equipo no encontrado"];
@@ -206,7 +248,7 @@ export async function cambiarDisponibilidadEquipoService(id, disponible) {
 
     const equipoUpdated = await equipoRepository.findOne({
       where: { ID_Num_Inv: id },
-      relations: ["marca", "categoria", "estado"],
+      relations: ["marca", "categoria", "estado", "especificaciones"],
     });
 
     return [equipoUpdated, null];

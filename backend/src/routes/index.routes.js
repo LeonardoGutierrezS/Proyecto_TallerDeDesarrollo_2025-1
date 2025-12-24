@@ -4,6 +4,7 @@ import { Router } from "express";
 // Rutas de autenticación y usuarios
 import authRoutes from "./auth.routes.js";
 import userRoutes from "./user.routes.js";
+import passwordRecoveryRoutes from "./passwordRecovery.routes.js";
 
 // Rutas de catálogos base
 import carreraRoutes from "./carrera.routes.js";
@@ -37,7 +38,8 @@ const router = Router();
 // Autenticación y usuarios
 router
   .use("/auth", authRoutes)
-  .use("/user", userRoutes);
+  .use("/user", userRoutes)
+  .use("/password-recovery", passwordRecoveryRoutes);
 
 // Catálogos base
 router
