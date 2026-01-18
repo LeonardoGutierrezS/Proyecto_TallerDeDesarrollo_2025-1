@@ -181,7 +181,7 @@ const GestionEquipos = () => {
                                                     onClick={() => handleViewDetails(equipo)}
                                                     title="Ver detalles"
                                                 >
-                                                    👁️
+                                                    📄
                                                 </button>
                                                 <button 
                                                     className="btn-edit"

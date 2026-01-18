@@ -1,19 +1,19 @@
 "use strict";
 import {
-  createPoseeCarreraService,
-  getCarreraPorUsuarioService,
-  getEstudiantesPorCarreraService,
-  updateAnioIngresoService,
-  deletePoseeCarreraService,
+    createPoseeCarreraService,
+    deletePoseeCarreraService,
+    getCarreraPorUsuarioService,
+    getEstudiantesPorCarreraService,
+    updateAnioIngresoService,
 } from "../services/posee_carrera.service.js";
 import {
-  poseeCarreraValidation,
-  updateAnioIngresoValidation,
+    poseeCarreraValidation,
+    updateAnioIngresoValidation,
 } from "../validations/posee_carrera.validation.js";
 import {
-  handleErrorClient,
-  handleErrorServer,
-  handleSuccess,
+    handleErrorClient,
+    handleErrorServer,
+    handleSuccess,
 } from "../handlers/responseHandlers.js";
 
 /**

@@ -3,11 +3,12 @@ import '@styles/styles.css';
 const Home = () => {
   const user = JSON.parse(sessionStorage.getItem('usuario')) || '';
   const userName = user?.nombreCompleto || 'Usuario';
-  const userRole = user?.tipoUsuario || 'Sin tipo de usuario';
+  const esDirectorEscuela = user?.esDirectorEscuela || false;
+  const userRole = esDirectorEscuela ? 'Director de Escuela' : (user?.tipoUsuario || 'Sin tipo de usuario');
 
   return (
     <div className="main-container">
-      <h1>Bienvenido al Sistema SIREC</h1>
+      <h1>Bienvenido a SIREC</h1>
       <div style={{ marginTop: '30px' }}>
         <p style={{ fontSize: '1.1em', color: '#003366' }}>
           Hola <strong>{userName}</strong>

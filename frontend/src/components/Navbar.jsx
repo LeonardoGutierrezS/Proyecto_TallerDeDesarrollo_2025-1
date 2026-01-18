@@ -1,15 +1,56 @@
 import { NavLink, useNavigate } from "react-router-dom";
 import { logout } from '@services/auth.service.js';
 import '@styles/navbar.css';
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import SirecLogo from '../Images/SIREC LOGO.png';
+import { getSolicitudes } from '@services/solicitud.service';
 
 const Navbar = () => {
     const navigate = useNavigate();
     const user = JSON.parse(sessionStorage.getItem('usuario')) || '';
-    const userRole = user?.tipoUsuario;
+    const esDirectorEscuela = user?.esDirectorEscuela || false;
+    const userRole = esDirectorEscuela ? 'Director de Escuela' : user?.tipoUsuario;
     const userName = user?.nombreCompleto || 'Usuario';
     const [menuOpen, setMenuOpen] = useState(false);
+    const [solicitudesPendientes, setSolicitudesPendientes] = useState(0);
+
+    // Obtener solicitudes pendientes para el badge
+    useEffect(() => {
+        const fetchSolicitudesPendientes = async () => {
+            if (userRole === 'Administrador' || esDirectorEscuela) {
+                try {
+                    const response = await getSolicitudes();
+                    if (response.status === 'Success' && response.data) {
+                        // Filtrar solo las pendientes (sin ID_Prestamo)
+                        const pendientes = response.data.filter(s => !s.ID_Prestamo);
+                        
+                        // Si es director, solo largo plazo
+                        if (esDirectorEscuela) {
+                            const largoPlazoPendientes = pendientes.filter(s => 
+                                s.Fecha_inicio_sol && s.Fecha_termino_sol
+                            );
+                            setSolicitudesPendientes(largoPlazoPendientes.length);
+                        } else {
+                            // Si es admin, solo diarias (sin fechas de inicio y término)
+                            const diariasPendientes = pendientes.filter(s => 
+                                !s.Fecha_inicio_sol && !s.Fecha_termino_sol
+                            );
+                            setSolicitudesPendientes(diariasPendientes.length);
+                        }
+                    }
+                } catch (error) {
+                    console.error('Error al obtener solicitudes pendientes:', error);
+                }
+            }
+        };
+
+        fetchSolicitudesPendientes();
+        
+        // Actualizar cada 30 segundos
+        const interval = setInterval(fetchSolicitudesPendientes, 30000);
+        
+        return () => clearInterval(interval);
+    }, [userRole, esDirectorEscuela]);
 
     const logoutSubmit = () => {
         try {
@@ -77,13 +118,56 @@ const Navbar = () => {
                                         onClick={() => setMenuOpen(false)}
                                     >
                                         <span className="icon">📋</span>
-                                        <span className="text">Gestión de Solicitudes</span>
+                                        <span className="text">
+                                            Gestión de Solicitudes
+                                            {solicitudesPendientes > 0 && (
+                                                <span className="badge-count">{solicitudesPendientes}</span>
+                                            )}
+                                        </span>
+                                    </NavLink>
+                                </li>
+                                <li>
+                                    <NavLink 
+                                        to="/gestion-penalizaciones" 
+                                        className={({ isActive }) => isActive ? 'active' : ''}
+                                        onClick={() => setMenuOpen(false)}
+                                    >
+                                        <span className="icon">⚠️</span>
+                                        <span className="text">Gestión de Penalizaciones</span>
+                                    </NavLink>
+                                </li>
+                                <li>
+                                    <NavLink 
+                                        to="/reportes" 
+                                        className={({ isActive }) => isActive ? 'active' : ''}
+                                        onClick={() => setMenuOpen(false)}
+                                    >
+                                        <span className="icon">📊</span>
+                                        <span className="text">Reportes</span>
                                     </NavLink>
                                 </li>
                             </>
                         )}
                         
-                        {(userRole === 'Alumno' || userRole === 'Profesor') && (
+                        {esDirectorEscuela && (
+                            <li>
+                                <NavLink 
+                                    to="/gestion-solicitudes" 
+                                    className={({ isActive }) => isActive ? 'active' : ''}
+                                    onClick={() => setMenuOpen(false)}
+                                >
+                                    <span className="icon">📋</span>
+                                    <span className="text">
+                                        Gestión de Solicitudes
+                                        {solicitudesPendientes > 0 && (
+                                            <span className="badge-count">{solicitudesPendientes}</span>
+                                        )}
+                                    </span>
+                                </NavLink>
+                            </li>
+                        )}
+                        
+                        {(userRole === 'Alumno' || (userRole === 'Profesor' && !esDirectorEscuela)) && (
                             <>
                                 <li>
                                     <NavLink 

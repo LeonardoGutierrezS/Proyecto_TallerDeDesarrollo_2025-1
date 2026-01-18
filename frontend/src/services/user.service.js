@@ -70,9 +70,13 @@ export async function createUser(userData) {
 export async function updateUser(data, rut) {
     try {
         const response = await axios.patch(`/user/detail/?rut=${rut}`, data);
-        return response.data.data;
+        return response.data;
     } catch (error) {
-        return error.response.data;
+        // Si hay error de validación del servidor, devolverlo
+        if (error.response && error.response.data) {
+            return error.response.data;
+        }
+        return { status: 'Error', message: 'Error al actualizar usuario' };
     }
 }
 

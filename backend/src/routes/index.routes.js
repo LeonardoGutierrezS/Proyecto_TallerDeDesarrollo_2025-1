@@ -20,12 +20,16 @@ import especificacionesHWRoutes from "./especificaciones_hw.routes.js";
 import solicitudRoutes from "./solicitud.routes.js";
 import autorizacionRoutes from "./autorizacion.routes.js";
 import prestamoRoutes from "./prestamo.routes.js";
+import prestamoAccionesRoutes from "./prestamo-acciones.routes.js";
 import devolucionRoutes from "./devolucion.routes.js";
 import tieneEstadoRoutes from "./tiene_estado.routes.js";
 
 // Rutas de penalizaciones
 import penalizacionesRoutes from "./penalizaciones.routes.js";
 import tienePenalizacionRoutes from "./tiene_penalizacion.routes.js";
+
+// Rutas de reportes
+import reportesRoutes from "./reportes.routes.js";
 
 // Rutas de clasificaciones de usuarios
 import cargoRoutes from "./cargo.routes.js";
@@ -58,6 +62,7 @@ router
   .use("/solicitud", solicitudRoutes)
   .use("/autorizacion", autorizacionRoutes)
   .use("/prestamo", prestamoRoutes)
+  .use("/prestamo-acciones", prestamoAccionesRoutes)
   .use("/devolucion", devolucionRoutes)
   .use("/tiene-estado", tieneEstadoRoutes);
 
@@ -65,6 +70,9 @@ router
 router
   .use("/penalizaciones", penalizacionesRoutes)
   .use("/tiene-penalizacion", tienePenalizacionRoutes);
+
+// Reportes
+router.use("/reportes", reportesRoutes);
 
 // Clasificaciones de usuarios
 router

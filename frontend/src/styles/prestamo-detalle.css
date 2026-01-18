@@ -205,4 +205,150 @@
     .timeline-connector {
         left: 19px;
     }
+
+    .tracking-item {
+        padding-left: 50px;
+    }
+
+    .tracking-dot {
+        width: 40px;
+        height: 40px;
+        font-size: 1.2em;
+    }
+}
+
+/* Nuevo Timeline Tracking - Estilo de seguimiento de compras */
+.timeline-tracking {
+    position: relative;
+    padding: 20px 0;
+}
+
+.tracking-item {
+    position: relative;
+    padding-left: 70px;
+    margin-bottom: 30px;
+    min-height: 60px;
+}
+
+.tracking-item:last-child {
+    margin-bottom: 0;
+}
+
+.tracking-item:last-child .tracking-line {
+    display: none;
+}
+
+.tracking-marker {
+    position: absolute;
+    left: 0;
+    top: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.tracking-dot {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    background: #4caf50;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5em;
+    color: white;
+    box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
+    z-index: 2;
+    position: relative;
+}
+
+.tracking-item.pendiente .tracking-dot {
+    background: #e0e0e0;
+    color: #999;
+    box-shadow: none;
+}
+
+.tracking-line {
+    display: none;
+}
+
+.tracking-item.pendiente .tracking-line {
+    background: #e0e0e0;
+}
+
+.tracking-content {
+    background: white;
+    padding: 15px 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    border-left: 3px solid #4caf50;
+}
+
+.tracking-item.pendiente .tracking-content {
+    border-left-color: #e0e0e0;
+    opacity: 0.7;
+}
+
+.tracking-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.tracking-header h4 {
+    margin: 0;
+    color: #003366;
+    font-size: 1.1em;
+    font-weight: 600;
+}
+
+.tracking-date {
+    font-size: 0.85em;
+    color: #666;
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+.tracking-description {
+    margin: 8px 0 0 0;
+    font-size: 0.9em;
+    color: #555;
+    line-height: 1.5;
+}
+
+.tracking-extra {
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid #e0e0e0;
+    font-size: 0.9em;
+    color: #555;
+}
+
+.tracking-extra p {
+    margin: 5px 0;
+    line-height: 1.5;
+}
+
+.tracking-extra strong {
+    color: #003366;
+}
+
+/* Animación para items completados */
+.tracking-item.completado .tracking-dot {
+    animation: checkmark 0.5s ease;
+}
+
+@keyframes checkmark {
+    0% {
+        transform: scale(0);
+    }
+    50% {
+        transform: scale(1.2);
+    }
+    100% {
+        transform: scale(1);
+    }
 }

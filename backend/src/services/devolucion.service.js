@@ -55,7 +55,7 @@ export async function registrarDevolucionService(body) {
     // Crear el estado de devolución
     const newEstado = tieneEstadoRepository.create({
       ID_Prestamo: body.ID_Prestamo,
-      Cod_Estado: 5, // Estado "Devuelto"
+      Cod_Estado: 4, // Estado "Devuelto"
       Fecha_Estado: body.Fecha_Dev || new Date(),
       Hora_Estado: body.Hora_Dev,
       Obs_Estado: body.Obs_Dev || "Equipo devuelto",

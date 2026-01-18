@@ -4,15 +4,6 @@ import '@styles/prestamo-detalle.css';
 const PrestamoDetalleModal = ({ show, onClose, prestamo }) => {
     if (!show || !prestamo) return null;
 
-    // Estados del préstamo en orden
-    const ESTADOS_ORDEN = [
-        { nombre: 'Pendiente', icono: '⏳', color: '#ff9800' },
-        { nombre: 'Aprobado', icono: '✅', color: '#4caf50' },
-        { nombre: 'Rechazado', icono: '❌', color: '#f44336' },
-        { nombre: 'Entregado', icono: '📦', color: '#2196f3' },
-        { nombre: 'Devuelto', icono: '🔙', color: '#9c27b0' }
-    ];
-
     // Formatear fecha y hora
     const formatFecha = (fecha) => {
         if (!fecha) return '-';
@@ -21,77 +12,70 @@ const PrestamoDetalleModal = ({ show, onClose, prestamo }) => {
             return date.toLocaleString('es-CL', { 
                 year: 'numeric', 
                 month: 'long', 
-                day: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit'
+                day: 'numeric'
             });
         } catch {
             return '-';
         }
     };
 
-    const formatHora = (hora) => {
-        if (!hora) return '';
-        return ` a las ${hora}`;
+    const formatFechaHora = (fecha, hora) => {
+        if (!fecha) return '-';
+        try {
+            const date = new Date(fecha);
+            const fechaStr = date.toLocaleDateString('es-CL', { 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric'
+            });
+            return hora ? `${fechaStr} - ${hora}` : fechaStr;
+        } catch {
+            return '-';
+        }
     };
 
-    // Determinar qué estados han sido completados
-    const estadoActual = prestamo.estadoPrestamo?.Estado_Prestamo;
-    const isRechazado = estadoActual === 'Rechazado';
-    
-    const getEstadoStatus = (nombreEstado) => {
-        if (nombreEstado === 'Rechazado') {
-            return isRechazado ? 'completado' : 'no-aplica';
-        }
-        
-        if (isRechazado && nombreEstado !== 'Pendiente') {
-            return 'no-aplica';
-        }
-
-        const orden = {
-            'Pendiente': 1,
-            'Aprobado': 2,
-            'Entregado': 3,
-            'Devuelto': 4
-        };
-
-        const ordenActual = orden[estadoActual] || 0;
-        const ordenEstado = orden[nombreEstado] || 0;
-
-        if (ordenActual >= ordenEstado) return 'completado';
-        if (ordenActual + 1 === ordenEstado) return 'activo';
-        return 'pendiente';
-    };
+    // Obtener datos del usuario
+    const usuario = prestamo.usuario || {};
 
     return (
         <div className="modal-overlay" onClick={onClose}>
             <div className="modal-content modal-detalle-prestamo" onClick={(e) => e.stopPropagation()}>
                 <div className="modal-header">
-                    <h2>📋 Detalles del Préstamo #{prestamo.ID_Prestamo}</h2>
+                    <h2>📋 Detalles de la Solicitud {prestamo.prestamo?.ID_Prestamo ? `#${prestamo.prestamo.ID_Prestamo}` : `#S-${prestamo.ID_Solicitud}`}</h2>
                     <button className="modal-close" onClick={onClose}>&times;</button>
                 </div>
 
                 <div className="modal-body">
-                    {/* Información del Usuario */}
+                    {/* Información del Solicitante */}
                     <div className="info-section">
-                        <h3>👤 Información del Usuario</h3>
+                        <h3>👤 Información del Solicitante</h3>
                         <div className="info-grid">
                             <div className="info-item">
-                                <span className="info-label">Nombre:</span>
-                                <span className="info-value">{prestamo.usuario?.Nombre} {prestamo.usuario?.Apellido}</span>
+                                <span className="info-label">Nombre Completo:</span>
+                                <span className="info-value">{usuario.Nombre_Completo || `${usuario.Nombre || ''} ${usuario.Apellido || ''}`.trim() || 'N/A'}</span>
                             </div>
                             <div className="info-item">
+                                <span className="info-label">RUT:</span>
+                                <span className="info-value">{usuario.Rut || prestamo.Rut || 'N/A'}</span>
+                            </div>
+                            <div className="info-item" style={{ gridColumn: '1 / -1' }}>
                                 <span className="info-label">Email:</span>
-                                <span className="info-value">{prestamo.usuario?.Email}</span>
+                                <span className="info-value" style={{ wordBreak: 'break-all' }}>{usuario.Correo || usuario.Email || 'N/A'}</span>
                             </div>
                             <div className="info-item">
-                                <span className="info-label">Rol:</span>
-                                <span className="info-value">{prestamo.usuario?.rol?.Rol}</span>
+                                <span className="info-label">Tipo de Usuario:</span>
+                                <span className="info-value">{usuario.tipoUsuario?.Descripcion || usuario.tipoUsuario?.Tipo_Usuario || 'N/A'}</span>
                             </div>
                             <div className="info-item">
                                 <span className="info-label">Carrera:</span>
-                                <span className="info-value">{prestamo.usuario?.carrera?.Carrera || 'N/A'}</span>
+                                <span className="info-value">{usuario.carrera?.Nombre_Carrera || usuario.carrera?.Carrera || 'N/A'}</span>
                             </div>
+                            {usuario.cargo && (
+                                <div className="info-item">
+                                    <span className="info-label">Cargo:</span>
+                                    <span className="info-value">{usuario.cargo.Nombre_Cargo || usuario.cargo.Cargo}</span>
+                                </div>
+                            )}
                         </div>
                     </div>
 
@@ -105,12 +89,65 @@ const PrestamoDetalleModal = ({ show, onClose, prestamo }) => {
                             </div>
                             <div className="info-item">
                                 <span className="info-label">Categoría:</span>
-                                <span className="info-value">{prestamo.categoria?.Categoria}</span>
+                                <span className="info-value">{prestamo.equipo?.categoria?.Descripcion || 'N/A'}</span>
                             </div>
-                            {prestamo.Retencion_documento && (
-                                <div className="info-item">
-                                    <span className="info-label">Documento Retenido:</span>
-                                    <span className="info-value">{prestamo.Retencion_documento}</span>
+                            <div className="info-item">
+                                <span className="info-label">Marca:</span>
+                                <span className="info-value">{prestamo.equipo?.marca?.Descripcion || 'N/A'}</span>
+                            </div>
+                            <div className="info-item">
+                                <span className="info-label">Modelo:</span>
+                                <span className="info-value">{prestamo.equipo?.Modelo || 'N/A'}</span>
+                            </div>
+                            <div className="info-item">
+                                <span className="info-label">Número de Serie:</span>
+                                <span className="info-value">{prestamo.equipo?.Numero_Serie || 'N/A'}</span>
+                            </div>
+                            <div className="info-item">
+                                <span className="info-label">Estado del Equipo:</span>
+                                <span className="info-value">{prestamo.equipo?.estado?.Descripcion || 'N/A'}</span>
+                            </div>
+                        </div>
+                        {prestamo.equipo?.especificaciones && prestamo.equipo.especificaciones.length > 0 && (
+                            <div className="especificaciones-list" style={{ marginTop: '1rem' }}>
+                                <h4 style={{ fontSize: '0.9rem', color: '#666', marginBottom: '0.5rem' }}>Especificaciones:</h4>
+                                <ul style={{ listStyle: 'none', padding: 0 }}>
+                                    {prestamo.equipo.especificaciones.map((spec, idx) => (
+                                        <li key={idx} style={{ padding: '0.3rem 0', fontSize: '0.9rem' }}>
+                                            <strong>{spec.Tipo_Especificacion_HW}:</strong> {spec.Descripcion}
+                                        </li>
+                                    ))}
+                                </ul>
+                            </div>
+                        )}
+                        {prestamo.equipo?.Comentarios && (
+                            <div className="info-item" style={{ gridColumn: '1 / -1', marginTop: '0.5rem' }}>
+                                <span className="info-label">Comentarios:</span>
+                                <span className="info-value">{prestamo.equipo.Comentarios}</span>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Información de Solicitud */}
+                    <div className="info-section">
+                        <h3>📋 Información de la Solicitud</h3>
+                        <div className="info-grid">
+                            <div className="info-item">
+                                <span className="info-label">Fecha de Solicitud:</span>
+                                <span className="info-value">{formatFechaHora(prestamo.Fecha_Sol, prestamo.Hora_Sol)}</span>
+                            </div>
+                            <div className="info-item">
+                                <span className="info-label">Fecha Inicio Solicitada:</span>
+                                <span className="info-value">{formatFecha(prestamo.Fecha_inicio_sol)}</span>
+                            </div>
+                            <div className="info-item">
+                                <span className="info-label">Fecha Término Solicitada:</span>
+                                <span className="info-value">{formatFecha(prestamo.Fecha_termino_sol)}</span>
+                            </div>
+                            {prestamo.Motivo_Sol && (
+                                <div className="info-item" style={{ gridColumn: '1 / -1' }}>
+                                    <span className="info-label">Motivo de la Solicitud:</span>
+                                    <span className="info-value">{prestamo.Motivo_Sol}</span>
                                 </div>
                             )}
                         </div>
@@ -118,72 +155,113 @@ const PrestamoDetalleModal = ({ show, onClose, prestamo }) => {
 
                     {/* Timeline del Préstamo */}
                     <div className="info-section">
-                        <h3>📊 Historial del Préstamo</h3>
-                        <div className="timeline">
-                            {ESTADOS_ORDEN.map((estado, index) => {
-                                const status = getEstadoStatus(estado.nombre);
-                                if (status === 'no-aplica') return null;
-
-                                return (
-                                    <div key={estado.nombre} className={`timeline-item ${status}`}>
-                                        <div className="timeline-marker" style={{ 
-                                            backgroundColor: status === 'completado' ? estado.color : '#e0e0e0',
-                                            borderColor: estado.color
-                                        }}>
-                                            <span className="timeline-icon">{estado.icono}</span>
-                                        </div>
-                                        <div className="timeline-content">
-                                            <h4>{estado.nombre}</h4>
-                                            {estado.nombre === 'Pendiente' && prestamo.Fecha_inicio_prestamo && (
-                                                <p className="timeline-date">
-                                                    {formatFecha(prestamo.Fecha_inicio_prestamo)}
-                                                    {formatHora(prestamo.Hora_inicio_prestamo)}
-                                                </p>
-                                            )}
-                                            {estado.nombre === 'Aprobado' && status === 'completado' && (
-                                                <p className="timeline-date">
-                                                    Fecha término programada: {formatFecha(prestamo.Fecha_ter_prestamo)}
-                                                    {formatHora(prestamo.Hora_fin_prestamo)}
-                                                </p>
-                                            )}
-                                            {estado.nombre === 'Rechazado' && status === 'completado' && (
-                                                <div>
-                                                    <p className="timeline-motivo">
-                                                        <strong>Motivo:</strong> {prestamo.Motivo_Rechazo || 'No especificado'}
-                                                    </p>
-                                                </div>
-                                            )}
-                                            {estado.nombre === 'Devuelto' && prestamo.Fecha_devolucion && (
-                                                <p className="timeline-date">
-                                                    {formatFecha(prestamo.Fecha_devolucion)}
-                                                    {formatHora(prestamo.Hora_devolucion)}
-                                                </p>
-                                            )}
-                                        </div>
-                                        {index < ESTADOS_ORDEN.length - 1 && status !== 'no-aplica' && (
-                                            <div className={`timeline-connector ${status === 'completado' ? 'completado' : ''}`}></div>
-                                        )}
+                        <h3>📊 Seguimiento de Estados</h3>
+                        <div className="timeline-tracking">
+                            {/* Solicitud Creada */}
+                            <div className="tracking-item completado">
+                                <div className="tracking-marker">
+                                    <div className="tracking-dot">📝</div>
+                                    <div className="tracking-line"></div>
+                                </div>
+                                <div className="tracking-content">
+                                    <div className="tracking-header">
+                                        <h4>Solicitud Creada</h4>
+                                        <span className="tracking-date">{formatFechaHora(prestamo.Fecha_Sol, prestamo.Hora_Sol)}</span>
                                     </div>
-                                );
-                            })}
+                                    <p className="tracking-description">La solicitud de préstamo ha sido registrada en el sistema.</p>
+                                </div>
+                            </div>
+
+                            {/* Estados del prestamo */}
+                            {prestamo.prestamo?.tieneEstados && prestamo.prestamo.tieneEstados.length > 0 ? (
+                                prestamo.prestamo.tieneEstados
+                                    .sort((a, b) => new Date(a.Fecha_Estado) - new Date(b.Fecha_Estado))
+                                    .map((estado, index) => {
+                                        const iconos = {
+                                            1: '⏳',
+                                            2: '✅', 
+                                            3: '📦',
+                                            4: '✅',
+                                            5: '❌'
+                                        };
+                                        const colores = {
+                                            1: '#ff9800',
+                                            2: '#4caf50',
+                                            3: '#2196f3',
+                                            4: '#9c27b0',
+                                            5: '#f44336'
+                                        };
+                                        const nombres = {
+                                            1: 'Pendiente',
+                                            2: 'Aprobado',
+                                            3: 'Entregado',
+                                            4: 'Devuelto',
+                                            5: 'Rechazado'
+                                        };
+                                        return (
+                                            <div key={index} className="tracking-item completado">
+                                                <div className="tracking-marker">
+                                                    <div className="tracking-dot" style={{ backgroundColor: colores[estado.Cod_Estado] }}>
+                                                        {iconos[estado.Cod_Estado]}
+                                                    </div>
+                                                    {index < prestamo.prestamo.tieneEstados.length - 1 && (
+                                                        <div className="tracking-line" style={{ backgroundColor: colores[estado.Cod_Estado] }}></div>
+                                                    )}
+                                                </div>
+                                                <div className="tracking-content">
+                                                    <div className="tracking-header">
+                                                        <h4>{nombres[estado.Cod_Estado] || estado.estadoPrestamo?.Estado_Prestamo || estado.estadoPrestamo?.Descripcion || 'Estado'}</h4>
+                                                        <span className="tracking-date">{formatFechaHora(estado.Fecha_Estado, estado.Hora_Estado)}</span>
+                                                    </div>
+                                                    {estado.Obs_Estado && (
+                                                        <p className="tracking-description">{estado.Obs_Estado}</p>
+                                                    )}
+                                                    {/* Información adicional según el estado */}
+                                                    {estado.Cod_Estado === 2 && prestamo.prestamo?.autorizacion && (
+                                                        <div className="tracking-extra">
+                                                            <p><strong>Autorizado por:</strong> {prestamo.prestamo.autorizacion.usuario?.Nombre_Completo || `${prestamo.prestamo.autorizacion.usuario?.Nombre || ''} ${prestamo.prestamo.autorizacion.usuario?.Apellido || ''}`.trim()}</p>
+                                                            {prestamo.prestamo.autorizacion.Obs_Aut && (
+                                                                <p><strong>Observaciones:</strong> {prestamo.prestamo.autorizacion.Obs_Aut}</p>
+                                                            )}
+                                                        </div>
+                                                    )}
+                                                    {estado.Cod_Estado === 5 && prestamo.prestamo?.autorizacion && (
+                                                        <div className="tracking-extra">
+                                                            <p><strong>Rechazado por:</strong> {prestamo.prestamo.autorizacion.usuario?.Nombre_Completo || `${prestamo.prestamo.autorizacion.usuario?.Nombre || ''} ${prestamo.prestamo.autorizacion.usuario?.Apellido || ''}`.trim()}</p>
+                                                            {prestamo.prestamo.autorizacion.Obs_Aut && (
+                                                                <p><strong>Motivo del rechazo:</strong> {prestamo.prestamo.autorizacion.Obs_Aut}</p>
+                                                            )}
+                                                        </div>
+                                                    )}
+                                                    {estado.Cod_Estado === 4 && prestamo.prestamo?.devolucion && (
+                                                        <div className="tracking-extra">
+                                                            <p><strong>Recibido por:</strong> {prestamo.prestamo.devolucion.usuario?.Nombre_Completo || `${prestamo.prestamo.devolucion.usuario?.Nombre || ''} ${prestamo.prestamo.devolucion.usuario?.Apellido || ''}`.trim()}</p>
+                                                            <p><strong>Estado del equipo:</strong> {prestamo.prestamo.devolucion.Estado_Equipo_Devolucion}</p>
+                                                            {prestamo.prestamo.devolucion.Obs_Dev && (
+                                                                <p><strong>Observaciones:</strong> {prestamo.prestamo.devolucion.Obs_Dev}</p>
+                                                            )}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        );
+                                    })
+                            ) : (
+                                <div className="tracking-item pendiente">
+                                    <div className="tracking-marker">
+                                        <div className="tracking-dot" style={{ backgroundColor: '#ff9800' }}>⏳</div>
+                                    </div>
+                                    <div className="tracking-content">
+                                        <div className="tracking-header">
+                                            <h4>Pendiente de Aprobación</h4>
+                                        </div>
+                                        <p className="tracking-description">La solicitud está esperando ser revisada y aprobada por un administrador.</p>
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     </div>
 
-                    {/* Observaciones */}
-                    {prestamo.Observaciones && (
-                        <div className="info-section">
-                            <h3>📝 Observaciones</h3>
-                            <p className="observaciones-text">{prestamo.Observaciones}</p>
-                        </div>
-                    )}
-
-                    {/* Condiciones del Préstamo */}
-                    {prestamo.Condiciones_Prestamo && (
-                        <div className="info-section">
-                            <h3>📜 Condiciones del Préstamo</h3>
-                            <p className="condiciones-text">{prestamo.Condiciones_Prestamo}</p>
-                        </div>
-                    )}
                 </div>
 
                 <div className="modal-actions">

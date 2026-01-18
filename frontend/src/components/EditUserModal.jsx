@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { updateUser } from '@services/user.service.js';
 import { getCarreras } from '@services/carrera.service.js';
+import { getCargos } from '@services/cargo.service.js';
 import { showErrorAlert, showSuccessAlert } from '@helpers/sweetAlert.js';
 import '@styles/modal.css';
 
@@ -11,31 +12,64 @@ const EditUserModal = ({ user, onClose, onSuccess }) => {
         rut: user.Rut || '',
         codTipoUsuario: user.Cod_TipoUsuario || user.tipoUsuario?.Cod_TipoUsuario || '',
         idCarrera: user.ID_Carrera || user.carrera?.ID_Carrera || '',
+        idCargo: user.ID_Cargo || user.cargo?.ID_Cargo || '',
+        descripcionCargo: user.poseesCargos?.[0]?.Descripcion_Cargo || '',
         vigente: user.Vigente
     });
     const [carreras, setCarreras] = useState([]);
+    const [cargos, setCargos] = useState([]);
     const [loading, setLoading] = useState(false);
 
     useEffect(() => {
-        fetchCarreras();
+        fetchData();
     }, []);
 
-    const fetchCarreras = async () => {
+    const fetchData = async () => {
         try {
-            const data = await getCarreras();
-            setCarreras(Array.isArray(data) ? data : []);
+            const [carrerasData, cargosData] = await Promise.all([
+                getCarreras(),
+                getCargos()
+            ]);
+            
+            const carrerasArray = carrerasData?.data ? carrerasData.data : 
+                                 Array.isArray(carrerasData) ? carrerasData : [];
+            const cargosArray = cargosData?.data ? cargosData.data : 
+                               Array.isArray(cargosData) ? cargosData : [];
+            
+            setCarreras(carrerasArray);
+            setCargos(cargosArray);
         } catch (error) {
-            console.error('Error al cargar carreras:', error);
+            console.error('Error al cargar datos:', error);
             setCarreras([]);
+            setCargos([]);
         }
     };
 
     const handleChange = (e) => {
         const { name, value, type, checked } = e.target;
-        setFormData({
-            ...formData,
-            [name]: type === 'checkbox' ? checked : value
-        });
+        
+        if (name === 'codTipoUsuario') {
+            // Limpiar campos condicionales al cambiar tipo de usuario
+            setFormData({
+                ...formData,
+                [name]: type === 'checkbox' ? checked : value,
+                idCarrera: '',
+                idCargo: '',
+                descripcionCargo: ''
+            });
+        } else if (name === 'idCargo' && value !== '2') {
+            // Limpiar descripción si cambia a un cargo diferente de "Otro"
+            setFormData({
+                ...formData,
+                [name]: value,
+                descripcionCargo: ''
+            });
+        } else {
+            setFormData({
+                ...formData,
+                [name]: type === 'checkbox' ? checked : value
+            });
+        }
     };
 
     const handleSubmit = async (e) => {
@@ -48,7 +82,9 @@ const EditUserModal = ({ user, onClose, onSuccess }) => {
                 email: formData.correo,
                 vigente: formData.vigente,
                 codTipoUsuario: parseInt(formData.codTipoUsuario),
-                idCarrera: formData.idCarrera && formData.idCarrera !== '' ? parseInt(formData.idCarrera) : null
+                idCarrera: formData.idCarrera && formData.idCarrera !== '' ? parseInt(formData.idCarrera) : null,
+                idCargo: formData.idCargo && formData.idCargo !== '' ? parseInt(formData.idCargo) : null,
+                descripcionCargo: formData.descripcionCargo || null
             };
 
             const response = await updateUser(userData, user.Rut);
@@ -66,6 +102,11 @@ const EditUserModal = ({ user, onClose, onSuccess }) => {
             setLoading(false);
         }
     };
+
+    // Determinar qué campos mostrar
+    const esAlumno = formData.codTipoUsuario === 2 || formData.codTipoUsuario === '2';
+    const esProfesor = formData.codTipoUsuario === 3 || formData.codTipoUsuario === '3';
+    const esCargoOtro = formData.idCargo === 2 || formData.idCargo === '2';
 
     return (
         <div className="modal-overlay" onClick={onClose}>
@@ -137,26 +178,65 @@ const EditUserModal = ({ user, onClose, onSuccess }) => {
                             <option value="1">Administrador</option>
                             <option value="2">Alumno</option>
                             <option value="3">Profesor</option>
-                            <option value="4">Director de Escuela</option>
                         </select>
                     </div>
 
-                    <div className="form-group">
-                        <label htmlFor="idCarrera">Carrera</label>
-                        <select
-                            id="idCarrera"
-                            name="idCarrera"
-                            value={formData.idCarrera}
-                            onChange={handleChange}
-                        >
-                            <option value="">Sin carrera</option>
-                            {carreras.map(carrera => (
-                                <option key={carrera.ID_Carrera} value={carrera.ID_Carrera}>
-                                    {carrera.Nombre_Carrera}
-                                </option>
-                            ))}
-                        </select>
-                    </div>
+                    {esAlumno && (
+                        <div className="form-group">
+                            <label htmlFor="idCarrera">Carrera *</label>
+                            <select
+                                id="idCarrera"
+                                name="idCarrera"
+                                value={formData.idCarrera}
+                                onChange={handleChange}
+                                required
+                            >
+                                <option value="">Seleccione una carrera</option>
+                                {carreras.map(carrera => (
+                                    <option key={carrera.ID_Carrera} value={carrera.ID_Carrera}>
+                                        {carrera.Nombre_Carrera}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+                    )}
+
+                    {esProfesor && (
+                        <>
+                            <div className="form-group">
+                                <label htmlFor="idCargo">Cargo *</label>
+                                <select
+                                    id="idCargo"
+                                    name="idCargo"
+                                    value={formData.idCargo}
+                                    onChange={handleChange}
+                                    required
+                                >
+                                    <option value="">Seleccione un cargo</option>
+                                    {cargos.map(cargo => (
+                                        <option key={cargo.ID_Cargo} value={cargo.ID_Cargo}>
+                                            {cargo.Desc_Cargo}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            {esCargoOtro && (
+                                <div className="form-group">
+                                    <label htmlFor="descripcionCargo">Descripción del Cargo</label>
+                                    <input
+                                        type="text"
+                                        id="descripcionCargo"
+                                        name="descripcionCargo"
+                                        value={formData.descripcionCargo}
+                                        onChange={handleChange}
+                                        maxLength={255}
+                                        placeholder="Ej: Jefe de Carrera, Coordinador de Laboratorio, etc."
+                                    />
+                                </div>
+                            )}
+                        </>
+                    )}
 
                     <div className="modal-actions">
                         <button type="button" className="btn-cancel" onClick={onClose}>

@@ -42,7 +42,7 @@ export async function getPrestamosPorEstado(estadoId) {
  */
 export async function getMisPrestamos() {
   try {
-    const { data } = await axios.get('/prestamo/usuario/mis-prestamos');
+    const { data } = await axios.get('/solicitud/mis-solicitudes');
     return data;
   } catch (error) {
     return error.response?.data || { status: 'Error', message: 'Error al obtener mis préstamos' };

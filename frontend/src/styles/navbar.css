@@ -93,6 +93,36 @@
 
 .sidebar-nav .text {
 	font-size: 0.95em;
+	display: flex;
+	align-items: center;
+	gap: 10px;
+}
+
+.badge-count {
+	background-color: #ff4757;
+	color: white;
+	font-size: 0.75em;
+	font-weight: 700;
+	padding: 2px 8px;
+	border-radius: 12px;
+	min-width: 20px;
+	text-align: center;
+	display: inline-block;
+	animation: pulse-badge 2s ease-in-out infinite;
+}
+
+.sidebar-nav a.active .badge-count {
+	background-color: #ff4757;
+	color: white;
+}
+
+@keyframes pulse-badge {
+	0%, 100% {
+		transform: scale(1);
+	}
+	50% {
+		transform: scale(1.1);
+	}
 }
 
 .sidebar-nav .logout {

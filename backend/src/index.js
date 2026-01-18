@@ -15,6 +15,7 @@ import {
   createCategorias,
   createEquipos,
   createEstados,
+  createEstadosPrestamo,
   createMarcas,
   createPenalizaciones,
   createTiposUsuario,
@@ -53,6 +54,9 @@ async function setupServer() {
 
     app.use(morgan("dev"));
 
+    // Servir archivos estáticos (logos para emails)
+    app.use('/public', express.static('public'));
+
     app.use(
       session({
         secret: cookieKey,
@@ -90,6 +94,7 @@ async function setupAPI() {
     await createMarcas();
     await createCategorias();
     await createEstados();
+    await createEstadosPrestamo();
     await createCargos();
     await createUsers();
     await createEquipos();

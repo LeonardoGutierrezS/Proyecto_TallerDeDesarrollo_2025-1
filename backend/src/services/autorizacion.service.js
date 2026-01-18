@@ -6,6 +6,7 @@ import User from "../entity/user.entity.js";
 import Equipos from "../entity/equipos.entity.js";
 import TieneEstado from "../entity/tiene_estado.entity.js";
 import { AppDataSource } from "../config/configDb.js";
+import { enviarEmailSolicitudAprobada, enviarEmailSolicitudRechazada } from "./email.service.js";
 
 /**
  * Autorizar (aprobar) una solicitud creando un préstamo
@@ -67,13 +68,13 @@ export async function aprobarSolicitudService(body) {
 
     await autorizacionRepository.save(newAutorizacion);
 
-    // Crear el primer estado del préstamo (Aprobado)
+    // Crear el primer estado del préstamo (Listo para Entregar)
     const newEstado = tieneEstadoRepository.create({
       ID_Prestamo: prestamoSaved.ID_Prestamo,
-      Cod_Estado: 2, // Estado "Aprobado"
+      Cod_Estado: 2, // Estado "Listo para Entregar" - esperando que Admin entregue
       Fecha_Estado: new Date(),
       Hora_Estado: body.Hora_Aut,
-      Obs_Estado: "Solicitud aprobada",
+      Obs_Estado: "Solicitud aprobada por Director - Lista para entregar",
     });
 
     await tieneEstadoRepository.save(newEstado);
@@ -97,14 +98,19 @@ export async function aprobarSolicitudService(body) {
         "equipos.marca",
         "equipos.categoria",
         "equipos.estado",
-        "solicitud",
-        "solicitud.usuario",
+        "solicitudes",
+        "solicitudes.usuario",
         "autorizacion",
         "autorizacion.usuario",
         "tieneEstados",
-        "tieneEstados.estado",
+        "tieneEstados.estadoPrestamo",
       ],
     });
+
+    // Enviar notificación por correo
+    if (prestamoWithRelations && prestamoWithRelations.solicitudes && prestamoWithRelations.solicitudes.length > 0) {
+      await enviarEmailSolicitudAprobada(prestamoWithRelations.solicitudes[0], prestamoWithRelations);
+    }
 
     return [prestamoWithRelations, null];
   } catch (error) {
@@ -170,7 +176,7 @@ export async function rechazarSolicitudService(body) {
     // Crear el estado de rechazo
     const newEstado = tieneEstadoRepository.create({
       ID_Prestamo: prestamoSaved.ID_Prestamo,
-      Cod_Estado: 3, // Estado "Rechazado"
+      Cod_Estado: 5, // Estado "Rechazado"
       Fecha_Estado: new Date(),
       Hora_Estado: body.Hora_Aut,
       Obs_Estado: body.Motivo_Rechazo || "Solicitud rechazada",
@@ -184,18 +190,30 @@ export async function rechazarSolicitudService(body) {
       { ID_Prestamo: prestamoSaved.ID_Prestamo },
     );
 
+    // Liberar el equipo ya que la solicitud fue rechazada
+    const equipoRepository = AppDataSource.getRepository(Equipos);
+    await equipoRepository.update(
+      { ID_Num_Inv: body.ID_Num_Inv },
+      { Disponible: true }
+    );
+
     const prestamoWithRelations = await prestamoRepository.findOne({
       where: { ID_Prestamo: prestamoSaved.ID_Prestamo },
       relations: [
         "equipos",
-        "solicitud",
-        "solicitud.usuario",
+        "solicitudes",
+        "solicitudes.usuario",
         "autorizacion",
         "autorizacion.usuario",
         "tieneEstados",
-        "tieneEstados.estado",
+        "tieneEstados.estadoPrestamo",
       ],
     });
+
+    // Enviar notificación por correo
+    if (prestamoWithRelations && prestamoWithRelations.solicitudes && prestamoWithRelations.solicitudes.length > 0) {
+      await enviarEmailSolicitudRechazada(prestamoWithRelations.solicitudes[0], body.Obs_Aut);
+    }
 
     return [prestamoWithRelations, null];
   } catch (error) {

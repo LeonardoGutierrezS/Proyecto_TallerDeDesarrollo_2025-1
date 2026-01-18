@@ -11,12 +11,16 @@ export async function getUserService(query) {
 
     const userFound = await userRepository.findOne({
       where: [{ Rut: rut }, { Correo: email }],
-      relations: ["tipoUsuario", "carrera", "cargo"],
+      relations: ["tipoUsuario", "carrera", "cargo", "poseesCargos", "poseesCargos.cargo"],
     });
 
     if (!userFound) return [null, "Usuario no encontrado"];
 
     const { Contrasenia, ...userData } = userFound;
+    
+    // Filtrar solo el cargo activo
+    const cargoActivo = userData.poseesCargos?.find(pc => pc.Fecha_Fin === null);
+    userData.poseesCargos = cargoActivo ? [cargoActivo] : [];
 
     return [userData, null];
   } catch (error) {
@@ -30,12 +34,19 @@ export async function getUsersService() {
     const userRepository = AppDataSource.getRepository(User);
 
     const users = await userRepository.find({
-      relations: ["tipoUsuario", "carrera", "cargo"],
+      relations: ["tipoUsuario", "carrera", "cargo", "poseesCargos", "poseesCargos.cargo"],
     });
 
     if (!users || users.length === 0) return [null, "No hay usuarios"];
 
-    const usersData = users.map(({ Contrasenia, ...user }) => user);
+    // Filtrar solo los cargos activos (Fecha_Fin null) en poseesCargos
+    const usersData = users.map(({ Contrasenia, ...user }) => {
+      const cargoActivo = user.poseesCargos?.find(pc => pc.Fecha_Fin === null);
+      return {
+        ...user,
+        poseesCargos: cargoActivo ? [cargoActivo] : []
+      };
+    });
 
     return [usersData, null];
   } catch (error) {
@@ -52,6 +63,7 @@ export async function updateUserService(query, body) {
     const TipoUsuarioSchema = AppDataSource.getRepository("TipoUsuario");
     const CargoSchema = AppDataSource.getRepository("Cargo");
     const CarreraSchema = AppDataSource.getRepository("Carrera");
+    const PoseeCargoSchema = AppDataSource.getRepository("PoseeCargo");
 
     const userFound = await userRepository.findOne({
       where: [{ Rut: rut }, { Correo: email }],
@@ -78,7 +90,9 @@ export async function updateUserService(query, body) {
     }
 
     // Actualizar campos básicos
-    if (body.nombreCompleto) userFound.Nombre_Completo = body.nombreCompleto;
+    if (body.nombreCompleto) {
+      userFound.Nombre_Completo = body.nombreCompleto.trim();
+    }
     if (body.rut && body.rut !== userFound.Rut) {
       // No se puede cambiar el RUT ya que es PK
       return [null, "No se puede cambiar el RUT del usuario"];
@@ -88,39 +102,97 @@ export async function updateUserService(query, body) {
 
     // Actualizar tipo de usuario si se proporciona
     if (body.codTipoUsuario !== undefined) {
-      console.log('Actualizando tipo de usuario. Valor recibido:', body.codTipoUsuario);
-      console.log('Tipo de usuario actual:', userFound.Cod_TipoUsuario);
-      
       const tipoUsuario = await TipoUsuarioSchema.findOne({ where: { Cod_TipoUsuario: body.codTipoUsuario } });
       if (!tipoUsuario) return [null, "Tipo de usuario no encontrado"];
       userFound.Cod_TipoUsuario = tipoUsuario.Cod_TipoUsuario;
-      console.log('Tipo de usuario establecido a:', tipoUsuario.Cod_TipoUsuario);
+    }
+
+    // Validar requisitos según tipo de usuario
+    const tipoUsuarioFinal = body.codTipoUsuario || userFound.Cod_TipoUsuario;
+    
+    // Alumno (2) requiere carrera obligatoriamente
+    if (tipoUsuarioFinal === 2) {
+      const carreraFinal = body.idCarrera !== undefined ? body.idCarrera : userFound.ID_Carrera;
+      if (!carreraFinal || carreraFinal === null || carreraFinal === "") {
+        return [null, "Los alumnos deben tener una carrera asignada"];
+      }
+    }
+    
+    // Profesor (3) requiere cargo obligatoriamente
+    if (tipoUsuarioFinal === 3) {
+      const cargoFinal = body.idCargo !== undefined ? body.idCargo : userFound.ID_Cargo;
+      if (!cargoFinal || cargoFinal === null) {
+        return [null, "Los profesores deben tener un cargo asignado"];
+      }
     }
 
     // Actualizar cargo si se proporciona
     if (body.idCargo !== undefined) {
+      const cargoAnterior = userFound.ID_Cargo;
+      
       if (body.idCargo === null) {
+        // Solo permitir nulo si no es profesor
+        if (tipoUsuarioFinal === 3) {
+          return [null, "No se puede quitar el cargo a un profesor"];
+        }
+        
+        // Cerrar el cargo actual si existe
+        if (cargoAnterior) {
+          await PoseeCargoSchema.update(
+            { Rut: userFound.Rut, ID_Cargo: cargoAnterior, Fecha_Fin: null },
+            { Fecha_Fin: new Date() }
+          );
+        }
+        
         userFound.ID_Cargo = null;
       } else {
         const cargo = await CargoSchema.findOne({ where: { ID_Cargo: body.idCargo } });
         if (!cargo) return [null, "Cargo no encontrado"];
+        
+        // Si cambió el cargo, cerrar el anterior y crear uno nuevo
+        if (cargoAnterior !== body.idCargo) {
+          // Cerrar cargo anterior si existe
+          if (cargoAnterior) {
+            await PoseeCargoSchema.update(
+              { Rut: userFound.Rut, ID_Cargo: cargoAnterior, Fecha_Fin: null },
+              { Fecha_Fin: new Date() }
+            );
+          }
+          
+          // Crear nuevo registro en posee_cargo
+          const nuevoPoseeCargo = PoseeCargoSchema.create({
+            Rut: userFound.Rut,
+            ID_Cargo: body.idCargo,
+            Fecha_Inicio: new Date(),
+            Fecha_Fin: null,
+            Descripcion_Cargo: body.descripcionCargo || null
+          });
+          
+          await PoseeCargoSchema.save(nuevoPoseeCargo);
+        } else if (body.descripcionCargo !== undefined) {
+          // Si no cambió el cargo pero sí la descripción, actualizar
+          await PoseeCargoSchema.update(
+            { Rut: userFound.Rut, ID_Cargo: body.idCargo, Fecha_Fin: null },
+            { Descripcion_Cargo: body.descripcionCargo || null }
+          );
+        }
+        
         userFound.ID_Cargo = cargo.ID_Cargo;
       }
     }
 
     // Actualizar carrera si se proporciona
     if (body.idCarrera !== undefined) {
-      console.log('Actualizando carrera. Valor recibido:', body.idCarrera);
-      console.log('Carrera actual del usuario:', userFound.ID_Carrera);
-      
-      if (body.idCarrera === null) {
+      if (body.idCarrera === null || body.idCarrera === "") {
+        // Solo permitir nulo si no es alumno
+        if (tipoUsuarioFinal === 2) {
+          return [null, "No se puede quitar la carrera a un alumno"];
+        }
         userFound.ID_Carrera = null;
-        console.log('Carrera establecida a null');
       } else {
         const carrera = await CarreraSchema.findOne({ where: { ID_Carrera: body.idCarrera } });
         if (!carrera) return [null, "Carrera no encontrada"];
         userFound.ID_Carrera = carrera.ID_Carrera;
-        console.log('Carrera establecida a:', carrera.ID_Carrera);
       }
     }
 
@@ -130,51 +202,21 @@ export async function updateUserService(query, body) {
     }
 
     // Guardar los cambios
-    console.log('Antes de guardar - userFound.ID_Carrera:', userFound.ID_Carrera);
-    console.log('Antes de guardar - userFound.Cod_TipoUsuario:', userFound.Cod_TipoUsuario);
     const savedUser = await userRepository.save(userFound);
-    console.log('Usuario guardado. ID_Carrera:', savedUser.ID_Carrera);
-    console.log('Usuario guardado. Cod_TipoUsuario:', savedUser.Cod_TipoUsuario);
-
-    // Forzar actualización con query directa si es necesario
-    if (body.idCarrera === null || body.codTipoUsuario !== undefined) {
-      const updates = [];
-      const params = [];
-      let paramIndex = 1;
-
-      if (body.idCarrera === null) {
-        updates.push(`"ID_Carrera" = NULL`);
-        console.log('Añadido ID_Carrera = NULL al update');
-      }
-
-      if (body.codTipoUsuario !== undefined) {
-        updates.push(`"Cod_TipoUsuario" = $${paramIndex}`);
-        params.push(body.codTipoUsuario);
-        paramIndex++;
-        console.log('Añadido Cod_TipoUsuario =', body.codTipoUsuario, 'al update');
-      }
-
-      if (updates.length > 0) {
-        params.push(savedUser.Rut);
-        const query = `UPDATE usuario SET ${updates.join(', ')} WHERE "Rut" = $${paramIndex}`;
-        console.log('Ejecutando query:', query, 'con params:', params);
-        await AppDataSource.query(query, params);
-        console.log('Forzado UPDATE con query directa');
-      }
-    }
 
     // Recargar el usuario con las relaciones
     const userData = await userRepository.findOne({
       where: { Rut: savedUser.Rut },
-      relations: ["tipoUsuario", "carrera", "cargo"],
+      relations: ["tipoUsuario", "carrera", "cargo", "poseesCargos", "poseesCargos.cargo"],
     });
-
-    console.log('Usuario recargado. ID_Carrera:', userData.ID_Carrera);
-    console.log('Usuario recargado. carrera:', userData.carrera);
 
     if (!userData) {
       return [null, "Usuario no encontrado después de actualizar"];
     }
+
+    // Filtrar solo el cargo activo
+    const cargoActivo = userData.poseesCargos?.find(pc => pc.Fecha_Fin === null);
+    userData.poseesCargos = cargoActivo ? [cargoActivo] : [];
 
     const { Contrasenia, ...userUpdated } = userData;
 
@@ -360,18 +402,18 @@ export async function createUserByAdminService(data) {
 
     // Generar contraseña provisional automática (8 caracteres: letras y números)
     const generatePassword = () => {
-      const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789';
-      let password = '';
+      const chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789";
+      let password = "";
       // Asegurar al menos una mayúscula, una minúscula y un número
-      password += 'ABCDEFGHJKLMNPQRSTUVWXYZ'[Math.floor(Math.random() * 24)];
-      password += 'abcdefghijkmnpqrstuvwxyz'[Math.floor(Math.random() * 23)];
-      password += '23456789'[Math.floor(Math.random() * 8)];
+      password += "ABCDEFGHJKLMNPQRSTUVWXYZ"[Math.floor(Math.random() * 24)];
+      password += "abcdefghijkmnpqrstuvwxyz"[Math.floor(Math.random() * 23)];
+      password += "23456789"[Math.floor(Math.random() * 8)];
       // Completar con caracteres aleatorios
       for (let i = 0; i < 5; i++) {
         password += chars[Math.floor(Math.random() * chars.length)];
       }
       // Mezclar caracteres
-      return password.split('').sort(() => Math.random() - 0.5).join('');
+      return password.split("").sort(() => Math.random() - 0.5).join("");
     };
 
     const provisionalPassword = generatePassword();

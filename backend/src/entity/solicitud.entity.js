@@ -10,14 +10,24 @@ const SolicitudSchema = new EntitySchema({
   name: "Solicitud",
   tableName: "solicitud",
   columns: {
+    ID_Solicitud: {
+      type: "int",
+      primary: true,
+      generated: true,
+    },
     Rut: {
       type: "varchar",
       length: 12,
-      primary: true,
+      nullable: false,
+    },
+    ID_Num_Inv: {
+      type: "varchar",
+      length: 50,
+      nullable: false,
     },
     ID_Prestamo: {
       type: "int",
-      primary: true,
+      nullable: true,
     },
     Fecha_Sol: {
       type: "timestamp with time zone",
@@ -32,6 +42,14 @@ const SolicitudSchema = new EntitySchema({
       type: "text",
       nullable: true,
     },
+    Fecha_inicio_sol: {
+      type: "date",
+      nullable: true,
+    },
+    Fecha_termino_sol: {
+      type: "date",
+      nullable: true,
+    },
   },
   relations: {
     usuario: {
@@ -43,19 +61,27 @@ const SolicitudSchema = new EntitySchema({
       },
       nullable: false,
     },
+    equipo: {
+      type: "many-to-one",
+      target: "Equipos",
+      joinColumn: {
+        name: "ID_Num_Inv",
+      },
+      nullable: false,
+    },
     prestamo: {
       type: "many-to-one",
       target: "Prestamo",
       joinColumn: {
         name: "ID_Prestamo",
       },
-      nullable: false,
+      nullable: true,
     },
   },
   indices: [
     {
       name: "IDX_SOLICITUD",
-      columns: ["Rut", "ID_Prestamo"],
+      columns: ["ID_Solicitud"],
       unique: true,
     },
   ],

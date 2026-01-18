@@ -18,7 +18,7 @@ export async function loginService(user) {
     console.log("Buscando usuario con email:", email);
     const userFound = await userRepository.findOne({
       where: { Correo: email },
-      relations: ["tipoUsuario", "carrera", "cargo"],
+      relations: ["tipoUsuario", "carrera", "poseesCargos", "poseesCargos.cargo"],
     });
 
     console.log("Usuario encontrado:", userFound ? "Sí" : "No");
@@ -37,12 +37,18 @@ export async function loginService(user) {
       return [null, createErrorMessage("password", "Usuario y/o contraseña incorrectos")];
     }
 
+    // Obtener cargo activo (sin fecha fin)
+    const cargoActivo = userFound.poseesCargos?.find(pc => !pc.Fecha_Fin);
+    const esDirectorEscuela = cargoActivo?.cargo?.ID_Cargo === 1;
+    const descripcionCargo = cargoActivo?.Descripcion_Cargo || cargoActivo?.cargo?.Desc_Cargo || null;
+
     const payload = {
       rut: userFound.Rut,
       nombreCompleto: userFound.Nombre_Completo,
       email: userFound.Correo,
       tipoUsuario: userFound.tipoUsuario?.Descripcion || "Alumno",
-      cargo: userFound.cargo?.Desc_Cargo || null,
+      cargo: descripcionCargo,
+      esDirectorEscuela: esDirectorEscuela,
       carrera: userFound.carrera?.Carrera || "",
       vigente: userFound.Vigente,
     };

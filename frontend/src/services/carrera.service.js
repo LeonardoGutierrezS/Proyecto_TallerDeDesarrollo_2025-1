@@ -6,10 +6,9 @@ import axios from './root.service.js';
 export async function getCarreras() {
     try {
         const response = await axios.get('/carrera');
-        // El backend retorna { status: 'Success', data: [...carreras] }
         return response.data;
     } catch (error) {
         console.error('Error al obtener carreras:', error);
-        return { status: 'Error', data: [] };
+        return { status: 'Error', data: [], message: 'Error al cargar las carreras' };
     }
 }

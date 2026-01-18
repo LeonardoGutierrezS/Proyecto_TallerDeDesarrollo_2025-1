@@ -20,6 +20,11 @@ import {
   handleErrorServer,
   handleSuccess,
 } from "../handlers/responseHandlers.js";
+import path from "path";
+import { fileURLToPath } from "url";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 export async function getUser(req, res) {
   try {
@@ -168,43 +173,154 @@ export async function approveUser(req, res) {
         <html>
         <head>
           <style>
-            body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-            .header { background-color: #003b7a; color: white; padding: 20px; text-align: center; border-radius: 5px 5px 0 0; }
-            .content { background-color: #f9f9f9; padding: 30px; border: 1px solid #ddd; }
-            .button { display: inline-block; padding: 12px 30px; background-color: #28a745; color: white; text-decoration: none; border-radius: 5px; margin: 20px 0; }
-            .footer { text-align: center; padding: 20px; font-size: 12px; color: #777; }
+            body { 
+              font-family: Arial, sans-serif; 
+              line-height: 1.6; 
+              color: #333; 
+              margin: 0; 
+              padding: 0; 
+              background-color: #f4f4f4;
+            }
+            .container { 
+              max-width: 600px; 
+              margin: 20px auto; 
+              background-color: #ffffff;
+              border-radius: 8px;
+              overflow: hidden;
+              box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            }
+            .logo-header {
+              background: linear-gradient(135deg, #003b7a 0%, #002855 100%);
+              padding: 40px 20px;
+              text-align: center;
+            }
+            .logo-container {
+              margin-bottom: 25px;
+              text-align: center;
+            }
+            .logo-container img {
+              max-height: 100px;
+              width: auto;
+              display: block;
+              margin: 0 auto;
+            }
+            .header-title {
+              color: white;
+              margin: 0;
+              font-size: 28px;
+              font-weight: bold;
+            }
+            .content { 
+              background-color: #f9f9f9; 
+              padding: 40px 30px;
+            }
+            .content p {
+              margin: 15px 0;
+              font-size: 15px;
+            }
+            .highlight {
+              color: #28a745;
+              font-weight: bold;
+            }
+            .button { 
+              display: inline-block; 
+              padding: 14px 35px; 
+              background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+              color: white; 
+              text-decoration: none; 
+              border-radius: 25px; 
+              margin: 20px 0;
+              font-weight: bold;
+              box-shadow: 0 4px 6px rgba(40, 167, 69, 0.3);
+            }
+            .button:hover {
+              transform: translateY(-2px);
+              box-shadow: 0 6px 8px rgba(40, 167, 69, 0.4);
+            }
+            .footer { 
+              background-color: #003b7a;
+              color: white;
+              text-align: center; 
+              padding: 30px 20px; 
+              font-size: 13px;
+            }
+            .footer p {
+              margin: 10px 0;
+              line-height: 1.8;
+            }
+            .footer-logo {
+              margin-top: 20px;
+            }
+            .footer-logo img {
+              max-height: 50px;
+              width: auto;
+            }
           </style>
         </head>
         <body>
           <div class="container">
-            <div class="header">
-              <h1>¡Registro Aprobado!</h1>
+            <div class="logo-header">
+              <div class="logo-container">
+                <img src="cid:sirec-logo-blanco" alt="SIREC" />
+              </div>
+              <h1 class="header-title">¡Registro Aprobado!</h1>
             </div>
             <div class="content">
               <p>Estimado/a <strong>${user.Nombre_Completo}</strong>,</p>
-              <p>Nos complace informarte que tu solicitud de registro en el Sistema de Reserva de Equipos Computacionales (SIREC) ha sido <strong>aprobada</strong>.</p>
+              <p>Nos complace informarte que tu solicitud de registro en el <strong>Sistema de Reserva
+              de Equipos Computacionales (SIREC)</strong> ha sido <span class="highlight">aprobada exitosamente</span>.</p>
               <p>Ya puedes iniciar sesión en el sistema con las credenciales que registraste.</p>
               <div style="text-align: center;">
-                <a href="${process.env.FRONTEND_URL || 'http://localhost:5173'}/auth" class="button">Iniciar Sesión</a>
+                <a href="${process.env.FRONTEND_URL || "http://localhost:5173"}/auth" class="button">Iniciar Sesión</a>
               </div>
               <p>Si tienes alguna consulta, no dudes en contactarnos.</p>
             </div>
             <div class="footer">
-              <p>Sistema de Reserva de Equipos Computacionales<br>Facultad de Ciencias Empresariales - Universidad del Bío-Bío</p>
+              <p><strong>Sistema de Reserva de Equipos Computacionales</strong><br>
+              Facultad de Ciencias Empresariales<br>
+              Universidad del Bío-Bío</p>
+              <div class="footer-logo">
+                <img src="cid:face-logo" alt="Facultad de Ciencias Empresariales" />
+              </div>
             </div>
           </div>
         </body>
         </html>
       `;
       
+      const textContent = `
+Registro Aprobado - SIREC
+
+Estimado/a ${user.Nombre_Completo},
+
+Nos complace informarte que tu solicitud de registro en el Sistema de Reserva de Equipos Computacionales (SIREC) ha sido aprobada exitosamente.
+
+Ya puedes acceder al sistema utilizando tus credenciales.
+
+Sistema de Reserva de Equipos Computacionales
+Facultad de Ciencias Empresariales - Universidad del Bío-Bío
+      `;
+
       await sendEmail(
         user.Correo,
-        'Registro Aprobado - SIREC',
-        htmlContent
+        "Registro Aprobado - SIREC",
+        textContent,
+        htmlContent,
+        [
+          {
+            filename: 'sirec-logo-blanco.png',
+            path: path.join(__dirname, '../../public/images/sirec-logo-blanco.png'),
+            cid: 'sirec-logo-blanco'
+          },
+          {
+            filename: 'face-logo.png',
+            path: path.join(__dirname, '../../public/images/face-logo.png'),
+            cid: 'face-logo'
+          }
+        ]
       );
     } catch (emailError) {
-      console.error('Error al enviar correo de aprobación:', emailError);
+      console.error("Error al enviar correo de aprobación:", emailError);
       // No fallar la aprobación si el email falla
     }
 
@@ -234,43 +350,155 @@ export async function rejectUser(req, res) {
         <html>
         <head>
           <style>
-            body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-            .header { background-color: #dc3545; color: white; padding: 20px; text-align: center; border-radius: 5px 5px 0 0; }
-            .content { background-color: #f9f9f9; padding: 30px; border: 1px solid #ddd; }
-            .motivo-box { background-color: #fff; border-left: 4px solid #dc3545; padding: 15px; margin: 20px 0; }
-            .footer { text-align: center; padding: 20px; font-size: 12px; color: #777; }
+            body { 
+              font-family: Arial, sans-serif; 
+              line-height: 1.6; 
+              color: #333; 
+              margin: 0; 
+              padding: 0; 
+              background-color: #f4f4f4;
+            }
+            .container { 
+              max-width: 600px; 
+              margin: 20px auto; 
+              background-color: #ffffff;
+              border-radius: 8px;
+              overflow: hidden;
+              box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            }
+            .logo-header {
+              background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+              padding: 40px 20px;
+              text-align: center;
+            }
+            .logo-container {
+              display: flex;
+              justify-content: center;
+              align-items: center;
+              margin-bottom: 25px;
+            }
+            .logo-container img {
+              max-height: 100px;
+              width: auto;
+              filter: brightness(0) invert(1);
+            }
+            .header-title {
+              color: white;
+              margin: 0;
+              font-size: 28px;
+              font-weight: bold;
+            }
+            .content { 
+              background-color: #f9f9f9; 
+              padding: 40px 30px;
+            }
+            .content p {
+              margin: 15px 0;
+              font-size: 15px;
+            }
+            .error-icon {
+              text-align: center;
+              font-size: 48px;
+              margin-bottom: 20px;
+              color: #dc3545;
+            }
+            .motivo-box { 
+              background-color: #fff; 
+              border-left: 4px solid #dc3545; 
+              padding: 20px; 
+              margin: 20px 0;
+              border-radius: 4px;
+              box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            }
+            .footer { 
+              background-color: #003b7a;
+              color: white;
+              text-align: center; 
+              padding: 30px 20px; 
+              font-size: 13px;
+            }
+            .footer p {
+              margin: 10px 0;
+              line-height: 1.8;
+            }
+            .footer-logo {
+              margin-top: 20px;
+            }
+            .footer-logo img {
+              max-height: 50px;
+              width: auto;
+            }
           </style>
         </head>
         <body>
           <div class="container">
-            <div class="header">
-              <h1>Registro No Aprobado</h1>
+            <div class="logo-header">
+              <div class="logo-container">
+                <img src="cid:sirec-logo-blanco" alt="SIREC" />
+              </div>
+              <h1 class="header-title">Registro No Aprobado</h1>
             </div>
             <div class="content">
+              <div class="error-icon">❌</div>
               <p>Estimado/a <strong>${user.Nombre_Completo}</strong>,</p>
-              <p>Lamentamos informarte que tu solicitud de registro en el Sistema de Reserva de Equipos Computacionales (SIREC) no ha sido aprobada.</p>
+              <p>Lamentamos informarte que tu solicitud de registro en el <strong>Sistema
+              de Reserva de Equipos Computacionales (SIREC)</strong> no ha sido aprobada.</p>
               <div class="motivo-box">
-                <strong>Motivo:</strong><br>
+                <strong>Motivo del rechazo:</strong><br><br>
                 ${motivo}
               </div>
-              <p>Si consideras que esto es un error o deseas más información, por favor contacta con el administrador del sistema.</p>
+              <p>Si consideras que esto es un error o deseas más información, 
+              por favor contacta con el administrador del sistema.</p>
             </div>
             <div class="footer">
-              <p>Sistema de Reserva de Equipos Computacionales<br>Facultad de Ciencias Empresariales - Universidad del Bío-Bío</p>
+              <p><strong>Sistema de Reserva de Equipos Computacionales</strong><br>
+              Facultad de Ciencias Empresariales<br>
+              Universidad del Bío-Bío</p>
+              <div class="footer-logo">
+                <img src="cid:face-logo" alt="Facultad de Ciencias Empresariales" />
+              </div>
             </div>
           </div>
         </body>
         </html>
       `;
       
+      const textContent = `
+Registro No Aprobado - SIREC
+
+Estimado/a ${user.Nombre_Completo},
+
+Lamentamos informarte que tu solicitud de registro en el Sistema de Reserva de Equipos Computacionales (SIREC) no ha sido aprobada.
+
+Motivo:
+${motivo}
+
+Si consideras que esto es un error o deseas más información, por favor contacta con el administrador del sistema.
+
+Sistema de Reserva de Equipos Computacionales
+Facultad de Ciencias Empresariales - Universidad del Bío-Bío
+      `;
+
       await sendEmail(
         user.Correo,
-        'Registro No Aprobado - SIREC',
-        htmlContent
+        "Registro Aprobado - SIREC",
+        textContent,
+        htmlContent,
+        [
+          {
+            filename: 'sirec-logo-blanco.png',
+            path: path.join(__dirname, '../../public/images/sirec-logo-blanco.png'),
+            cid: 'sirec-logo-blanco'
+          },
+          {
+            filename: 'face-logo.png',
+            path: path.join(__dirname, '../../public/images/face-logo.png'),
+            cid: 'face-logo'
+          }
+        ]
       );
     } catch (emailError) {
-      console.error('Error al enviar correo de rechazo:', emailError);
+      console.error("Error al enviar correo de aprobación:", emailError);
       // No fallar el rechazo si el email falla
     }
 
@@ -356,8 +584,9 @@ export async function createUserByAdmin(req, res) {
               </div>
               
               <p style="text-align: center; margin-top: 30px;">
-                <a href="${process.env.FRONTEND_URL || 'http://localhost:5173'}" 
-                   style="display: inline-block; padding: 12px 30px; background-color: #003b5c; color: white; text-decoration: none; border-radius: 5px;">
+                <a href="${process.env.FRONTEND_URL || "http://localhost:5173"}" 
+                  style="display: inline-block; padding: 12px 30px; background-color: #003b5c; 
+                  color: white; text-decoration: none; border-radius: 5px;">
                   Iniciar Sesión
                 </a>
               </p>
@@ -405,7 +634,8 @@ Universidad del Bío-Bío
     // Remover la contraseña provisional de la respuesta
     const { provisionalPassword, ...userWithoutPassword } = newUser;
 
-    handleSuccess(res, 201, "Usuario creado correctamente. Se ha enviado un correo con las credenciales.", userWithoutPassword);
+    handleSuccess(res, 201, "Usuario creado correctamente. Se ha enviado un correo con las credenciales.", 
+      userWithoutPassword);
   } catch (error) {
     handleErrorServer(res, 500, error.message);
   }

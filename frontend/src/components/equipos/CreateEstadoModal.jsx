@@ -8,7 +8,12 @@ const CreateEstadoModal = ({ show, onClose, onSuccess }) => {
 
     const onSubmit = async (data) => {
         try {
-            const response = await createEstado(data);
+            // Transformar el campo Estado a Descripcion para el backend
+            const estadoData = {
+                Descripcion: data.Estado
+            };
+            
+            const response = await createEstado(estadoData);
             
             if (response.status === 'Success') {
                 showSuccessAlert('¡Estado creado!', 'El estado ha sido creado exitosamente.');

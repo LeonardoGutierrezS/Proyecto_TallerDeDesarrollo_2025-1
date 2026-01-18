@@ -39,7 +39,22 @@ const Users = () => {
     { title: "Correo electrónico", field: "email", width: 300, responsive: 3 },
     { title: "Rut", field: "rut", width: 150, responsive: 2 },
     { title: "Tipo de Usuario", field: "tipoUsuario", width: 200, responsive: 2 },
-    { title: "Carrera", field: "carrera", width: 300, responsive: 2 },
+    { 
+      title: "Carrera/Cargo", 
+      field: "carreraOCargo", 
+      width: 300, 
+      responsive: 2,
+      formatter: function(cell) {
+        const rowData = cell.getRow().getData();
+        // Mostrar carrera para Alumnos, cargo para Profesores
+        if (rowData.codTipoUsuario === 2) {
+          return rowData.carrera || 'Sin carrera';
+        } else if (rowData.codTipoUsuario === 3) {
+          return rowData.cargo || 'Sin cargo';
+        }
+        return '-';
+      }
+    },
     { title: "Creado", field: "createdAt", width: 200, responsive: 2 }
   ];
 

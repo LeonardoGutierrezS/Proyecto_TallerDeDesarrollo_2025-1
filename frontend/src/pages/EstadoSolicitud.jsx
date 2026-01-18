@@ -2,12 +2,17 @@ import '@styles/styles.css';
 import '@styles/estado-solicitud.css';
 import { useState, useEffect } from 'react';
 import { useAuth } from '@context/AuthContext';
+import { useLocation } from 'react-router-dom';
 import { getMisPrestamos } from '@services/prestamo.service';
-import { showErrorAlert } from '@helpers/sweetAlert';
+import { descargarPDFAutorizacion } from '@services/solicitud.service';
+import { showErrorAlert, showSuccessAlert } from '@helpers/sweetAlert';
 import PrestamoDetalleModal from '@components/prestamos/PrestamoDetalleModal';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faFilePdf } from '@fortawesome/free-solid-svg-icons';
 
 const EstadoSolicitud = () => {
     const { user } = useAuth();
+    const location = useLocation();
     const [prestamos, setPrestamos] = useState([]);
     const [loading, setLoading] = useState(true);
     const [selectedPrestamo, setSelectedPrestamo] = useState(null);
@@ -34,36 +39,109 @@ const EstadoSolicitud = () => {
             }
         };
 
-        if (user?.id) {
+        if (user?.rut) {
             fetchMisPrestamos();
         }
-    }, [user?.id]);
+    }, [user?.rut, location.key]); // Agregar location.key para recargar cuando navegue a esta página
 
-    // Filtrar préstamos en curso (estados 1-4)
-    const prestamosEnCurso = prestamos.filter(p => 
-        p.estadoPrestamo?.ID_Estado_Prestamo >= 1 && 
-        p.estadoPrestamo?.ID_Estado_Prestamo <= 4
-    );
+    // Función para descargar PDF
+    const handleDescargarPDF = async (solicitud) => {
+        try {
+            if (!solicitud.ID_Prestamo) {
+                showErrorAlert('No disponible', 'El PDF solo está disponible después de la aprobación');
+                return;
+            }
 
-    // Filtrar préstamos finalizados (estado 5: Devuelto)
-    const prestamosFinalizados = prestamos.filter(p => 
-        p.estadoPrestamo?.ID_Estado_Prestamo === 5
-    );
+            const response = await descargarPDFAutorizacion(solicitud.ID_Solicitud);
+            
+            if (response && response.data) {
+                // Crear un Blob desde los datos
+                const blob = new Blob([response.data], { type: 'application/pdf' });
+                
+                // Crear URL temporal para el blob
+                const url = window.URL.createObjectURL(blob);
+                
+                // Crear elemento <a> temporal para la descarga
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = `Autorizacion_Prestamo_${solicitud.ID_Prestamo}.pdf`;
+                
+                // Ejecutar descarga
+                document.body.appendChild(link);
+                link.click();
+                
+                // Limpiar
+                document.body.removeChild(link);
+                window.URL.revokeObjectURL(url);
+                
+                showSuccessAlert('Descarga exitosa', 'El PDF ha sido descargado');
+            }
+        } catch (error) {
+            console.error('Error al descargar PDF:', error);
+            if (error.response?.status === 404) {
+                showErrorAlert('No disponible', 'No se encontró el PDF de autorización');
+            } else {
+                showErrorAlert('Error', 'No se pudo descargar el PDF');
+            }
+        }
+    };
+
+    // Verificar si la solicitud es de largo plazo
+    const esLargoPlazo = (item) => {
+        return item.Fecha_inicio_sol && item.Fecha_termino_sol;
+    };
+
+    // Función auxiliar para obtener el estado de una solicitud/prestamo
+    const getEstado = (item) => {
+        // Si no tiene prestamo, es una solicitud pendiente
+        if (!item.ID_Prestamo || !item.prestamo) {
+            return { Cod_Estado: 1, Descripcion: 'Pendiente' };
+        }
+
+        // Si tiene prestamo, obtener el estado más reciente
+        if (item.prestamo?.tieneEstados && item.prestamo.tieneEstados.length > 0) {
+            // Ordenar por fecha y obtener el último estado (más reciente)
+            const estadosOrdenados = [...item.prestamo.tieneEstados].sort(
+                (a, b) => new Date(b.Fecha_Estado) - new Date(a.Fecha_Estado)
+            );
+            const ultimoEstado = estadosOrdenados[0];
+            return {
+                Cod_Estado: ultimoEstado.Cod_Estado,
+                Descripcion: ultimoEstado.estadoPrestamo?.Descripcion || 'Desconocido'
+            };
+        }
+        
+        return { Cod_Estado: 1, Descripcion: 'Pendiente' };
+    };
+
+    // Filtrar préstamos en curso (pendientes: 1, aprobados: 2, entregados: 3)
+    const prestamosEnCurso = prestamos.filter(item => {
+        const estado = getEstado(item);
+        // En curso: Pendiente (1), Listo para Entregar (2), Entregado (3)
+        return estado.Cod_Estado >= 1 && estado.Cod_Estado <= 3;
+    });
+
+    // Filtrar préstamos finalizados (devueltos: 4, rechazados: 5)
+    const prestamosFinalizados = prestamos.filter(item => {
+        const estado = getEstado(item);
+        // Finalizados: Devuelto (4) o Rechazado (5)
+        return estado.Cod_Estado === 4 || estado.Cod_Estado === 5;
+    });
 
     const handleVerDetalle = (prestamo) => {
         setSelectedPrestamo(prestamo);
         setShowModal(true);
     };
 
-    const getEstadoBadgeClass = (estadoId) => {
+    const getEstadoBadgeClass = (codEstado) => {
         const clases = {
-            1: 'badge-pendiente',
-            2: 'badge-aprobado',
-            3: 'badge-rechazado',
-            4: 'badge-entregado',
-            5: 'badge-devuelto'
+            1: 'badge-pendiente',    // Pendiente
+            2: 'badge-aprobado',     // Listo para Entregar
+            3: 'badge-entregado',    // Entregado
+            4: 'badge-devuelto',     // Devuelto
+            5: 'badge-rechazado'     // Rechazado
         };
-        return clases[estadoId] || 'badge-default';
+        return clases[codEstado] || 'badge-default';
     };
 
     const formatFecha = (fecha) => {
@@ -97,6 +175,7 @@ const EstadoSolicitud = () => {
                         <thead>
                             <tr>
                                 <th>ID</th>
+                                <th>Fecha Solicitud</th>
                                 <th>Estado</th>
                                 <th>Equipo</th>
                                 <th>Categoría</th>
@@ -109,42 +188,58 @@ const EstadoSolicitud = () => {
                         <tbody>
                             {lista.length === 0 ? (
                                 <tr>
-                                    <td colSpan={tipo === 'finalizadas' ? 8 : 7} className="no-data">
+                                    <td colSpan={tipo === 'finalizadas' ? 9 : 8} className="no-data">
                                         No tienes {tipo === 'en-curso' ? 'solicitudes en curso' : 'solicitudes finalizadas'}
                                     </td>
                                 </tr>
                             ) : (
-                                lista.map((prestamo) => (
-                                    <tr key={prestamo.ID_Prestamo}>
-                                        <td>{prestamo.ID_Prestamo}</td>
-                                        <td>
-                                            <span className={`estado-badge ${getEstadoBadgeClass(prestamo.estadoPrestamo?.ID_Estado_Prestamo)}`}>
-                                                {prestamo.estadoPrestamo?.Estado_Prestamo || 'N/A'}
-                                            </span>
-                                        </td>
-                                        <td>
-                                            <strong>{prestamo.ID_Num_Inv}</strong>
-                                            <div className="equipo-modelo">{prestamo.equipos?.Modelo || 'N/A'}</div>
-                                        </td>
-                                        <td>{prestamo.categoria?.Categoria || 'N/A'}</td>
-                                        <td>{formatFecha(prestamo.Fecha_inicio_prestamo)}</td>
-                                        <td>{formatFecha(prestamo.Fecha_ter_prestamo)}</td>
-                                        {tipo === 'finalizadas' && (
-                                            <td>{formatFecha(prestamo.Fecha_devolucion)}</td>
-                                        )}
-                                        <td>
-                                            <div className="actions-buttons">
-                                                <button 
-                                                    className="btn-detail"
-                                                    title="Ver detalles"
-                                                    onClick={() => handleVerDetalle(prestamo)}
-                                                >
-                                                    👁️
-                                                </button>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                ))
+                                lista.map((item) => {
+                                    const estado = getEstado(item);
+                                    const idMostrar = item.prestamo?.ID_Prestamo || `S-${item.ID_Solicitud}`;
+                                    
+                                    return (
+                                        <tr key={item.ID_Solicitud}>
+                                            <td>{idMostrar}</td>
+                                            <td>{formatFecha(item.Fecha_Sol)}</td>
+                                            <td>
+                                                <span className={`estado-badge ${getEstadoBadgeClass(estado.Cod_Estado)}`}>
+                                                    {estado.Descripcion}
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <strong>{item.ID_Num_Inv}</strong>
+                                                <div className="equipo-modelo">{item.equipo?.Modelo || 'N/A'}</div>
+                                            </td>
+                                            <td>{item.equipo?.categoria?.Descripcion || 'N/A'}</td>
+                                            <td>{formatFecha(item.Fecha_inicio_sol || item.prestamo?.Fecha_inicio_prestamo || item.Fecha_Sol)}</td>
+                                            <td>{formatFecha(item.Fecha_termino_sol || item.prestamo?.Fecha_ter_prestamo || item.Fecha_Sol)}</td>
+                                            {tipo === 'finalizadas' && (
+                                                <td>{formatFecha(item.prestamo?.devolucion?.Fecha_devolucion)}</td>
+                                            )}
+                                            <td>
+                                                <div className="actions-buttons">
+                                                    <button 
+                                                        className="btn-detail"
+                                                        title="Ver detalles"
+                                                        onClick={() => handleVerDetalle(item)}
+                                                    >
+                                                        📋
+                                                    </button>
+                                                    {/* Botón PDF solo para solicitudes de largo plazo aprobadas */}
+                                                    {esLargoPlazo(item) && item.ID_Prestamo && (
+                                                        <button 
+                                                            className="btn-pdf"
+                                                            title="Descargar PDF de Autorización"
+                                                            onClick={() => handleDescargarPDF(item)}
+                                                        >
+                                                            <FontAwesomeIcon icon={faFilePdf} />
+                                                        </button>
+                                                    )}
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    );
+                                })
                             )}
                         </tbody>
                     </table>

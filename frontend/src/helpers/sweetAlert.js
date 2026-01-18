@@ -12,17 +12,18 @@ export async function deleteDataAlert() {
   })
 }
 
-export async function showConfirmAlert(title, text) {
-  return Swal.fire({
+export async function showConfirmAlert(title, text, confirmButtonText = "Sí, confirmar") {
+  const result = await Swal.fire({
     title: title,
     text: text,
     icon: "warning",
     showCancelButton: true,
     confirmButtonColor: "#3085d6",
     cancelButtonColor: "#d33",
-    confirmButtonText: "Sí, eliminar",
+    confirmButtonText: confirmButtonText,
     cancelButtonText: "Cancelar"
-  })
+  });
+  return result.isConfirmed;
 }
 
 export const showSuccessAlert = (titleMessage, message) => {

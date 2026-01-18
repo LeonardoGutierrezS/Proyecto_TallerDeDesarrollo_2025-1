@@ -24,7 +24,21 @@ const usePendingUsers = () => {
 
     const handleApprove = async (rut) => {
         try {
+            // Mostrar mensaje de carga
+            Swal.fire({
+                title: 'Procesando...',
+                html: 'Aprobando usuario y enviando correo de confirmación',
+                allowOutsideClick: false,
+                allowEscapeKey: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                }
+            });
+
             const response = await approveUser(rut);
+            
+            Swal.close(); // Cerrar el loading
+            
             if (response.status === 'Success') {
                 showSuccessAlert('¡Aprobado!', 'Usuario aprobado correctamente. Se ha enviado un correo de confirmación.');
                 fetchPendingUsers(); // Recargar lista
@@ -32,6 +46,7 @@ const usePendingUsers = () => {
                 showErrorAlert('Error', response.details?.message || 'Error al aprobar usuario');
             }
         } catch (error) {
+            Swal.close(); // Cerrar el loading en caso de error
             console.error('Error al aprobar usuario:', error);
             showErrorAlert('Error', 'No se pudo aprobar el usuario');
         }

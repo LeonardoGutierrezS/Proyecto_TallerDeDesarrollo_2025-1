@@ -1,10 +1,10 @@
 "use strict";
 import {
   asignarPenalizacionService,
-  getTienePenalizacionesService,
-  getPenalizacionesPorUsuarioService,
-  getPenalizacionesActivasService,
   finalizarPenalizacionService,
+  getPenalizacionesActivasService,
+  getPenalizacionesPorUsuarioService,
+  getTienePenalizacionesService,
 } from "../services/tiene_penalizacion.service.js";
 import {
   asignarPenalizacionValidation,

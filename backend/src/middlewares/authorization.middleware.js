@@ -42,11 +42,13 @@ export async function isAdmin(req, res, next) {
 }
 
 /**
- * Middleware para verificar que el usuario tiene rol de Director de Escuela
+ * Middleware para verificar que el usuario tiene cargo de Director de Escuela
+ * Ahora Director de Escuela es un cargo, no un tipo de usuario
  */
 export async function isDirector(req, res, next) {
   try {
     const userRepository = AppDataSource.getRepository(User);
+    const poseeCargoRepository = AppDataSource.getRepository("PoseeCargo");
 
     const userFound = await userRepository.findOne({
       where: { Correo: req.user.email },
@@ -70,18 +72,37 @@ export async function isDirector(req, res, next) {
       );
     }
 
+    // Verificar que sea profesor
     const tipoUsuarioDesc = userFound.tipoUsuario?.Descripcion;
-
-    if (tipoUsuarioDesc?.toLowerCase() !== "director de escuela") {
+    if (tipoUsuarioDesc?.toLowerCase() !== "profesor") {
       return handleErrorClient(
         res,
         403,
         "Error al acceder al recurso",
-        "Se requiere tipo de usuario Director de Escuela para realizar esta acción.",
+        "Se requiere ser Profesor con cargo de Director de Escuela para realizar esta acción.",
+      );
+    }
+
+    // Verificar que tenga cargo de Director de Escuela (ID_Cargo = 1)
+    const cargo = await poseeCargoRepository.findOne({
+      where: { 
+        Rut_profesor: userFound.Rut,
+        ID_Cargo: 1  // 1 = Director de Escuela
+      },
+      relations: ["cargo"],
+    });
+
+    if (!cargo || cargo.Fecha_Fin !== null) {
+      return handleErrorClient(
+        res,
+        403,
+        "Error al acceder al recurso",
+        "Se requiere cargo activo de Director de Escuela para realizar esta acción.",
       );
     }
 
     req.user.tipoUsuario = tipoUsuarioDesc;
+    req.user.cargo = cargo.cargo?.Desc_Cargo || "Director de Escuela";
     req.user.vigente = userFound.Vigente;
     next();
   } catch (error) {
@@ -257,6 +278,7 @@ export async function isAlumnoOrProfesor(req, res, next) {
 export async function isAdminOrDirector(req, res, next) {
   try {
     const userRepository = AppDataSource.getRepository(User);
+    const poseeCargoRepository = AppDataSource.getRepository("PoseeCargo");
 
     const userFound = await userRepository.findOne({
       where: { Correo: req.user.email },
@@ -283,18 +305,44 @@ export async function isAdminOrDirector(req, res, next) {
     const tipoUsuarioDesc = userFound.tipoUsuario?.Descripcion;
     const tipoLower = tipoUsuarioDesc?.toLowerCase();
 
-    if (tipoLower !== "administrador" && tipoLower !== "director de escuela") {
-      return handleErrorClient(
-        res,
-        403,
-        "Error al acceder al recurso",
-        "Se requiere tipo de usuario Administrador o Director de Escuela para realizar esta acción.",
-      );
+    // Si es administrador, tiene acceso directo
+    if (tipoLower === "administrador") {
+      req.user.tipoUsuario = tipoUsuarioDesc;
+      req.user.vigente = userFound.Vigente;
+      req.user.rut = userFound.Rut;
+      next();
+      return;
     }
 
-    req.user.tipoUsuario = tipoUsuarioDesc;
-    req.user.vigente = userFound.Vigente;
-    next();
+    // Si es profesor, verificar si tiene cargo de Director de Escuela activo
+    if (tipoLower === "profesor") {
+      const cargo = await poseeCargoRepository.findOne({
+        where: { 
+          Rut_profesor: userFound.Rut,
+          ID_Cargo: 1  // 1 = Director de Escuela
+        },
+        relations: ["cargo"],
+      });
+
+      if (cargo && cargo.Fecha_Fin === null) {
+        // Es profesor con cargo de Director de Escuela activo
+        req.user.tipoUsuario = tipoUsuarioDesc;
+        req.user.cargo = cargo.cargo?.Desc_Cargo || "Director de Escuela";
+        req.user.vigente = userFound.Vigente;
+        req.user.rut = userFound.Rut;
+        req.user.esDirectorEscuela = true;
+        next();
+        return;
+      }
+    }
+
+    // No cumple ninguna de las condiciones
+    return handleErrorClient(
+      res,
+      403,
+      "Error al acceder al recurso",
+      "Se requiere ser Administrador o Profesor con cargo de Director de Escuela para realizar esta acción.",
+    );
   } catch (error) {
     handleErrorServer(
       res,

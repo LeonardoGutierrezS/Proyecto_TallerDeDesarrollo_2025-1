@@ -9,6 +9,8 @@ import ResetPassword from '@pages/ResetPassword';
 import GestionUsuarios from '@pages/GestionUsuarios';
 import GestionEquipos from '@pages/GestionEquipos';
 import GestionSolicitudes from '@pages/GestionSolicitudes';
+import GestionPenalizaciones from '@pages/GestionPenalizaciones';
+import Reportes from '@pages/Reportes';
 import GenerarSolicitud from '@pages/GenerarSolicitud';
 import EstadoSolicitud from '@pages/EstadoSolicitud';
 import Error404 from '@pages/Error404';
@@ -53,15 +55,31 @@ const router = createBrowserRouter([
       {
         path: '/gestion-solicitudes',
         element: (
-        <ProtectedRoute allowedRoles={['Administrador']}>
+        <ProtectedRoute allowedRoles={['Administrador', 'Director de Escuela']}>
           <GestionSolicitudes />
+        </ProtectedRoute>
+        ),
+      },
+      {
+        path: '/gestion-penalizaciones',
+        element: (
+        <ProtectedRoute allowedRoles={['Administrador']}>
+          <GestionPenalizaciones />
+        </ProtectedRoute>
+        ),
+      },
+      {
+        path: '/reportes',
+        element: (
+        <ProtectedRoute allowedRoles={['Administrador']}>
+          <Reportes />
         </ProtectedRoute>
         ),
       },
       {
         path: '/generar-solicitud',
         element: (
-        <ProtectedRoute allowedRoles={['Alumno', 'Profesor']}>
+        <ProtectedRoute allowedRoles={['Alumno', 'Profesor']} excludeDirectorEscuela={true}>
           <GenerarSolicitud />
         </ProtectedRoute>
         ),
@@ -69,7 +87,7 @@ const router = createBrowserRouter([
       {
         path: '/estado-solicitud',
         element: (
-        <ProtectedRoute allowedRoles={['Alumno', 'Profesor']}>
+        <ProtectedRoute allowedRoles={['Alumno', 'Profesor']} excludeDirectorEscuela={true}>
           <EstadoSolicitud />
         </ProtectedRoute>
         ),

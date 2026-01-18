@@ -6,23 +6,22 @@ import Joi from "joi";
  */
 export const solicitudValidation = Joi.object({
   Rut: Joi.string()
-    .pattern(/^[0-9]{7,8}-[0-9Kk]$/)
+    .pattern(/^[0-9]{1,2}\.?[0-9]{3}\.?[0-9]{3}-[0-9Kk]$/)
     .required()
     .messages({
       "string.empty": "El RUT no puede estar vacío.",
       "any.required": "El RUT es obligatorio.",
       "string.base": "El RUT debe ser de tipo texto.",
-      "string.pattern.base": "El RUT debe tener el formato 12345678-9.",
+      "string.pattern.base": "El RUT debe tener el formato 12345678-9 o 12.345.678-9.",
     }),
-  ID_Prestamo: Joi.number()
-    .integer()
-    .positive()
+  ID_Num_Inv: Joi.string()
+    .max(50)
     .required()
     .messages({
-      "number.base": "El ID de préstamo debe ser un número.",
-      "number.integer": "El ID de préstamo debe ser un número entero.",
-      "number.positive": "El ID de préstamo debe ser un número positivo.",
-      "any.required": "El ID de préstamo es obligatorio.",
+      "string.empty": "El número de inventario no puede estar vacío.",
+      "any.required": "El número de inventario es obligatorio.",
+      "string.base": "El número de inventario debe ser de tipo texto.",
+      "string.max": "El número de inventario debe tener como máximo 50 caracteres.",
     }),
   Fecha_Sol: Joi.date()
     .messages({
@@ -43,6 +42,16 @@ export const solicitudValidation = Joi.object({
     .messages({
       "string.base": "El motivo de solicitud debe ser de tipo texto.",
       "string.max": "El motivo de solicitud debe tener como máximo 500 caracteres.",
+    }),
+  Fecha_inicio_sol: Joi.date()
+    .allow(null)
+    .messages({
+      "date.base": "La fecha de inicio debe ser una fecha válida.",
+    }),
+  Fecha_termino_sol: Joi.date()
+    .allow(null)
+    .messages({
+      "date.base": "La fecha de término debe ser una fecha válida.",
     }),
 })
   .unknown(false)

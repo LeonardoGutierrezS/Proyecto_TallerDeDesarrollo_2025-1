@@ -138,19 +138,45 @@ export async function getPrestamosPorUsuarioService(rut) {
     const prestamos = await prestamoRepository
       .createQueryBuilder("prestamo")
       .leftJoinAndSelect("prestamo.equipos", "equipos")
-      .leftJoinAndSelect("prestamo.solicitud", "solicitud")
-      .leftJoinAndSelect("solicitud.usuario", "usuario")
+      .leftJoinAndSelect("equipos.categoria", "categoria")
+      .leftJoinAndSelect("prestamo.solicitudes", "solicitudes")
+      .leftJoinAndSelect("solicitudes.usuario", "usuario")
       .leftJoinAndSelect("usuario.tipoUsuario", "tipoUsuario")
       .leftJoinAndSelect("usuario.carrera", "carrera")
       .leftJoinAndSelect("prestamo.autorizacion", "autorizacion")
       .leftJoinAndSelect("prestamo.devolucion", "devolucion")
       .leftJoinAndSelect("prestamo.tieneEstados", "tieneEstados")
-      .leftJoinAndSelect("tieneEstados.estado", "estado")
-      .where("solicitud.Rut = :rut", { rut })
+      .leftJoinAndSelect("tieneEstados.estadoPrestamo", "estadoPrestamo")
+      .where("solicitudes.Rut = :rut", { rut })
       .orderBy("prestamo.Fecha_inicio_prestamo", "DESC")
+      .addOrderBy("tieneEstados.Fecha_Estado", "DESC")
+      .addOrderBy("tieneEstados.Hora_Estado", "DESC")
       .getMany();
 
-    return [prestamos || [], null];
+    // Agregar el estado actual a cada préstamo
+    const prestamosConEstado = prestamos.map(prestamo => {
+      // Obtener el estado más reciente
+      const estadoActual = prestamo.tieneEstados && prestamo.tieneEstados.length > 0 
+        ? prestamo.tieneEstados[0].estadoPrestamo 
+        : null;
+
+      // Extraer la categoría del equipo
+      const categoria = prestamo.equipos?.categoria || null;
+
+      // Extraer la solicitud principal (primera solicitud)
+      const solicitud = prestamo.solicitudes && prestamo.solicitudes.length > 0
+        ? prestamo.solicitudes[0]
+        : null;
+
+      return {
+        ...prestamo,
+        solicitud: solicitud, // Mantener compatibilidad con frontend
+        estadoPrestamo: estadoActual,
+        categoria: categoria
+      };
+    });
+
+    return [prestamosConEstado || [], null];
   } catch (error) {
     console.error("Error al obtener los préstamos por usuario:", error);
     return [null, "Error interno del servidor"];

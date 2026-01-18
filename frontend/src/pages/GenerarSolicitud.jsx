@@ -4,54 +4,29 @@ import 'react-datepicker/dist/react-datepicker.css';
 import { useState, useEffect } from 'react';
 import { useGetEquiposDisponibles } from '@hooks/equipos/useGetEquiposDisponibles';
 import { useGetCategorias } from '@hooks/catalogos/useGetCategorias';
-import { createPrestamo } from '@services/prestamo.service';
+import { createSolicitud } from '@services/solicitud.service';
 import { showErrorAlert, showSuccessAlert } from '@helpers/sweetAlert';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '@context/AuthContext';
 import DatePicker from 'react-datepicker';
 import { registerLocale } from 'react-datepicker';
 import { es } from 'date-fns/locale/es';
 
-// Crear un locale personalizado con meses capitalizados
-const esCapitalizado = {
-    ...es,
-    localize: {
-        ...es.localize,
-        month: (n) => {
-            const months = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
-            return months[n];
-        },
-    },
-};
-
-registerLocale('es', esCapitalizado);
+registerLocale('es', es);
 
 const GenerarSolicitud = () => {
     const navigate = useNavigate();
+    const { user } = useAuth();
     const [currentStep, setCurrentStep] = useState(1);
     const [selectedCategoria, setSelectedCategoria] = useState(null);
     const [selectedEquipo, setSelectedEquipo] = useState(null);
     const [searchText, setSearchText] = useState('');
     const [tipoPrestamo, setTipoPrestamo] = useState('diario'); // 'diario' o 'largo_plazo'
-    
-    // Obtener fecha de hoy en formato YYYY-MM-DD
-    const getFechaHoy = () => {
-        const hoy = new Date();
-        return hoy.toISOString().split('T')[0];
-    };
-
-    const [fechaInicio, setFechaInicio] = useState(new Date());
-    const [fechaTermino, setFechaTermino] = useState(new Date());
+    const [fechaInicio, setFechaInicio] = useState(null);
+    const [fechaTermino, setFechaTermino] = useState(null);
     const [formData, setFormData] = useState({
-        condiciones: '',
-        observaciones: ''
+        motivo: ''
     });
-
-    // Actualizar fecha de término automáticamente si es préstamo diario
-    useEffect(() => {
-        if (tipoPrestamo === 'diario' && fechaInicio) {
-            setFechaTermino(fechaInicio);
-        }
-    }, [tipoPrestamo, fechaInicio]);
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     const { equipos, loading: loadingEquipos } = useGetEquiposDisponibles();
@@ -102,39 +77,30 @@ const GenerarSolicitud = () => {
         }
     };
 
-    // Formatear fecha para mostrar
-    const formatearFecha = (fecha) => {
-        if (!fecha) return '';
-        const date = new Date(fecha + 'T00:00:00');
-        return date.toLocaleDateString('es-CL', { 
-            weekday: 'long', 
-            year: 'numeric', 
-            month: 'long', 
-            day: 'numeric' 
-        });
-    };
-
     // Manejar cambios en el formulario
     const handleInputChange = (e) => {
         const { name, value } = e.target;
-        setFormData(prev => ({
-            ...prev,
-            [name]: value
-        }));
+        setFormData({ ...formData, [name]: value });
     };
 
     // Enviar solicitud
     const handleSubmit = async () => {
         // Validaciones
-        if (!fechaInicio || !fechaTermino) {
-            showErrorAlert('Campos requeridos', 'Debes completar las fechas de inicio y término del préstamo.');
+        if (!formData.motivo || formData.motivo.trim() === '') {
+            showErrorAlert('Motivo requerido', 'Debes especificar el motivo de tu solicitud.');
             return;
         }
 
-        // Validar que la fecha de término sea posterior o igual a la de inicio
-        if (fechaTermino < fechaInicio) {
-            showErrorAlert('Fechas inválidas', 'La fecha de término debe ser posterior o igual a la fecha de inicio.');
-            return;
+        // Si hay fechas, validar que sean correctas
+        if (fechaInicio || fechaTermino) {
+            if (!fechaInicio || !fechaTermino) {
+                showErrorAlert('Fechas incompletas', 'Debes especificar ambas fechas para solicitudes a largo plazo.');
+                return;
+            }
+            if (fechaTermino < fechaInicio) {
+                showErrorAlert('Fechas inválidas', 'La fecha de término debe ser posterior a la fecha de inicio.');
+                return;
+            }
         }
 
         setIsSubmitting(true);
@@ -144,28 +110,22 @@ const GenerarSolicitud = () => {
             const now = new Date();
             const horaActual = now.toTimeString().split(' ')[0]; // Formato: HH:MM:SS
 
-            // Convertir fechas a formato YYYY-MM-DD
-            const formatearFechaDB = (fecha) => {
-                const year = fecha.getFullYear();
-                const month = String(fecha.getMonth() + 1).padStart(2, '0');
-                const day = String(fecha.getDate()).padStart(2, '0');
-                return `${year}-${month}-${day}`;
-            };
-
-            // Preparar datos del préstamo
-            const prestamoData = {
+            // Preparar datos de la solicitud
+            const solicitudData = {
+                Rut: user.rut,
                 ID_Num_Inv: selectedEquipo.ID_Num_Inv,
-                ID_Categoria: selectedEquipo.categoria.ID_Categoria,
-                Fecha_inicio_prestamo: formatearFechaDB(fechaInicio),
-                Hora_inicio_prestamo: horaActual,
-                Fecha_ter_prestamo: formatearFechaDB(fechaTermino),
-                Hora_fin_prestamo: horaActual,
-                Condiciones_Prestamo: formData.condiciones || null,
-                Observaciones: formData.observaciones || null,
-                ID_Estado_Prestamo: 1 // Pendiente
+                Fecha_Sol: new Date().toISOString(),
+                Hora_Sol: horaActual,
+                Motivo_Sol: formData.motivo.trim()
             };
 
-            const response = await createPrestamo(prestamoData);
+            // Agregar fechas si existen (largo plazo)
+            if (fechaInicio && fechaTermino) {
+                solicitudData.Fecha_inicio_sol = fechaInicio.toISOString().split('T')[0];
+                solicitudData.Fecha_termino_sol = fechaTermino.toISOString().split('T')[0];
+            }
+
+            const response = await createSolicitud(solicitudData);
 
             if (response.status === 'Success') {
                 showSuccessAlert(
@@ -208,8 +168,7 @@ const GenerarSolicitud = () => {
                                 className={`categoria-card ${equiposDisponibles === 0 ? 'disabled' : ''}`}
                                 onClick={() => equiposDisponibles > 0 && handleSelectCategoria(categoria)}
                             >
-                                <div className="categoria-icon">📦</div>
-                                <h3>{categoria.Categoria}</h3>
+                                <h3>{categoria.Descripcion}</h3>
                                 <div className="categoria-count">
                                     {equiposDisponibles} {equiposDisponibles === 1 ? 'equipo' : 'equipos'} disponible{equiposDisponibles !== 1 ? 's' : ''}
                                 </div>
@@ -231,7 +190,7 @@ const GenerarSolicitud = () => {
             <div className="step-content">
                 <h2>💻 Paso 2: Selecciona un Equipo</h2>
                 <p className="step-description">
-                    Categoría: <strong>{selectedCategoria?.Categoria}</strong>
+                    Categoría: <strong>{selectedCategoria?.Descripcion}</strong>
                 </p>
 
                 <div className="search-container">
@@ -250,36 +209,44 @@ const GenerarSolicitud = () => {
                             <p>No hay equipos disponibles en esta categoría</p>
                         </div>
                     ) : (
-                        equiposBuscados.map((equipo) => (
-                            <div
-                                key={equipo.ID_Num_Inv}
-                                className="equipo-card"
-                                onClick={() => handleSelectEquipo(equipo)}
-                            >
-                                <div className="equipo-header">
-                                    <span className="equipo-inv">{equipo.ID_Num_Inv}</span>
-                                    <span className="equipo-badge disponible">Disponible</span>
+                        equiposBuscados.map((equipo) => {
+                            return (
+                                <div
+                                    key={equipo.ID_Num_Inv}
+                                    className="equipo-card"
+                                    onClick={() => handleSelectEquipo(equipo)}
+                                >
+                                    <div className="equipo-header">
+                                        <span className="equipo-inv">{equipo.ID_Num_Inv}</span>
+                                        <span className="equipo-badge disponible">Disponible</span>
+                                    </div>
+                                    <div className="equipo-info">
+                                        <div className="equipo-detail">
+                                            <span className="label">Categoría:</span>
+                                            <span className="value">{equipo.categoria?.Descripcion || 'N/A'}</span>
+                                        </div>
+                                        <div className="equipo-detail">
+                                            <span className="label">Marca:</span>
+                                            <span className="value">{equipo.marca?.Descripcion || 'N/A'}</span>
+                                        </div>
+                                        <div className="equipo-detail">
+                                            <span className="label">Modelo:</span>
+                                            <span className="value">{equipo.Modelo}</span>
+                                        </div>
+                                        {equipo.especificaciones && equipo.especificaciones.length > 0 && (
+                                            <>
+                                                {equipo.especificaciones.map((spec, index) => (
+                                                    <div key={index} className="equipo-detail">
+                                                        <span className="label">{spec.Tipo_Especificacion_HW}:</span>
+                                                        <span className="value">{spec.Descripcion}</span>
+                                                    </div>
+                                                ))}
+                                            </>
+                                        )}
+                                    </div>
                                 </div>
-                                <div className="equipo-info">
-                                    <div className="equipo-detail">
-                                        <span className="label">Modelo:</span>
-                                        <span className="value">{equipo.Modelo}</span>
-                                    </div>
-                                    <div className="equipo-detail">
-                                        <span className="label">Marca:</span>
-                                        <span className="value">{equipo.marca?.Marca || 'N/A'}</span>
-                                    </div>
-                                    <div className="equipo-detail">
-                                        <span className="label">N° Serie:</span>
-                                        <span className="value">{equipo.Numero_Serie}</span>
-                                    </div>
-                                    <div className="equipo-detail">
-                                        <span className="label">Estado:</span>
-                                        <span className="value">{equipo.estado?.Estado || 'N/A'}</span>
-                                    </div>
-                                </div>
-                            </div>
-                        ))
+                            );
+                        })
                     )}
                 </div>
 
@@ -310,153 +277,136 @@ const GenerarSolicitud = () => {
                             </div>
                             <div className="resumen-item">
                                 <span className="label">Categoría:</span>
-                                <span className="value">{selectedEquipo?.categoria?.Categoria}</span>
+                                <span className="value">{selectedEquipo?.categoria?.Descripcion}</span>
+                            </div>
+                            <div className="resumen-item">
+                                <span className="label">Marca:</span>
+                                <span className="value">{selectedEquipo?.marca?.Descripcion || 'N/A'}</span>
                             </div>
                             <div className="resumen-item">
                                 <span className="label">Modelo:</span>
                                 <span className="value">{selectedEquipo?.Modelo}</span>
                             </div>
-                            <div className="resumen-item">
-                                <span className="label">Marca:</span>
-                                <span className="value">{selectedEquipo?.marca?.Marca}</span>
-                            </div>
-                            <div className="resumen-item">
-                                <span className="label">N° Serie:</span>
-                                <span className="value">{selectedEquipo?.Numero_Serie}</span>
-                            </div>
-                            <div className="resumen-item">
-                                <span className="label">Estado:</span>
-                                <span className="value">{selectedEquipo?.estado?.Estado}</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Configuración del Préstamo */}
-                    <div className="resumen-section prestamo-config">
-                        <h3>📋 Condiciones del Préstamo</h3>
-                        
-                        {/* Tipo de préstamo */}
-                        <div className="config-subsection">
-                            <h4 className="subsection-title">Duración del Préstamo</h4>
-                            <div className="tipo-prestamo-selector">
-                                <div 
-                                    className={`tipo-option ${tipoPrestamo === 'diario' ? 'active' : ''}`}
-                                    onClick={() => setTipoPrestamo('diario')}
-                                >
-                                    <div className="tipo-icon">📅</div>
-                                    <div className="tipo-info">
-                                        <h4>Préstamo por el día</h4>
-                                        <p>El equipo se debe devolver el mismo día</p>
-                                    </div>
-                                </div>
-                                <div 
-                                    className={`tipo-option ${tipoPrestamo === 'largo_plazo' ? 'active' : ''}`}
-                                    onClick={() => setTipoPrestamo('largo_plazo')}
-                                >
-                                    <div className="tipo-icon">📆</div>
-                                    <div className="tipo-info">
-                                        <h4>Préstamo a largo plazo</h4>
-                                        <p>El equipo se devolverá en una fecha posterior</p>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Selección de fechas */}
-                        <div className="config-subsection">
-                            <h4 className="subsection-title">Fechas del Préstamo</h4>
-                            <div className="calendario-container">
-                            <div className="form-group">
-                                <label>
-                                    Fecha de {tipoPrestamo === 'diario' ? 'Préstamo' : 'Inicio'} *
-                                </label>
-                                <DatePicker
-                                    selected={fechaInicio}
-                                    onChange={(date) => setFechaInicio(date)}
-                                    minDate={new Date()}
-                                    dateFormat="dd/MM/yyyy"
-                                    locale="es"
-                                    showMonthDropdown
-                                    showYearDropdown
-                                    dropdownMode="select"
-                                    className="calendario-input"
-                                    calendarClassName="custom-calendar"
-                                    placeholderText="Selecciona una fecha"
-                                    required
-                                />
-                                <span className="fecha-helper">
-                                    {fechaInicio && formatearFecha(fechaInicio.toISOString().split('T')[0])}
-                                </span>
-                            </div>
-                            {tipoPrestamo === 'largo_plazo' && (
-                                <div className="form-group">
-                                    <label>
-                                        Fecha de Devolución *
-                                    </label>
-                                    <DatePicker
-                                        selected={fechaTermino}
-                                        onChange={(date) => setFechaTermino(date)}
-                                        minDate={fechaInicio || new Date()}
-                                        dateFormat="dd/MM/yyyy"
-                                        locale="es"
-                                        showMonthDropdown
-                                        showYearDropdown
-                                        dropdownMode="select"
-                                        className="calendario-input"
-                                        calendarClassName="custom-calendar"
-                                        placeholderText="Selecciona una fecha"
-                                        required
-                                    />
-                                    <span className="fecha-helper">
-                                        {fechaTermino && formatearFecha(fechaTermino.toISOString().split('T')[0])}
-                                    </span>
-                                </div>
+                            {selectedEquipo?.especificaciones && selectedEquipo.especificaciones.length > 0 && (
+                                <>
+                                    {selectedEquipo.especificaciones.map((spec, index) => (
+                                        <div key={index} className="resumen-item">
+                                            <span className="label">{spec.Tipo_Especificacion_HW}:</span>
+                                            <span className="value">{spec.Descripcion}</span>
+                                        </div>
+                                    ))}
+                                </>
                             )}
                         </div>
-                        {tipoPrestamo === 'diario' && fechaInicio && (
-                            <div className="fecha-info">
-                                <span>ℹ️ El equipo debe devolverse el mismo día seleccionado</span>
-                            </div>
-                        )}
-                        {tipoPrestamo === 'largo_plazo' && fechaInicio && fechaTermino && (
-                            <div className="fecha-info">
-                                <span>📊 Duración del préstamo: <strong>{Math.ceil((fechaTermino - fechaInicio) / (1000 * 60 * 60 * 24)) + 1} días</strong></span>
-                            </div>
-                        )}
-                        <p className="fecha-nota">
-                            💡 La hora se registrará automáticamente al confirmar
-                        </p>
-                        </div>
                     </div>
 
-                    {/* Información adicional */}
-                    <div className="resumen-section info-adicional">
-                        <h3>📝 Información Adicional</h3>
-                        <p className="section-description">Los siguientes campos son opcionales pero pueden ayudar a procesar tu solicitud</p>
-                        <div className="form-grid-adicional">
-                            <div className="form-group">
-                                <label htmlFor="condiciones">Condiciones Especiales</label>
-                                <textarea
-                                    id="condiciones"
-                                    name="condiciones"
-                                    value={formData.condiciones}
-                                    onChange={handleInputChange}
-                                    placeholder="Ej: Necesito el equipo en la sala 205"
-                                    rows="4"
+                    {/* Configuración del período de préstamo */}
+                    <div className="resumen-section prestamo-config">
+                        <h3>📅 Período del Préstamo *</h3>
+                        <p className="section-description">
+                            Selecciona el tipo de préstamo que necesitas
+                        </p>
+                        
+                        <div className="tipo-prestamo-selector">
+                            <label className={`tipo-option ${tipoPrestamo === 'diario' ? 'selected' : ''}`}>
+                                <input
+                                    type="radio"
+                                    name="tipoPrestamo"
+                                    value="diario"
+                                    checked={tipoPrestamo === 'diario'}
+                                    onChange={(e) => {
+                                        setTipoPrestamo(e.target.value);
+                                        setFechaInicio(null);
+                                        setFechaTermino(null);
+                                    }}
                                 />
-                            </div>
-                            <div className="form-group">
-                                <label htmlFor="observaciones">Observaciones</label>
-                                <textarea
-                                    id="observaciones"
-                                    name="observaciones"
-                                    value={formData.observaciones}
-                                    onChange={handleInputChange}
-                                    placeholder="Ej: Es para una presentación importante"
-                                    rows="4"
+                                <div className="option-content">
+                                    <span className="option-icon">⏰</span>
+                                    <div className="option-text">
+                                        <strong>Préstamo por el Día</strong>
+                                        <small>Retiro y devolución el mismo día - Aprobación por Administrador</small>
+                                    </div>
+                                </div>
+                            </label>
+
+                            <label className={`tipo-option ${tipoPrestamo === 'largo_plazo' ? 'selected' : ''}`}>
+                                <input
+                                    type="radio"
+                                    name="tipoPrestamo"
+                                    value="largo_plazo"
+                                    checked={tipoPrestamo === 'largo_plazo'}
+                                    onChange={(e) => setTipoPrestamo(e.target.value)}
                                 />
-                            </div>
+                                <div className="option-content">
+                                    <span className="option-icon">📆</span>
+                                    <div className="option-text">
+                                        <strong>Préstamo a Largo Plazo</strong>
+                                        <small>Múltiples días - Requiere aprobación del Director de Escuela</small>
+                                    </div>
+                                </div>
+                            </label>
                         </div>
+
+                        {tipoPrestamo === 'largo_plazo' && (
+                            <>
+                                <div className="calendario-container" style={{ marginTop: '20px' }}>
+                                    <div className="form-group">
+                                        <label>Fecha de Inicio *</label>
+                                        <DatePicker
+                                            selected={fechaInicio}
+                                            onChange={(date) => setFechaInicio(date)}
+                                            minDate={new Date()}
+                                            dateFormat="dd/MM/yyyy"
+                                            locale="es"
+                                            className="calendario-input"
+                                            placeholderText="Selecciona la fecha de inicio"
+                                            required
+                                        />
+                                    </div>
+                                    <div className="form-group">
+                                        <label>Fecha de Término *</label>
+                                        <DatePicker
+                                            selected={fechaTermino}
+                                            onChange={(date) => setFechaTermino(date)}
+                                            minDate={fechaInicio || new Date()}
+                                            dateFormat="dd/MM/yyyy"
+                                            locale="es"
+                                            className="calendario-input"
+                                            placeholderText="Selecciona la fecha de término"
+                                            required
+                                        />
+                                    </div>
+                                </div>
+                                {(!fechaInicio || !fechaTermino) && (
+                                    <p className="warning-note" style={{ marginTop: '10px' }}>
+                                        ⚠️ Debes especificar ambas fechas para préstamos a largo plazo
+                                    </p>
+                                )}
+                            </>
+                        )}
+                    </div>
+
+                    {/* Motivo de la solicitud */}
+                    <div className="resumen-section info-adicional">
+                        <h3>📝 Motivo de la Solicitud *</h3>
+                        <p className="section-description">Por favor, indica el motivo por el cual necesitas este equipo</p>
+                        <div className="form-group">
+                            <textarea
+                                id="motivo"
+                                name="motivo"
+                                value={formData.motivo}
+                                onChange={handleInputChange}
+                                placeholder="Ej: Necesito el notebook para realizar una presentación en la sala 205. Es parte de mi proyecto de título."
+                                rows="6"
+                                required
+                            />
+                            <span className="char-count">
+                                {formData.motivo.length}/500 caracteres
+                            </span>
+                        </div>
+                        <p className="info-note">
+                            ℹ️ La fecha y hora de la solicitud se registrarán automáticamente al confirmar
+                        </p>
                     </div>
                 </div>
 
@@ -467,7 +417,7 @@ const GenerarSolicitud = () => {
                     <button 
                         className="btn-submit" 
                         onClick={handleSubmit}
-                        disabled={isSubmitting}
+                        disabled={isSubmitting || !formData.motivo.trim()}
                     >
                         {isSubmitting ? 'Enviando...' : '✓ Confirmar Solicitud'}
                     </button>

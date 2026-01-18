@@ -2,10 +2,10 @@
 import { Router } from "express";
 import { authenticateJwt } from "../middlewares/authentication.middleware.js";
 import {
-  registrarDevolucionController,
+  getDevolucionController,
   getDevolucionesController,
   getDevolucionesPorUsuarioController,
-  getDevolucionController,
+  registrarDevolucionController,
 } from "../controllers/devolucion.controller.js";
 
 const router = Router();

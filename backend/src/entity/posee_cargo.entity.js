@@ -18,6 +18,12 @@ const PoseeCargoSchema = new EntitySchema({
       type: "int",
       primary: true,
     },
+    Descripcion_Cargo: {
+      type: "varchar",
+      length: 255,
+      nullable: true,
+      comment: "Descripción personalizada del cargo cuando se selecciona 'Otro'",
+    },
     Fecha_Inicio: {
       type: "timestamp with time zone",
       nullable: false,

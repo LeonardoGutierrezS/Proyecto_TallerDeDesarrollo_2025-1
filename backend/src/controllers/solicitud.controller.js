@@ -1,12 +1,13 @@
 "use strict";
 import {
   createSolicitudService,
-  getSolicitudesService,
-  getSolicitudesPorUsuarioService,
-  getSolicitudesPorPrestamoService,
-  getSolicitudService,
   deleteSolicitudService,
+  getSolicitudesPorPrestamoService,
+  getSolicitudesPorUsuarioService,
+  getSolicitudesService,
+  getSolicitudService,  
 } from "../services/solicitud.service.js";
+import { generarPDFAutorizacion } from "../services/pdf.service.js";
 import { solicitudValidation } from "../validations/solicitud.validation.js";
 import {
   handleErrorClient,
@@ -71,6 +72,25 @@ export async function getSolicitudesPorUsuarioController(req, res) {
 }
 
 /**
+ * Obtener mis solicitudes (usuario autenticado)
+ */
+export async function getMisSolicitudesController(req, res) {
+  try {
+    const rut = req.user.rut; // Obtener RUT del usuario autenticado
+
+    const [solicitudes, errorSolicitudes] = await getSolicitudesPorUsuarioService(rut);
+
+    if (errorSolicitudes) return handleErrorClient(res, 404, errorSolicitudes);
+
+    solicitudes.length === 0
+      ? handleSuccess(res, 204)
+      : handleSuccess(res, 200, "Solicitudes encontradas", solicitudes);
+  } catch (error) {
+    handleErrorServer(res, 500, error.message);
+  }
+}
+
+/**
  * Obtener solicitudes por préstamo
  */
 export async function getSolicitudesPorPrestamoController(req, res) {
@@ -90,13 +110,13 @@ export async function getSolicitudesPorPrestamoController(req, res) {
 }
 
 /**
- * Obtener una solicitud por Rut e ID de Préstamo
+ * Obtener una solicitud por ID de Solicitud
  */
 export async function getSolicitudController(req, res) {
   try {
-    const { rut, idPrestamo } = req.params;
+    const { idSolicitud } = req.params;
 
-    const [solicitud, errorSolicitud] = await getSolicitudService(rut, idPrestamo);
+    const [solicitud, errorSolicitud] = await getSolicitudService(parseInt(idSolicitud));
 
     if (errorSolicitud) return handleErrorClient(res, 404, errorSolicitud);
 
@@ -111,14 +131,39 @@ export async function getSolicitudController(req, res) {
  */
 export async function deleteSolicitudController(req, res) {
   try {
-    const { rut, idPrestamo } = req.params;
+    const { idSolicitud } = req.params;
 
-    const [solicitud, errorSolicitud] = await deleteSolicitudService(rut, idPrestamo);
+    const [solicitud, errorSolicitud] = await deleteSolicitudService(parseInt(idSolicitud));
 
     if (errorSolicitud) return handleErrorClient(res, 404, errorSolicitud);
 
     handleSuccess(res, 200, "Solicitud eliminada correctamente", solicitud);
   } catch (error) {
+    handleErrorServer(res, 500, error.message);
+  }
+}
+
+/**
+ * Descargar PDF de autorización de préstamo
+ */
+export async function descargarPDFAutorizacionController(req, res) {
+  try {
+    const { idSolicitud } = req.params;
+
+    const doc = await generarPDFAutorizacion(parseInt(idSolicitud));
+
+    // Configurar headers para descarga de PDF
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename=autorizacion-prestamo-${idSolicitud}.pdf`
+    );
+
+    // Enviar el PDF
+    doc.pipe(res);
+    doc.end();
+  } catch (error) {
+    console.error("Error al generar PDF:", error);
     handleErrorServer(res, 500, error.message);
   }
 }

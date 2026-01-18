@@ -3,8 +3,8 @@ import { Router } from "express";
 import { authenticateJwt } from "../middlewares/authentication.middleware.js";
 import {
   createTieneEstadoController,
-  getHistorialEstadosController,
   getEstadoActualController,
+  getHistorialEstadosController,
 } from "../controllers/tiene_estado.controller.js";
 
 const router = Router();

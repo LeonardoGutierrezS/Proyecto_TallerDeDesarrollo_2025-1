@@ -27,12 +27,7 @@ export async function createCargoService(body) {
 
     const cargoSaved = await cargoRepository.save(newCargo);
 
-    const cargoWithRelations = await cargoRepository.findOne({
-      where: { ID_Cargo: cargoSaved.ID_Cargo },
-      relations: ["usuario"],
-    });
-
-    return [cargoWithRelations, null];
+    return [cargoSaved, null];
   } catch (error) {
     console.error("Error al crear el cargo:", error);
     return [null, "Error interno del servidor"];
@@ -47,7 +42,9 @@ export async function getCargosService() {
     const cargoRepository = AppDataSource.getRepository(Cargo);
 
     const cargos = await cargoRepository.find({
-      relations: ["usuario"],
+      order: {
+        ID_Cargo: "ASC"
+      }
     });
 
     return [cargos || [], null];
@@ -66,7 +63,6 @@ export async function getCargoService(id) {
 
     const cargoFound = await cargoRepository.findOne({
       where: { ID_Cargo: id },
-      relations: ["usuario"],
     });
 
     if (!cargoFound) return [null, "Cargo no encontrado"];
@@ -98,7 +94,6 @@ export async function updateCargoService(id, body) {
 
     const cargoUpdated = await cargoRepository.findOne({
       where: { ID_Cargo: id },
-      relations: ["usuario"],
     });
 
     return [cargoUpdated, null];

@@ -1,10 +1,10 @@
 "use strict";
 import {
   createTipoUsuarioService,
+  deleteTipoUsuarioService,
   getTiposUsuarioService,
   getTipoUsuarioService,
   updateTipoUsuarioService,
-  deleteTipoUsuarioService,
 } from "../services/tipo_usuario.service.js";
 import {
   tipoUsuarioValidation,

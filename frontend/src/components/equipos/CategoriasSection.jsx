@@ -128,7 +128,6 @@ const CategoriasSection = () => {
                                     </td>
                                     <td>
                                         <div className="categoria-name">
-                                            <span className="categoria-icon">📦</span>
                                             <span className="categoria-text">{categoria.Descripcion}</span>
                                         </div>
                                     </td>

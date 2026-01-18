@@ -59,42 +59,70 @@ const PendingUsersSection = () => {
     return (
         <div className="pending-users-section">
             <h2>Usuarios Pendientes de Aprobación ({pendingUsers.length})</h2>
-            {pendingUsers.map(user => (
-                <div key={user.ID_Usuario} className="pending-user-card">
-                    <div className="user-info-row">
-                        <div className="info-item">
-                            <span className="info-label">Nombre Completo</span>
-                            <span className="info-value">{user.Nombre_Completo}</span>
+            {pendingUsers.map(user => {
+                const tipoUsuarioDesc = user.tipoUsuario?.Descripcion || '';
+                const codTipoUsuario = user.tipoUsuario?.Cod_TipoUsuario;
+                
+                // Determinar qué mostrar según el tipo de usuario
+                let carreraOCargoLabel = 'Carrera';
+                let carreraOCargoValue = '-';
+                
+                if (codTipoUsuario === 2) {
+                    // Alumno - mostrar carrera
+                    carreraOCargoLabel = 'Carrera';
+                    carreraOCargoValue = user.carrera?.Nombre_Carrera || 'Sin carrera';
+                } else if (codTipoUsuario === 3) {
+                    // Profesor - mostrar cargo con descripción si aplica
+                    carreraOCargoLabel = 'Cargo';
+                    const descCargo = user.cargo?.Desc_Cargo || 'Sin cargo';
+                    const descripcionPersonalizada = user.poseesCargos?.[0]?.Descripcion_Cargo;
+                    
+                    if (descCargo === 'Otro' && descripcionPersonalizada) {
+                        carreraOCargoValue = `${descCargo} (${descripcionPersonalizada})`;
+                    } else {
+                        carreraOCargoValue = descCargo;
+                    }
+                }
+                
+                return (
+                    <div key={user.ID_Usuario} className="pending-user-card">
+                        <div className="user-info-row">
+                            <div className="info-item">
+                                <span className="info-label">Nombre Completo</span>
+                                <span className="info-value">{user.Nombre_Completo}</span>
+                            </div>
+                            <div className="info-item">
+                                <span className="info-label">Correo</span>
+                                <span className="info-value">{user.Correo}</span>
+                            </div>
+                            <div className="info-item">
+                                <span className="info-label">RUT</span>
+                                <span className="info-value">{user.Rut}</span>
+                            </div>
+                            {carreraOCargoValue !== '-' && (
+                                <div className="info-item">
+                                    <span className="info-label">{carreraOCargoLabel}</span>
+                                    <span className="info-value">{carreraOCargoValue}</span>
+                                </div>
+                            )}
                         </div>
-                        <div className="info-item">
-                            <span className="info-label">Correo</span>
-                            <span className="info-value">{user.Correo}</span>
-                        </div>
-                        <div className="info-item">
-                            <span className="info-label">RUT</span>
-                            <span className="info-value">{user.Rut}</span>
-                        </div>
-                        <div className="info-item">
-                            <span className="info-label">Carrera</span>
-                            <span className="info-value">{user.carrera?.Nombre_Carrera || 'Sin carrera'}</span>
+                        <div className="action-buttons">
+                            <button 
+                                className="btn-approve"
+                                onClick={() => handleApprove(user.Rut)}
+                            >
+                                ✓ Aprobar
+                            </button>
+                            <button 
+                                className="btn-reject"
+                                onClick={() => handleReject(user.Rut)}
+                            >
+                                ✗ Rechazar
+                            </button>
                         </div>
                     </div>
-                    <div className="action-buttons">
-                        <button 
-                            className="btn-approve"
-                            onClick={() => handleApprove(user.Rut)}
-                        >
-                            ✓ Aprobar
-                        </button>
-                        <button 
-                            className="btn-reject"
-                            onClick={() => handleReject(user.Rut)}
-                        >
-                            ✗ Rechazar
-                        </button>
-                    </div>
-                </div>
-            ))}
+                );
+            })}
         </div>
     );
 };
@@ -152,7 +180,6 @@ const AllUsersSection = () => {
                     <option value="Administrador">Administrador</option>
                     <option value="Alumno">Alumno</option>
                     <option value="Profesor">Profesor</option>
-                    <option value="Director de Escuela">Director de Escuela</option>
                 </select>
                 <select
                     className="filter-select"
@@ -175,42 +202,64 @@ const AllUsersSection = () => {
                             <th>Correo</th>
                             <th>RUT</th>
                             <th>Tipo de Usuario</th>
-                            <th>Carrera</th>
+                            <th>Carrera/Cargo</th>
                             <th>Estado</th>
                             <th>Acciones</th>
                         </tr>
                     </thead>
                     <tbody>
-                        {users.map(user => (
-                            <tr key={user.Rut || user.ID_Usuario}>
-                                <td>{user.Nombre_Completo}</td>
-                                <td>{user.Correo}</td>
-                                <td>{user.Rut}</td>
-                                <td>{user.tipoUsuario?.Descripcion || 'N/A'}</td>
-                                <td>{user.carrera?.Nombre_Carrera || 'Sin carrera'}</td>
-                                <td>
-                                    <span className={`status-badge ${user.Vigente ? 'active' : 'inactive'}`}>
-                                        {user.Vigente ? 'Activo' : 'Inactivo'}
-                                    </span>
-                                </td>
-                                <td>
-                                    <div className="action-buttons">
-                                        <button 
-                                            className="btn-edit"
-                                            onClick={() => handleEditClick(user)}
-                                        >
-                                            ✏️ Editar
-                                        </button>
-                                        <button 
-                                            className={user.Vigente ? 'btn-deactivate' : 'btn-approve'}
-                                            onClick={() => handleDeactivate(user.Rut, user.Vigente)}
-                                        >
-                                            {user.Vigente ? '⊗ Desactivar' : '✓ Activar'}
-                                        </button>
-                                    </div>
-                                </td>
-                            </tr>
-                        ))}
+                        {users.map(user => {
+                            const tipoUsuarioDesc = user.tipoUsuario?.Descripcion || '';
+                            const codTipoUsuario = user.tipoUsuario?.Cod_TipoUsuario;
+                            
+                            // Determinar qué mostrar según el tipo de usuario
+                            let carreraOCargo = '-';
+                            if (codTipoUsuario === 2) {
+                                // Alumno - mostrar carrera
+                                carreraOCargo = user.carrera?.Nombre_Carrera || 'Sin carrera';
+                            } else if (codTipoUsuario === 3) {
+                                // Profesor - mostrar cargo con descripción si aplica
+                                const descCargo = user.cargo?.Desc_Cargo || 'Sin cargo';
+                                const descripcionPersonalizada = user.poseesCargos?.[0]?.Descripcion_Cargo;
+                                
+                                if (descCargo === 'Otro' && descripcionPersonalizada) {
+                                    carreraOCargo = `${descCargo} (${descripcionPersonalizada})`;
+                                } else {
+                                    carreraOCargo = descCargo;
+                                }
+                            }
+                            
+                            return (
+                                <tr key={user.Rut || user.ID_Usuario}>
+                                    <td>{user.Nombre_Completo}</td>
+                                    <td>{user.Correo}</td>
+                                    <td>{user.Rut}</td>
+                                    <td>{tipoUsuarioDesc || 'N/A'}</td>
+                                    <td>{carreraOCargo}</td>
+                                    <td>
+                                        <span className={`status-badge ${user.Vigente ? 'active' : 'inactive'}`}>
+                                            {user.Vigente ? 'Activo' : 'Inactivo'}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <div className="action-buttons">
+                                            <button 
+                                                className="btn-edit"
+                                                onClick={() => handleEditClick(user)}
+                                            >
+                                                ✏️ Editar
+                                            </button>
+                                            <button 
+                                                className={user.Vigente ? 'btn-deactivate' : 'btn-approve'}
+                                                onClick={() => handleDeactivate(user.Rut, user.Vigente)}
+                                            >
+                                                {user.Vigente ? '⊗ Desactivar' : '✓ Activar'}
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            );
+                        })}
                     </tbody>
                 </table>
             )}

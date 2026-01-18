@@ -3,29 +3,30 @@ import { EntitySchema } from "typeorm";
 
 /**
  * Entidad TieneEstado - Historial de estados de préstamos
- * Reemplaza el campo único de estado por un historial completo (auditoría).
- * Permite tracking de todos los cambios de estado de un préstamo.
+ * Registra todos los cambios de estado de un préstamo (auditoría).
+ * Permite tracking completo del ciclo de vida de un préstamo.
  */
 const TieneEstadoSchema = new EntitySchema({
   name: "TieneEstado",
   tableName: "tiene_estado",
   columns: {
-    ID_Num_Inv: {
-      type: "varchar",
-      length: 50,
-      primary: true,
-    },
-    ID_Estado: {
+    ID_Tiene_Estado: {
       type: "int",
       primary: true,
+      generated: true,
+    },
+    ID_Prestamo: {
+      type: "int",
+      nullable: false,
     },
     Cod_Estado: {
       type: "int",
-      primary: true,
+      nullable: false,
     },
     Fecha_Estado: {
       type: "timestamp with time zone",
       nullable: false,
+      default: () => "CURRENT_TIMESTAMP",
     },
     Hora_Estado: {
       type: "time",
@@ -37,25 +38,17 @@ const TieneEstadoSchema = new EntitySchema({
     },
   },
   relations: {
-    equipo: {
+    prestamo: {
       type: "many-to-one",
-      target: "Equipos",
+      target: "Prestamo",
       joinColumn: {
-        name: "ID_Num_Inv",
+        name: "ID_Prestamo",
       },
       nullable: false,
     },
     estadoPrestamo: {
       type: "many-to-one",
       target: "EstadoPrestamo",
-      joinColumn: {
-        name: "ID_Estado",
-      },
-      nullable: false,
-    },
-    estado: {
-      type: "many-to-one",
-      target: "Estado",
       joinColumn: {
         name: "Cod_Estado",
       },
@@ -65,7 +58,7 @@ const TieneEstadoSchema = new EntitySchema({
   indices: [
     {
       name: "IDX_TIENE_ESTADO",
-      columns: ["ID_Num_Inv", "ID_Estado", "Cod_Estado"],
+      columns: ["ID_Tiene_Estado"],
       unique: true,
     },
   ],

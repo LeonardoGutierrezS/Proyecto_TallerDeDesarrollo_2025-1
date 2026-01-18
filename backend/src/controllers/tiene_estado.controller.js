@@ -1,8 +1,8 @@
 "use strict";
 import {
   createTieneEstadoService,
-  getHistorialEstadosService,
   getEstadoActualService,
+  getHistorialEstadosService,
 } from "../services/tiene_estado.service.js";
 import { tieneEstadoValidation } from "../validations/tiene_estado.validation.js";
 import {

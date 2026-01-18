@@ -1,5 +1,6 @@
 "use strict";
 import Estado from "../entity/estado.entity.js";
+import Equipos from "../entity/equipos.entity.js";
 import { AppDataSource } from "../config/configDb.js";
 
 export async function createEstadoService(body) {
@@ -62,6 +63,7 @@ export async function getEstadosService() {
 export async function updateEstadoService(id, body) {
   try {
     const estadoRepository = AppDataSource.getRepository(Estado);
+    const equiposRepository = AppDataSource.getRepository(Equipos);
 
     const estadoFound = await estadoRepository.findOne({
       where: { Cod_Estado: id },
@@ -69,22 +71,30 @@ export async function updateEstadoService(id, body) {
 
     if (!estadoFound) return [null, "Estado no encontrado"];
 
+    // Verificar si hay equipos asociados a este estado
+    const equiposCount = await equiposRepository.count({
+      where: { ID_Estado: id },
+    });
+
+    if (equiposCount > 0) {
+      return [null, `No se puede editar el estado porque tiene ${equiposCount} equipo(s) asociado(s)`];
+    }
+
+    // Solo limpiar espacios, NO convertir a minúsculas
+    const estadoNormalizado = body.Descripcion.trim()
+      .replace(/\s+/g, ' ');
+
     const existingEstado = await estadoRepository.findOne({
-      where: { Descripcion: body.Descripcion },
+      where: { Descripcion: estadoNormalizado },
     });
 
     if (existingEstado && existingEstado.Cod_Estado !== id) {
       return [null, "Ya existe otro estado con el mismo nombre"];
     }
 
-    await estadoRepository.update(
-      { ID_Estado: id },
-      { Estado: body.Estado },
-    );
-
-    const estadoUpdated = await estadoRepository.findOne({
-      where: { ID_Estado: id },
-    });
+    // Actualizar usando save() en lugar de update()
+    estadoFound.Descripcion = estadoNormalizado;
+    const estadoUpdated = await estadoRepository.save(estadoFound);
 
     return [estadoUpdated, null];
   } catch (error) {
@@ -96,12 +106,22 @@ export async function updateEstadoService(id, body) {
 export async function deleteEstadoService(id) {
   try {
     const estadoRepository = AppDataSource.getRepository(Estado);
+    const equiposRepository = AppDataSource.getRepository(Equipos);
 
     const estadoFound = await estadoRepository.findOne({
-      where: { ID_Estado: id },
+      where: { Cod_Estado: id },
     });
 
     if (!estadoFound) return [null, "Estado no encontrado"];
+
+    // Verificar si hay equipos asociados a este estado
+    const equiposCount = await equiposRepository.count({
+      where: { ID_Estado: id },
+    });
+
+    if (equiposCount > 0) {
+      return [null, `No se puede eliminar el estado porque tiene ${equiposCount} equipo(s) asociado(s)`];
+    }
 
     const estadoDeleted = await estadoRepository.remove(estadoFound);
 

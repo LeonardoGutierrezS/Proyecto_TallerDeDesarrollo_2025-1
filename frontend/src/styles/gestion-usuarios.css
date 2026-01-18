@@ -138,18 +138,20 @@
 /* Botones de acción */
 .action-buttons {
     display: flex;
-    gap: 10px;
-    justify-content: flex-end;
+    gap: 6px;
+    justify-content: center;
+    flex-wrap: wrap;
 }
 
 .btn-approve, .btn-reject, .btn-edit, .btn-deactivate {
-    padding: 8px 20px;
+    padding: 6px 12px;
     border: none;
     border-radius: 5px;
-    font-size: 0.9em;
+    font-size: 0.75em;
     font-weight: 600;
     cursor: pointer;
     transition: all 0.3s ease;
+    white-space: nowrap;
 }
 
 .btn-approve {
@@ -223,6 +225,9 @@
     width: 100%;
     border-collapse: collapse;
     margin-top: 20px;
+    font-size: 0.85em;
+    table-layout: fixed;
+    font-family: Arial, sans-serif;
 }
 
 .users-table thead {
@@ -231,14 +236,58 @@
 }
 
 .users-table th {
-    padding: 15px;
+    padding: 12px 10px;
     text-align: left;
     font-weight: 600;
+    font-size: 1em;
 }
 
 .users-table td {
-    padding: 12px 15px;
+    padding: 10px;
     border-bottom: 1px solid #e0e0e0;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    vertical-align: middle;
+    font-size: 1em;
+}
+
+/* Anchos específicos de columnas */
+.users-table th:nth-child(1), /* Nombre */
+.users-table td:nth-child(1) {
+    width: 16%;
+}
+
+.users-table th:nth-child(2), /* Correo */
+.users-table td:nth-child(2) {
+    width: 20%;
+}
+
+.users-table th:nth-child(3), /* RUT */
+.users-table td:nth-child(3) {
+    width: 11%;
+    white-space: nowrap;
+}
+
+.users-table th:nth-child(4), /* Tipo de Usuario */
+.users-table td:nth-child(4) {
+    width: 11%;
+    text-align: center;
+}
+
+.users-table th:nth-child(5), /* Carrera/Cargo */
+.users-table td:nth-child(5) {
+    width: 17%;
+}
+
+.users-table th:nth-child(6), /* Estado */
+.users-table td:nth-child(6) {
+    width: 9%;
+    text-align: center;
+}
+
+.users-table th:nth-child(7), /* Acciones */
+.users-table td:nth-child(7) {
+    width: 16%;
 }
 
 .users-table tbody tr:hover {

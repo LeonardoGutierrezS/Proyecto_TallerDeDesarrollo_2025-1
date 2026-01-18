@@ -6,6 +6,7 @@ import CarreraSchema from "../entity/carrera.entity.js";
 import MarcaSchema from "../entity/marca.entity.js";
 import CategoriaSchema from "../entity/categoria.entity.js";
 import EstadoSchema from "../entity/estado.entity.js";
+import EstadoPrestamoSchema from "../entity/estado_prestamo.entity.js";
 import EquiposSchema from "../entity/equipos.entity.js";
 import PenalizacionesSchema from "../entity/penalizaciones.entity.js";
 import { AppDataSource } from "./configDb.js";
@@ -37,13 +38,8 @@ async function createTiposUsuario() {
           Descripcion: "Profesor",
         }),
       ),
-      tipoUsuarioRepository.save(
-        tipoUsuarioRepository.create({
-          Descripcion: "Director de Escuela",
-        }),
-      ),
     ]);
-    console.log("* => Tipos de usuario creados exitosamente");
+    console.log("* => Tipos de usuario creados exitosamente (Administrador, Alumno, Profesor)");
   } catch (error) {
     console.error("Error al crear tipos de usuario:", error);
   }
@@ -55,15 +51,27 @@ async function createTiposUsuario() {
 async function createCargos() {
   try {
     const cargoRepository = AppDataSource.getRepository(CargoSchema);
-    const userRepository = AppDataSource.getRepository(User);
 
     const count = await cargoRepository.count();
     if (count > 0) return;
 
-    // Los cargos se asignarán cuando se creen los usuarios
-    console.log("* => Cargos se crearán con los usuarios");
+    await Promise.all([
+      cargoRepository.save(
+        cargoRepository.create({
+          ID_Cargo: 1,
+          Desc_Cargo: "Director de Escuela",
+        }),
+      ),
+      cargoRepository.save(
+        cargoRepository.create({
+          ID_Cargo: 2,
+          Desc_Cargo: "Otro",
+        }),
+      ),
+    ]);
+    console.log("* => Cargos creados exitosamente (Director de Escuela, Otro)");
   } catch (error) {
-    console.error("Error al verificar cargos:", error);
+    console.error("Error al crear cargos:", error);
   }
 }
 
@@ -104,16 +112,19 @@ async function createUsers() {
     const tipoUsuarioRepository = AppDataSource.getRepository(TipoUsuarioSchema);
     const cargoRepository = AppDataSource.getRepository(CargoSchema);
     const carreraRepository = AppDataSource.getRepository(CarreraSchema);
+    const poseeCargoRepository = AppDataSource.getRepository("PoseeCargo");
 
     const countBefore = await userRepository.count();
     console.log(`* => Usuarios existentes en la base de datos: ${countBefore}`);
     if (countBefore > 0) return;
 
-    // Obtener tipos de usuario y carreras
+    // Obtener tipos de usuario, cargos y carreras
     const tipoAdmin = await tipoUsuarioRepository.findOne({ where: { Descripcion: "Administrador" } });
     const tipoAlumno = await tipoUsuarioRepository.findOne({ where: { Descripcion: "Alumno" } });
     const tipoProfesor = await tipoUsuarioRepository.findOne({ where: { Descripcion: "Profesor" } });
-    const tipoDirector = await tipoUsuarioRepository.findOne({ where: { Descripcion: "Director de Escuela" } });
+    
+    const cargoDirector = await cargoRepository.findOne({ where: { ID_Cargo: 1 } }); // Director de Escuela
+    const cargoOtro = await cargoRepository.findOne({ where: { ID_Cargo: 2 } }); // Otro
     
     const carreraInformatica = await carreraRepository.findOne({ 
       where: { Nombre_Carrera: "Ingeniería Civil Informática" } 
@@ -122,12 +133,12 @@ async function createUsers() {
       where: { Nombre_Carrera: "Ingeniería de Ejecución en Computación e Informática" } 
     });
 
-    if (!tipoAdmin || !tipoAlumno || !tipoProfesor || !tipoDirector || !carreraInformatica) {
-      console.error("Error: No se encontraron los tipos de usuario o carreras necesarios");
+    if (!tipoAdmin || !tipoAlumno || !tipoProfesor || !cargoDirector || !cargoOtro || !carreraInformatica) {
+      console.error("Error: No se encontraron los tipos de usuario, cargos o carreras necesarios");
       return;
     }
 
-    // Crear usuarios
+    // 1. Crear Administrador (sin carrera, sin cargo)
     const admin = await userRepository.save(
       userRepository.create({
         Nombre_Completo: "Administrador Principal",
@@ -136,10 +147,12 @@ async function createUsers() {
         Contrasenia: await encryptPassword("admin1234"),
         Vigente: true,
         Cod_TipoUsuario: tipoAdmin.Cod_TipoUsuario,
-        ID_Carrera: carreraInformatica.ID_Carrera,
+        ID_Carrera: null,
+        ID_Cargo: null,
       }),
     );
 
+    // 2. Crear Director de Escuela (Profesor con cargo Director de Escuela)
     const director = await userRepository.save(
       userRepository.create({
         Nombre_Completo: "María Elena González Pérez",
@@ -147,11 +160,22 @@ async function createUsers() {
         Correo: "director2024@gmail.cl",
         Contrasenia: await encryptPassword("director1234"),
         Vigente: true,
-        Cod_TipoUsuario: tipoDirector.Cod_TipoUsuario,
-        ID_Carrera: carreraInformatica.ID_Carrera,
+        Cod_TipoUsuario: tipoProfesor.Cod_TipoUsuario,
+        ID_Carrera: null,
+        ID_Cargo: cargoDirector.ID_Cargo,
       }),
     );
 
+    // Registrar en posee_cargo para el Director
+    await poseeCargoRepository.save({
+      Rut_profesor: director.Rut,
+      ID_Cargo: cargoDirector.ID_Cargo,
+      Descripcion_Cargo: null, // Director no necesita descripción adicional
+      Fecha_Inicio: new Date(),
+      Fecha_Fin: null, // Cargo activo
+    });
+
+    // 3. Crear Profesores con cargo "Otro"
     const profesor1 = await userRepository.save(
       userRepository.create({
         Nombre_Completo: "Carlos Alberto Fernández López",
@@ -160,9 +184,18 @@ async function createUsers() {
         Contrasenia: await encryptPassword("profesor1234"),
         Vigente: true,
         Cod_TipoUsuario: tipoProfesor.Cod_TipoUsuario,
-        ID_Carrera: carreraInformatica.ID_Carrera,
+        ID_Carrera: null,
+        ID_Cargo: cargoOtro.ID_Cargo,
       }),
     );
+
+    await poseeCargoRepository.save({
+      Rut_profesor: profesor1.Rut,
+      ID_Cargo: cargoOtro.ID_Cargo,
+      Descripcion_Cargo: "Profesor de Programación",
+      Fecha_Inicio: new Date(),
+      Fecha_Fin: null,
+    });
 
     const profesor2 = await userRepository.save(
       userRepository.create({
@@ -172,10 +205,20 @@ async function createUsers() {
         Contrasenia: await encryptPassword("profesor1234"),
         Vigente: true,
         Cod_TipoUsuario: tipoProfesor.Cod_TipoUsuario,
-        ID_Carrera: carreraEjecucion.ID_Carrera,
+        ID_Carrera: null,
+        ID_Cargo: cargoOtro.ID_Cargo,
       }),
     );
 
+    await poseeCargoRepository.save({
+      Rut_profesor: profesor2.Rut,
+      ID_Cargo: cargoOtro.ID_Cargo,
+      Descripcion_Cargo: "Profesora de Base de Datos",
+      Fecha_Inicio: new Date(),
+      Fecha_Fin: null,
+    });
+
+    // 4. Crear Alumnos con carrera
     await Promise.all([
       userRepository.save(
         userRepository.create({
@@ -186,6 +229,7 @@ async function createUsers() {
           Vigente: true,
           Cod_TipoUsuario: tipoAlumno.Cod_TipoUsuario,
           ID_Carrera: carreraInformatica.ID_Carrera,
+          ID_Cargo: null,
         }),
       ),
       userRepository.save(
@@ -197,6 +241,7 @@ async function createUsers() {
           Vigente: true,
           Cod_TipoUsuario: tipoAlumno.Cod_TipoUsuario,
           ID_Carrera: carreraInformatica.ID_Carrera,
+          ID_Cargo: null,
         }),
       ),
       userRepository.save(
@@ -208,6 +253,7 @@ async function createUsers() {
           Vigente: true,
           Cod_TipoUsuario: tipoAlumno.Cod_TipoUsuario,
           ID_Carrera: carreraEjecucion.ID_Carrera,
+          ID_Cargo: null,
         }),
       ),
       userRepository.save(
@@ -219,6 +265,7 @@ async function createUsers() {
           Vigente: true,
           Cod_TipoUsuario: tipoAlumno.Cod_TipoUsuario,
           ID_Carrera: carreraInformatica.ID_Carrera,
+          ID_Cargo: null,
         }),
       ),
       userRepository.save(
@@ -230,6 +277,7 @@ async function createUsers() {
           Vigente: true,
           Cod_TipoUsuario: tipoAlumno.Cod_TipoUsuario,
           ID_Carrera: carreraEjecucion.ID_Carrera,
+          ID_Cargo: null,
         }),
       ),
       userRepository.save(
@@ -245,30 +293,13 @@ async function createUsers() {
       ),
     ]);
 
-    // Crear cargos para usuarios específicos
-    await cargoRepository.save(
-      cargoRepository.create({
-        Rut: director.Rut,
-        Desc_Cargo: "Director de Escuela de Ingeniería Civil Informática",
-      }),
-    );
-
-    await cargoRepository.save(
-      cargoRepository.create({
-        Rut: profesor1.Rut,
-        Desc_Cargo: "Profesor de Programación",
-      }),
-    );
-
-    await cargoRepository.save(
-      cargoRepository.create({
-        Rut: profesor2.Rut,
-        Desc_Cargo: "Profesora de Base de Datos",
-      }),
-    );
-
     const countAfter = await userRepository.count();
-    console.log(`* => Usuarios y cargos creados exitosamente (${countAfter} usuarios creados)`);
+    console.log("* => Usuarios creados exitosamente:");
+    console.log("  - 1 Administrador");
+    console.log("  - 1 Director de Escuela (Profesor con cargo Director)");
+    console.log("  - 2 Profesores con cargo \"Otro\"");
+    console.log("  - 6 Alumnos");
+    console.log(`  Total: ${countAfter} usuarios`);
   } catch (error) {
     console.error("Error al crear usuarios:", error);
   }
@@ -331,7 +362,7 @@ async function createCategorias() {
 }
 
 /**
- * Crea los estados iniciales del sistema
+ * Crea los estados iniciales del sistema (para equipos)
  */
 async function createEstados() {
   try {
@@ -349,6 +380,30 @@ async function createEstados() {
     console.log("* => Estados creados exitosamente");
   } catch (error) {
     console.error("Error al crear estados:", error);
+  }
+}
+
+/**
+ * Crea los estados de préstamo iniciales del sistema
+ * Flujo: Pendiente → Listo para Entregar (Director aprueba) → Entregado (Admin entrega) → Devuelto (Admin recibe)
+ */
+async function createEstadosPrestamo() {
+  try {
+    const estadoPrestamoRepository = AppDataSource.getRepository(EstadoPrestamoSchema);
+
+    const count = await estadoPrestamoRepository.count();
+    if (count > 0) return;
+
+    await Promise.all([
+      estadoPrestamoRepository.save(estadoPrestamoRepository.create({ Descripcion: "Pendiente" })),
+      estadoPrestamoRepository.save(estadoPrestamoRepository.create({ Descripcion: "Listo para Entregar" })),
+      estadoPrestamoRepository.save(estadoPrestamoRepository.create({ Descripcion: "Entregado" })),
+      estadoPrestamoRepository.save(estadoPrestamoRepository.create({ Descripcion: "Devuelto" })),
+      estadoPrestamoRepository.save(estadoPrestamoRepository.create({ Descripcion: "Rechazado" })),
+    ]);
+    console.log("* => Estados de préstamo creados exitosamente");
+  } catch (error) {
+    console.error("Error al crear estados de préstamo:", error);
   }
 }
 
@@ -524,7 +579,8 @@ export {
   createUsers, 
   createMarcas, 
   createCategorias, 
-  createEstados, 
+  createEstados,
+  createEstadosPrestamo,
   createEquipos, 
   createPenalizaciones 
 };

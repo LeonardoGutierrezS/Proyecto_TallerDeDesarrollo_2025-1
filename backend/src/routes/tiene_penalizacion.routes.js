@@ -4,10 +4,10 @@ import { authenticateJwt } from "../middlewares/authentication.middleware.js";
 import { isAdmin } from "../middlewares/authorization.middleware.js";
 import {
   asignarPenalizacionController,
-  getTienePenalizacionesController,
-  getPenalizacionesPorUsuarioController,
-  getPenalizacionesActivasController,
   finalizarPenalizacionController,
+  getPenalizacionesActivasController,
+  getPenalizacionesPorUsuarioController,
+  getTienePenalizacionesController,
 } from "../controllers/tiene_penalizacion.controller.js";
 
 const router = Router();

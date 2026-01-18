@@ -4,10 +4,10 @@ import { authenticateJwt } from "../middlewares/authentication.middleware.js";
 import { isAdmin } from "../middlewares/authorization.middleware.js";
 import {
   createTipoUsuarioController,
+  deleteTipoUsuarioController,
   getTiposUsuarioController,
   getTipoUsuarioController,
   updateTipoUsuarioController,
-  deleteTipoUsuarioController,
 } from "../controllers/tipo_usuario.controller.js";
 
 const router = Router();
