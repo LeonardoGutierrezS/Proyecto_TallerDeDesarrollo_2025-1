@@ -26,13 +26,14 @@ const useLogin = () => {
         if (dataMessage && dataMessage.message) {
             const message = dataMessage.message;
             
-            // Si el mensaje contiene "y/o" o es genérico, marcamos ambos campos
-            if (message.includes('y/o') || message.includes('incorrectos') || message.includes('inactivo')) {
-                setGeneralError(message);
-            } else if (dataMessage.dataInfo === 'email') {
+            // Priorizar asignación específica si dataInfo está presente
+            if (dataMessage.dataInfo === 'email') {
                 setErrorEmail(message);
             } else if (dataMessage.dataInfo === 'password') {
                 setErrorPassword(message);
+            } else if (message.includes('y/o') || message.includes('incorrectos') || message.includes('inactivo')) {
+                // Fallback para mensajes genéricos o antiguos
+                setGeneralError(message);
             } else {
                 setGeneralError(message);
             }

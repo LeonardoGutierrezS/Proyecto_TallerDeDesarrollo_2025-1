@@ -6,6 +6,64 @@ import Prestamo from "../entity/prestamo.entity.js";
 import Equipos from "../entity/equipos.entity.js";
 import User from "../entity/user.entity.js";
 import Devolucion from "../entity/devolucion.entity.js";
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const LOGO_SIREC = path.join(__dirname, '../assets/images/sirec-logo-blanco.png');
+const LOGO_FACE = path.join(__dirname, '../assets/images/face-logo.png');
+
+/**
+ * Función auxiliar para dibujar el encabezado institucional con logos
+ */
+const dibujarEncabezadoInstitucional = (doc, titulo, isLandscape = false) => {
+  const pageWidth = isLandscape ? 792 : 612;
+  const margin = 40;
+  const contentWidth = pageWidth - (margin * 2);
+
+  try {
+    // Franja azul superior
+    doc.rect(0, 0, pageWidth, 60).fill("#003366");
+
+    // Logo SIREC (Izquierda)
+    doc.image(LOGO_SIREC, margin, 10, { height: 40 });
+  } catch (e) {
+    console.error("No se pudo cargar logo SIREC:", e);
+  }
+
+  try {
+    // Logo Facultad (Derecha) - Ajustado para que no tope con el borde
+    doc.image(LOGO_FACE, pageWidth - margin - 120, 10, { height: 40 });
+  } catch (e) {
+    console.error("No se pudo cargar logo FACE:", e);
+  }
+
+  doc
+    .fillColor("#003366")
+    .fontSize(16)
+    .font("Helvetica-Bold")
+    .text(titulo, margin, 70, { align: "center", width: contentWidth })
+    .moveDown(0.2);
+
+  doc
+    .fontSize(10)
+    .font("Helvetica")
+    .fillColor("#64748b")
+    .text("Universidad del Bío-Bío - Facultad de Ciencias Empresariales", { align: "center", width: contentWidth })
+    .text(`Fecha de generación: ${new Date().toLocaleString("es-CL")}`, { align: "center", width: contentWidth })
+    .moveDown(1.5);
+  
+  // Línea divisoria
+  doc
+    .moveTo(margin, doc.y - 10)
+    .lineTo(pageWidth - margin, doc.y - 10)
+    .strokeColor("#e2e8f0")
+    .lineWidth(1)
+    .stroke();
+  
+  return doc.y;
+};
 
 /**
  * Generar reporte de solicitudes en PDF
@@ -44,18 +102,7 @@ export async function generarReporteSolicitudesPDF(filtros = {}) {
     const doc = new PDFDocument({ size: "letter", margin: 40 });
 
     // Encabezado
-    doc
-      .fontSize(16)
-      .font("Helvetica-Bold")
-      .text("REPORTE DE SOLICITUDES", { align: "center" })
-      .moveDown(0.5);
-
-    doc
-      .fontSize(10)
-      .font("Helvetica")
-      .text("Universidad del Bío-Bío - SIREC", { align: "center" })
-      .text(`Fecha de generación: ${new Date().toLocaleString("es-CL")}`, { align: "center" })
-      .moveDown(1);
+    dibujarEncabezadoInstitucional(doc, "REPORTE DE SOLICITUDES");
 
     // Filtros aplicados
     if (filtros.fechaInicio || filtros.fechaFin) {
@@ -87,7 +134,7 @@ export async function generarReporteSolicitudesPDF(filtros = {}) {
         .font("Helvetica-Bold")
         .text(`${index + 1}. Solicitud #${solicitud.ID_Solicitud}`, { continued: false })
         .font("Helvetica")
-        .text(`Usuario: ${solicitud.usuario?.Nombre || ''} ${solicitud.usuario?.Apellido || ''}`)
+        .text(`Usuario: ${solicitud.usuario?.Nombre_Completo || ''}`)
         .text(`RUT: ${solicitud.Rut}`)
         .text(`Equipo: ${solicitud.ID_Num_Inv} - ${solicitud.equipo?.Modelo || "N/A"}`)
         .text(`Tipo: ${tipo}`)
@@ -142,7 +189,7 @@ export async function generarReporteSolicitudesCSV(filtros = {}) {
       const tipo = solicitud.Fecha_inicio_sol && solicitud.Fecha_termino_sol ? "Largo Plazo" : "Diaria";
       
       csv += `${solicitud.ID_Solicitud},`;
-      csv += `"${solicitud.usuario?.Nombre || ''} ${solicitud.usuario?.Apellido || ''}",`;
+      csv += `"${solicitud.usuario?.Nombre_Completo || ''}",`;
       csv += `${solicitud.Rut},`;
       csv += `${solicitud.ID_Num_Inv},`;
       csv += `"${solicitud.equipo?.Modelo || "N/A"}",`;
@@ -193,18 +240,8 @@ export async function generarReportePrestamosPDF(filtros = {}) {
 
     const doc = new PDFDocument({ size: "letter", margin: 40 });
 
-    doc
-      .fontSize(16)
-      .font("Helvetica-Bold")
-      .text("REPORTE DE PRÉSTAMOS", { align: "center" })
-      .moveDown(0.5);
-
-    doc
-      .fontSize(10)
-      .font("Helvetica")
-      .text("Universidad del Bío-Bío - SIREC", { align: "center" })
-      .text(`Fecha de generación: ${new Date().toLocaleString("es-CL")}`, { align: "center" })
-      .moveDown(1);
+    // Encabezado
+    dibujarEncabezadoInstitucional(doc, "REPORTE DE PRÉSTAMOS");
 
     doc.fontSize(11).font("Helvetica-Bold").text(`Total de Préstamos: ${prestamos.length}`);
     doc.moveDown(1);
@@ -222,7 +259,7 @@ export async function generarReportePrestamosPDF(filtros = {}) {
         .font("Helvetica-Bold")
         .text(`${index + 1}. Préstamo #${prestamo.ID_Prestamo}`)
         .font("Helvetica")
-        .text(`Usuario: ${solicitud?.usuario?.Nombre || ''} ${solicitud?.usuario?.Apellido || ''}`)
+        .text(`Usuario: ${solicitud?.usuario?.Nombre_Completo || ''}`)
         .text(`Equipo: ${prestamo.ID_Num_Inv}`)
         .text(`Estado: ${estado}`)
         .text(`Fecha Inicio: ${new Date(prestamo.Fecha_inicio_prestamo).toLocaleString("es-CL")}`)
@@ -274,7 +311,7 @@ export async function generarReportePrestamosCSV(filtros = {}) {
       const solicitud = prestamo.solicitudes && prestamo.solicitudes.length > 0 ? prestamo.solicitudes[0] : null;
       
       csv += `${prestamo.ID_Prestamo},`;
-      csv += `"${solicitud?.usuario?.Nombre || ''} ${solicitud?.usuario?.Apellido || ''}",`;
+      csv += `"${solicitud?.usuario?.Nombre_Completo || ''}",`;
       csv += `${solicitud?.Rut || "N/A"},`;
       csv += `${prestamo.ID_Num_Inv},`;
       csv += `${estado},`;
@@ -289,32 +326,19 @@ export async function generarReportePrestamosCSV(filtros = {}) {
   }
 }
 
-/**
- * Generar reporte de equipos en PDF
- */
 export async function generarReporteEquiposPDF() {
   try {
     const equipoRepository = AppDataSource.getRepository(Equipos);
     
     const equipos = await equipoRepository.find({
-      relations: ["categoria", "marca", "estado"],
+      relations: ["categoria", "marca", "estado", "especificaciones"],
       order: { ID_Num_Inv: "ASC" }
     });
 
-    const doc = new PDFDocument({ size: "letter", margin: 40 });
+    const doc = new PDFDocument({ size: "letter", layout: "landscape", margin: 40 });
 
-    doc
-      .fontSize(16)
-      .font("Helvetica-Bold")
-      .text("REPORTE DE EQUIPOS", { align: "center" })
-      .moveDown(0.5);
-
-    doc
-      .fontSize(10)
-      .font("Helvetica")
-      .text("Universidad del Bío-Bío - SIREC", { align: "center" })
-      .text(`Fecha de generación: ${new Date().toLocaleString("es-CL")}`, { align: "center" })
-      .moveDown(1);
+    // Encabezado
+    dibujarEncabezadoInstitucional(doc, "REPORTE DE EQUIPOS", true);
 
     // Estadísticas
     const disponibles = equipos.filter(e => e.Disponible).length;
@@ -322,28 +346,73 @@ export async function generarReporteEquiposPDF() {
 
     doc.fontSize(11).font("Helvetica-Bold").text("Resumen:");
     doc.fontSize(10).font("Helvetica")
-      .text(`Total de Equipos: ${equipos.length}`)
-      .text(`Disponibles: ${disponibles}`)
-      .text(`En Préstamo: ${enPrestamo}`)
+      .text(`Total de Equipos: ${equipos.length} | Disponibles: ${disponibles} | En Préstamo: ${enPrestamo}`)
       .moveDown(1);
 
-    // Tabla de equipos
+    // Configuración de la tabla
+    const tableTop = doc.y;
+    const colWidths = [25, 80, 110, 80, 80, 80, 60, 197]; 
+    const colNames = ["#", "Inventario", "Modelo", "Categoría", "Marca", "Estado", "Disp.", "Especificaciones"];
+    const startX = 40;
+    let currentY = tableTop;
+
+    // Función para dibujar encabezado de tabla
+    const drawTableHeader = (y) => {
+      doc.rect(startX, y, 712, 20).fill("#f1f5f9").stroke("#cbd5e1");
+      doc.fillColor("#1e293b").font("Helvetica-Bold").fontSize(8);
+      
+      let x = startX;
+      colNames.forEach((name, i) => {
+        doc.text(name, x + 5, y + 6, { width: colWidths[i] - 10, align: "left" });
+        x += colWidths[i];
+      });
+      return y + 20;
+    };
+
+    currentY = drawTableHeader(currentY);
+
+    // Filas de equipos
     equipos.forEach((equipo, index) => {
-      if (doc.y > 700) {
-        doc.addPage();
+      // Formatear especificaciones
+      let specsText = "-";
+      if (equipo.especificaciones && equipo.especificaciones.length > 0) {
+        specsText = equipo.especificaciones
+          .map(s => `${s.Tipo_Especificacion_HW}: ${s.Descripcion}`)
+          .join(", ");
       }
 
-      doc
-        .fontSize(9)
-        .font("Helvetica-Bold")
-        .text(`${index + 1}. ${equipo.ID_Num_Inv}`)
-        .font("Helvetica")
-        .text(`Modelo: ${equipo.Modelo || "N/A"}`)
-        .text(`Categoría: ${equipo.categoria?.Descripcion || "N/A"}`)
-        .text(`Marca: ${equipo.marca?.Descripcion || "N/A"}`)
-        .text(`Estado: ${equipo.estado?.Descripcion || "N/A"}`)
-        .text(`Disponible: ${equipo.Disponible ? "Sí" : "No"}`)
-        .moveDown(0.5);
+      const data = [
+        (index + 1).toString(),
+        equipo.ID_Num_Inv || "N/A",
+        equipo.Modelo || "N/A",
+        equipo.categoria?.Descripcion || "N/A",
+        equipo.marca?.Descripcion || "N/A",
+        equipo.estado?.Descripcion || "N/A",
+        equipo.Disponible ? "Sí" : "No",
+        specsText
+      ];
+
+      // Altura dinámica basada en el texto de especificaciones
+      const rowHeight = Math.max(25, doc.heightOfString(specsText, { width: colWidths[7] - 10 }) + 10);
+
+      if (currentY + rowHeight > 550) {
+        doc.addPage({ size: "letter", layout: "landscape", margin: 40 });
+        const nextY = dibujarEncabezadoInstitucional(doc, "REPORTE DE EQUIPOS", true);
+        currentY = drawTableHeader(nextY);
+      }
+
+      doc.font("Helvetica").fontSize(8).fillColor("#334155");
+      let x = startX;
+      data.forEach((text, i) => {
+        doc.rect(x, currentY, colWidths[i], rowHeight).stroke("#e2e8f0");
+        doc.text(text, x + 5, currentY + 7, { 
+          width: colWidths[i] - 10,
+          height: rowHeight - 10
+        });
+        x += colWidths[i];
+      });
+
+      currentY += rowHeight;
     });
 
     return doc;
@@ -394,7 +463,9 @@ export async function generarReporteEstadisticasPDF(filtros = {}) {
     const devolucionRepository = AppDataSource.getRepository(Devolucion);
     const userRepository = AppDataSource.getRepository(User);
 
-    // Obtener datos para gráficos (usando la misma lógica que obtenerDatosGraficos)
+    const mesesHistorial = filtros.meses || 6;
+
+    // 1. Obtención de datos exhaustiva
     const solicitudes = await solicitudRepository
       .createQueryBuilder("solicitud")
       .leftJoinAndSelect("solicitud.prestamo", "prestamo")
@@ -412,219 +483,227 @@ export async function generarReporteEstadisticasPDF(filtros = {}) {
       .leftJoinAndSelect("user.tipoUsuario", "tipoUsuario")
       .getMany();
 
-    // Estadísticas básicas
+    // Solicitudes por mes
+    const fechaCorte = new Date();
+    fechaCorte.setMonth(fechaCorte.getMonth() - mesesHistorial);
+    fechaCorte.setDate(1);
+
+    const solicitudesPorMes = await solicitudRepository
+      .createQueryBuilder("solicitud")
+      .select("DATE_TRUNC('month', solicitud.Fecha_Sol)", "mes")
+      .addSelect("COUNT(*)", "cantidad")
+      .where("solicitud.Fecha_Sol >= :fecha", { fecha: fechaCorte })
+      .groupBy("DATE_TRUNC('month', solicitud.Fecha_Sol)")
+      .orderBy("DATE_TRUNC('month', solicitud.Fecha_Sol)", "ASC")
+      .getRawMany();
+
+    // Solicitudes por carrera
+    const solicitudesPorCarreraRaw = await solicitudRepository
+      .createQueryBuilder("solicitud")
+      .leftJoin("solicitud.usuario", "usuario")
+      .leftJoin("usuario.carrera", "carrera")
+      .select("COALESCE(carrera.Nombre_Carrera, 'Personal/Docente')", "carrera")
+      .addSelect("COUNT(*)", "cantidad")
+      .groupBy("carrera.Nombre_Carrera")
+      .orderBy("COUNT(*)", "DESC")
+      .getRawMany();
+
+    // 2. Procesamiento de métricas
     const totalSolicitudes = solicitudes.length;
-    const totalPrestamos = await prestamoRepository.count();
     const totalEquipos = equipos.length;
     const equiposDisponibles = equipos.filter(eq => eq.Disponible).length;
-    const totalDevoluciones = await devolucionRepository.count();
-
-    // Datos para gráficos
-    const solicitudesPorEstado = {
-      pendientes: 0,
-      listoParaEntregar: 0,
-      entregados: 0,
-      devueltos: 0,
-      rechazados: 0
-    };
-
+    
+    const estados = { pendientes: 0, listoParaEntregar: 0, entregados: 0, devueltos: 0, rechazados: 0 };
     solicitudes.forEach(sol => {
-      const estado = obtenerEstadoSolicitud(sol);
-      if (estado === "Pendiente") solicitudesPorEstado.pendientes++;
-      else if (estado === "Listo para Entregar") solicitudesPorEstado.listoParaEntregar++;
-      else if (estado === "Entregado") solicitudesPorEstado.entregados++;
-      else if (estado === "Devuelto") solicitudesPorEstado.devueltos++;
-      else if (estado === "Rechazado") solicitudesPorEstado.rechazados++;
+      const e = obtenerEstadoSolicitud(sol);
+      if (e === "Pendiente") estados.pendientes++;
+      else if (e === "Listo para Entregar") estados.listoParaEntregar++;
+      else if (e === "Listo para recepcionar") estados.entregados++;
+      else if (e === "Devuelto") estados.devueltos++;
+      else if (e === "Rechazado") estados.rechazados++;
     });
 
-    const solicitudesPorTipo = {
-      diarias: 0,
-      largoPlazo: 0
-    };
-
-    solicitudes.forEach(sol => {
-      if (sol.Fecha_inicio_sol && sol.Fecha_termino_sol) {
-        solicitudesPorTipo.largoPlazo++;
-      } else {
-        solicitudesPorTipo.diarias++;
-      }
-    });
-
-    const usuariosPorTipo = {
-      alumnos: 0,
-      profesores: 0,
-      administradores: 0
-    };
-
-    usuarios.forEach(user => {
-      const tipo = user.tipoUsuario?.Descripcion;
-      if (tipo === "Alumno") usuariosPorTipo.alumnos++;
-      else if (tipo === "Profesor") usuariosPorTipo.profesores++;
-      else if (tipo === "Administrador") usuariosPorTipo.administradores++;
+    const categorias = {};
+    equipos.forEach(eq => {
+      const cat = eq.categoria?.Descripcion || "Otro";
+      categorias[cat] = (categorias[cat] || 0) + 1;
     });
 
     const doc = new PDFDocument({ size: "letter", margin: 40 });
 
-    // Encabezado
-    doc
-      .fontSize(18)
-      .font("Helvetica-Bold")
-      .text("REPORTE DE ESTADÍSTICAS GENERALES", { align: "center" })
-      .moveDown(0.5);
-
-    doc
-      .fontSize(10)
-      .font("Helvetica")
-      .text("Universidad del Bío-Bío - SIREC", { align: "center" })
-      .text(`Fecha de generación: ${new Date().toLocaleString("es-CL")}`, { align: "center" })
-      .moveDown(2);
-
-    // Estadísticas principales
-    doc.fontSize(14).font("Helvetica-Bold").text("📊 Resumen General", { underline: true });
-    doc.moveDown(0.5);
-
-    doc.fontSize(11).font("Helvetica")
-      .text(`Total de Solicitudes: ${totalSolicitudes}`)
-      .text(`Total de Préstamos: ${totalPrestamos}`)
-      .text(`Total de Devoluciones: ${totalDevoluciones}`)
-      .text(`Total de Equipos: ${totalEquipos}`)
-      .text(`Equipos Disponibles: ${equiposDisponibles}`)
-      .text(`Equipos en Préstamo: ${totalEquipos - equiposDisponibles}`)
-      .moveDown(1);
-
-    // Tasa de disponibilidad
-    const tasaDisponibilidad = ((equiposDisponibles / totalEquipos) * 100).toFixed(2);
-    doc.fontSize(11).font("Helvetica-Bold")
-      .text(`Tasa de Disponibilidad: ${tasaDisponibilidad}%`)
-      .moveDown(2);
-
-    // Gráfico 1: Solicitudes por Estado (Gráfico de Barras)
-    doc.addPage();
-    doc.fontSize(14).font("Helvetica-Bold").text("📊 Solicitudes por Estado", { align: "center" });
+    // --- PÁGINA 1: RESUMEN EJECUTIVO ---
+    dibujarEncabezadoInstitucional(doc, "REPORTE ESTADÍSTICO DE GESTIÓN");
+    
+    doc.fontSize(16).font("Helvetica-Bold").fillColor("#1e293b").text("Resumen Ejecutivo", { underline: true });
     doc.moveDown(1);
 
-    const chartX = 80;
-    const chartY = 150;
-    const chartWidth = 400;
-    const chartHeight = 200;
-    const maxValue = Math.max(...Object.values(solicitudesPorEstado));
-    const barWidth = chartWidth / Object.keys(solicitudesPorEstado).length;
+    // Grid de KPIs Básicos
+    const startY = doc.y;
+    const boxWidth = 250;
+    const boxHeight = 60;
 
-    // Dibujar ejes
-    doc.strokeColor("#000000").lineWidth(2);
-    doc.moveTo(chartX, chartY + chartHeight).lineTo(chartX + chartWidth, chartY + chartHeight).stroke(); // Eje X
-    doc.moveTo(chartX, chartY).lineTo(chartX, chartY + chartHeight).stroke(); // Eje Y
+    // Caja 1: Solicitudes
+    doc.rect(40, startY, boxWidth, boxHeight).fill("#eff6ff").stroke("#3b82f6");
+    doc.fillColor("#1e40af").fontSize(12).font("Helvetica-Bold").text("TOTAL SOLICITUDES", 50, startY + 15);
+    doc.fontSize(20).text(totalSolicitudes.toString(), 50, startY + 32);
 
-    // Dibujar barras
-    const colors = ["#FFD93D", "#36A2EB", "#4BC0C0", "#9966FF", "#FF6384"];
-    const estados = ["pendientes", "listoParaEntregar", "entregados", "devueltos", "rechazados"];
-    const etiquetas = ["Pendientes", "Listo p/Entregar", "Entregados", "Devueltos", "Rechazados"];
+    // Caja 2: Equipos
+    doc.rect(305, startY, boxWidth, boxHeight).fill("#fff7ed").stroke("#f97316");
+    doc.fillColor("#9a3412").fontSize(12).font("Helvetica-Bold").text("INVENTARIO TOTAL", 315, startY + 15);
+    doc.fontSize(20).text(totalEquipos.toString(), 315, startY + 32);
 
-    estados.forEach((estado, index) => {
-      const value = solicitudesPorEstado[estado];
-      const barHeight = maxValue > 0 ? (value / maxValue) * chartHeight : 0;
-      const x = chartX + (index * barWidth) + 10;
-      const y = chartY + chartHeight - barHeight;
+    doc.moveDown(4);
 
-      // Dibujar barra
-      doc.fillColor(colors[index]).rect(x, y, barWidth - 20, barHeight).fill();
+    // Tabla de Estados
+    doc.fillColor("#1e293b").fontSize(14).font("Helvetica-Bold").text("Estado Actual de Solicitudes");
+    doc.moveDown(0.5);
+    
+    const tableTop = doc.y;
+    const col1 = 60, col2 = 250, col3 = 350;
+    
+    doc.rect(40, tableTop, 520, 20).fill("#f1f5f9");
+    doc.fillColor("#475569").fontSize(10).font("Helvetica-Bold");
+    doc.text("ESTADO", col1, tableTop + 5);
+    doc.text("CANTIDAD", col2, tableTop + 5);
+    doc.text("PORCENTAJE", col3, tableTop + 5);
 
-      // Etiqueta del valor
-      doc.fillColor("#000000").fontSize(10).font("Helvetica-Bold");
-      doc.text(value.toString(), x + (barWidth - 20) / 2 - 5, y - 15);
+    let currentY = tableTop + 20;
+    const listaEstados = [
+      { n: "Pendientes", v: estados.pendientes, c: "#FFD93D" },
+      { n: "Listo para Entregar", v: estados.listoParaEntregar, c: "#36A2EB" },
+      { n: "Listo para recepcionar", v: estados.entregados, c: "#4BC0C0" },
+      { n: "Devueltos", v: estados.devueltos, c: "#9966FF" },
+      { n: "Rechazados", v: estados.rechazados, c: "#FF6384" }
+    ];
 
-      // Etiqueta del eje X
-      doc.fontSize(8).font("Helvetica");
-      doc.text(etiquetas[index], x - 5, chartY + chartHeight + 10, { width: barWidth, align: "center" });
+    listaEstados.forEach(item => {
+      const pct = ((item.v / (totalSolicitudes || 1)) * 100).toFixed(1) + "%";
+      doc.fillColor("#1e293b").font("Helvetica").fontSize(10);
+      doc.text(item.n, col1, currentY + 7);
+      doc.text(item.v.toString(), col2, currentY + 7);
+      doc.text(pct, col3, currentY + 7);
+      
+      // Mini barra indicadora
+      doc.rect(col3 + 80, currentY + 8, (item.v / (totalSolicitudes || 1)) * 100, 8).fill(item.c);
+      
+      doc.moveTo(40, currentY + 25).lineTo(560, currentY + 25).stroke("#e2e8f0");
+      currentY += 25;
     });
 
-    // Gráfico 2: Tipos de Solicitud (Gráfico de Torta Simple)
-    doc.moveDown(8);
-    doc.fontSize(14).font("Helvetica-Bold").text("📊 Tipos de Solicitud", { align: "center" });
+    // --- PÁGINA 2: TENDENCIAS ---
+    doc.addPage();
+    dibujarEncabezadoInstitucional(doc, "ANÁLISIS DE TENDENCIAS");
+    
+    doc.fontSize(14).font("Helvetica-Bold").text(`Historial de Solicitudes (Últimos ${mesesHistorial} meses)`);
     doc.moveDown(1);
 
-    const pieX = 300;
-    const pieY = 450;
-    const pieRadius = 60;
-    const totalTipos = solicitudesPorTipo.diarias + solicitudesPorTipo.largoPlazo;
+    if (solicitudesPorMes.length > 0) {
+      const chartX = 60;
+      const chartY = 180;
+      const chartW = 480;
+      const chartH = 150;
+      const maxQty = Math.max(...solicitudesPorMes.map(m => parseInt(m.cantidad)), 1);
 
-    if (totalTipos > 0) {
-      const anguloInicioDiarias = 0;
-      const anguloFinDiarias = (solicitudesPorTipo.diarias / totalTipos) * 360;
-      const anguloInicioLargo = anguloFinDiarias;
-      const anguloFinLargo = 360;
+      // Ejes
+      doc.strokeColor("#cbd5e1").lineWidth(1);
+      doc.moveTo(chartX, chartY).lineTo(chartX, chartY + chartH).lineTo(chartX + chartW, chartY + chartH).stroke();
 
-      // Dibujar sectores
-      if (solicitudesPorTipo.diarias > 0) {
-        doc.fillColor("#36A2EB");
-        drawPieSlice(doc, pieX, pieY, pieRadius, anguloInicioDiarias, anguloFinDiarias);
-      }
-
-      if (solicitudesPorTipo.largoPlazo > 0) {
-        doc.fillColor("#FF9F40");
-        drawPieSlice(doc, pieX, pieY, pieRadius, anguloInicioLargo, anguloFinLargo);
-      }
-
-      // Leyenda
-      doc.fillColor("#36A2EB").rect(150, 440, 15, 15).fill();
-      doc.fillColor("#000000").fontSize(10).font("Helvetica");
-      doc.text(`Diarias: ${solicitudesPorTipo.diarias}`, 170, 443);
-
-      doc.fillColor("#FF9F40").rect(150, 460, 15, 15).fill();
-      doc.fillColor("#000000");
-      doc.text(`Largo Plazo: ${solicitudesPorTipo.largoPlazo}`, 170, 463);
+      // Línea de tendencia
+      doc.strokeColor("#3b82f6").lineWidth(2);
+      const stepX = chartW / (solicitudesPorMes.length || 1);
+      
+      solicitudesPorMes.forEach((m, i) => {
+        const x = chartX + (i * stepX) + (stepX / 2);
+        const y = chartY + chartH - (parseInt(m.cantidad) / maxQty) * chartH;
+        
+        if (i === 0) doc.moveTo(x, y); else doc.lineTo(x, y);
+        
+        // Punto
+        doc.circle(x, y, 3).fill("#3b82f6");
+        
+        // Etiqueta Mes
+        const date = new Date(m.mes);
+        const label = date.toLocaleDateString("es-ES", { month: "short" });
+        doc.fillColor("#64748b").fontSize(8).text(label, x - 10, chartY + chartH + 10);
+        // Valor sobre el punto
+        doc.fillColor("#1e293b").fontSize(8).font("Helvetica-Bold").text(m.cantidad.toString(), x - 5, y - 12);
+      });
+      doc.stroke();
     }
 
-    // Gráfico 3: Usuarios por Tipo (Nueva página)
-    doc.addPage();
-    doc.fontSize(14).font("Helvetica-Bold").text("👥 Usuarios por Tipo", { align: "center" });
-    doc.moveDown(1);
+    // Distribución por Carrera (Barras Horizontales)
+    doc.moveDown(12);
+    doc.fillColor("#1e293b").fontSize(14).font("Helvetica-Bold").text("Distribución por Carrera / Programa");
+    doc.moveDown(0.5);
 
-    const userChartX = 80;
-    const userChartY = 150;
-    const userChartWidth = 400;
-    const userChartHeight = 200;
-    const maxUsers = Math.max(...Object.values(usuariosPorTipo));
-    const userBarWidth = userChartWidth / Object.keys(usuariosPorTipo).length;
+    const barStartX = 180;
+    const barMaxW = 350;
+    let barY = doc.y + 10;
 
-    // Dibujar ejes
-    doc.strokeColor("#000000").lineWidth(2);
-    doc.moveTo(userChartX, userChartY + userChartHeight).lineTo(userChartX + userChartWidth, userChartY + userChartHeight).stroke();
-    doc.moveTo(userChartX, userChartY).lineTo(userChartX, userChartY + userChartHeight).stroke();
+    solicitudesPorCarreraRaw.slice(0, 8).forEach(row => {
+      const label = row.carrera.length > 25 ? row.carrera.substring(0, 22) + "..." : row.carrera;
+      const val = parseInt(row.cantidad);
+      const width = (val / (totalSolicitudes || 1)) * barMaxW;
 
-    // Dibujar barras de usuarios
-    const userColors = ["#36A2EB", "#FFD93D", "#9966FF"];
-    const tiposUsuario = ["alumnos", "profesores", "administradores"];
-    const etiquetasUsuario = ["Alumnos", "Profesores", "Administradores"];
-
-    tiposUsuario.forEach((tipo, index) => {
-      const value = usuariosPorTipo[tipo];
-      const barHeight = maxUsers > 0 ? (value / maxUsers) * userChartHeight : 0;
-      const x = userChartX + (index * userBarWidth) + 50;
-      const y = userChartY + userChartHeight - barHeight;
-
-      // Dibujar barra
-      doc.fillColor(userColors[index]).rect(x, y, userBarWidth - 100, barHeight).fill();
-
-      // Etiqueta del valor
-      doc.fillColor("#000000").fontSize(12).font("Helvetica-Bold");
-      doc.text(value.toString(), x + (userBarWidth - 100) / 2 - 5, y - 20);
-
-      // Etiqueta del eje X
-      doc.fontSize(10).font("Helvetica");
-      doc.text(etiquetasUsuario[index], x - 20, userChartY + userChartHeight + 15, { width: userBarWidth - 60, align: "center" });
+      doc.fillColor("#475569").fontSize(9).font("Helvetica").text(label, 40, barY + 5, { width: 130 });
+      doc.rect(barStartX, barY, Math.max(width, 2), 15).fill("#60a5fa");
+      doc.fillColor("#1e293b").fontSize(9).font("Helvetica-Bold").text(val.toString(), barStartX + width + 5, barY + 5);
+      
+      barY += 25;
     });
 
-    // Resumen final
-    doc.moveDown(8);
-    doc.fontSize(12).font("Helvetica-Bold").text("📋 Resumen Ejecutivo", { underline: true });
-    doc.moveDown(0.5);
-    doc.fontSize(10).font("Helvetica");
-    doc.text(`• Se han registrado ${totalSolicitudes} solicitudes en total`);
-    doc.text(`• ${solicitudesPorEstado.entregados} equipos han sido entregados exitosamente`);
-    doc.text(`• La tasa de disponibilidad de equipos es del ${tasaDisponibilidad}%`);
-    doc.text(`• ${usuariosPorTipo.alumnos} alumnos están registrados en el sistema`);
-    doc.text(`• ${solicitudesPorTipo.largoPlazo} solicitudes son de largo plazo vs ${solicitudesPorTipo.diarias} diarias`);
+    // --- PÁGINA 3: INVENTARIO Y CATEGORÍAS ---
+    doc.addPage();
+    dibujarEncabezadoInstitucional(doc, "ANÁLISIS DE INVENTARIO");
+
+    doc.fontSize(14).font("Helvetica-Bold").text("Distribución de Equipos por Categoría");
+    doc.moveDown(1);
+
+    const catItems = Object.entries(categorias).sort((a,b) => b[1] - a[1]);
+    let catY = doc.y;
+
+    catItems.forEach(([name, count], i) => {
+      const pct = ((count / (totalEquipos || 1)) * 100).toFixed(1);
+      
+      doc.fillColor("#f8fafc").rect(40, catY, 520, 30).fill();
+      doc.fillColor("#1e293b").font("Helvetica-Bold").fontSize(10).text(name, 55, catY + 10);
+      doc.font("Helvetica").text(`${count} unidades (${pct}%)`, 400, catY + 10);
+      
+      doc.strokeColor("#e2e8f0").moveTo(40, catY + 30).lineTo(560, catY + 30).stroke();
+      catY += 30;
+    });
+
+    // --- PÁGINA 4: USUARIOS ---
+    doc.addPage();
+    dibujarEncabezadoInstitucional(doc, "ANÁLISIS DE USUARIOS");
+
+    const userStats = {
+      alumnos: usuarios.filter(u => u.tipoUsuario?.Descripcion === "Alumno").length,
+      profesores: usuarios.filter(u => u.tipoUsuario?.Descripcion === "Profesor").length
+    };
+
+    doc.fontSize(14).font("Helvetica-Bold").text("Distribución de Usuarios (Solicitantes)");
+    doc.moveDown(1);
+
+    const userTypes = [
+      { n: "Alumnos", v: userStats.alumnos, c: "#3b82f6" },
+      { n: "Profesores", v: userStats.profesores, c: "#f59e0b" }
+    ];
+
+    const totalUserStats = userStats.alumnos + userStats.profesores;
+    let userY = doc.y;
+
+    userTypes.forEach(type => {
+      const pct = ((type.v / (totalUserStats || 1)) * 100).toFixed(1) + "%";
+      
+      doc.fillColor("#f8fafc").rect(40, userY, 520, 40).fill();
+      doc.fillColor("#1e293b").font("Helvetica-Bold").fontSize(11).text(type.n, 60, userY + 15);
+      doc.font("Helvetica").text(`${type.v} registrados (${pct})`, 350, userY + 15);
+      
+      doc.rect(60, userY + 32, (type.v / (totalUserStats || 1)) * 480, 4).fill(type.c);
+      
+      userY += 50;
+    });
 
     return doc;
   } catch (error) {
@@ -668,7 +747,7 @@ function obtenerEstadoSolicitud(solicitud) {
     switch(ultimoEstado.Cod_Estado) {
       case 1: return "Pendiente";
       case 2: return "Listo para Entregar";
-      case 3: return "Entregado";
+      case 3: return "Listo para recepcionar";
       case 4: return "Devuelto";
       case 5: return "Rechazado";
       default: return "Desconocido";
@@ -691,7 +770,7 @@ function obtenerEstadoPrestamo(prestamo) {
     
     switch(ultimoEstado.Cod_Estado) {
       case 2: return "Listo para Entregar";
-      case 3: return "Entregado";
+      case 3: return "Listo para recepcionar";
       case 4: return "Devuelto";
       case 5: return "Rechazado";
       default: return "En Proceso";
@@ -709,43 +788,32 @@ export async function generarReporteUsuariosPDF(filtros = {}) {
     const userRepository = AppDataSource.getRepository(User);
     
     let queryBuilder = userRepository
-      .createQueryBuilder("user")
-      .leftJoinAndSelect("user.tipoUsuario", "tipoUsuario")
-      .leftJoinAndSelect("user.carrera", "carrera")
-      .leftJoinAndSelect("user.cargo", "cargo")
-      .orderBy("user.createdAt", "DESC");
+      .createQueryBuilder("u")
+      .leftJoinAndSelect("u.tipoUsuario", "tipoUsuario")
+      .leftJoinAndSelect("u.carrera", "carrera")
+      .leftJoinAndSelect("u.cargo", "cargo")
+      .orderBy("u.Nombre_Completo", "ASC");
 
     // Aplicar filtros
     if (filtros.tipoUsuario) {
-      queryBuilder.andWhere("tipoUsuario.Tipo = :tipoUsuario", { 
+      queryBuilder.andWhere("tipoUsuario.Descripcion = :tipoUsuario", { 
         tipoUsuario: filtros.tipoUsuario 
       });
     }
 
     const usuarios = await queryBuilder.getMany();
 
-    // Crear PDF
-    const doc = new PDFDocument({ size: "letter", margin: 40 });
+    // Crear PDF en LANDSCAPE
+    const doc = new PDFDocument({ size: "letter", layout: "landscape", margin: 40 });
 
     // Encabezado
-    doc
-      .fontSize(16)
-      .font("Helvetica-Bold")
-      .text("REPORTE DE USUARIOS", { align: "center" })
-      .moveDown(0.5);
-
-    doc
-      .fontSize(10)
-      .font("Helvetica")
-      .text("Universidad del Bío-Bío - SIREC", { align: "center" })
-      .text(`Fecha de generación: ${new Date().toLocaleString("es-CL")}`, { align: "center" })
-      .moveDown(1);
+    dibujarEncabezadoInstitucional(doc, "REPORTE DE USUARIOS", true);
 
     // Filtros aplicados
     if (filtros.tipoUsuario) {
       doc.fontSize(9).font("Helvetica-Bold").text("Filtros aplicados:", { underline: true });
       doc.font("Helvetica").text(`Tipo de Usuario: ${filtros.tipoUsuario}`);
-      doc.moveDown(1);
+      doc.moveDown(0.5);
     }
 
     // Estadísticas
@@ -755,35 +823,75 @@ export async function generarReporteUsuariosPDF(filtros = {}) {
 
     doc.fontSize(11).font("Helvetica-Bold").text("Resumen:");
     doc.font("Helvetica")
-      .text(`Total de Usuarios: ${usuarios.length}`)
-      .text(`Alumnos: ${alumnosCount}`)
-      .text(`Profesores: ${profesoresCount}`)
-      .text(`Administradores: ${adminsCount}`)
+      .text(`Total de Usuarios: ${usuarios.length} | Alumnos: ${alumnosCount} | Profesores: ${profesoresCount} | Administradores: ${adminsCount}`)
       .moveDown(1);
 
-    // Tabla de usuarios
-    usuarios.forEach((usuario, index) => {
-      if (doc.y > 700) {
-        doc.addPage();
-      }
+    // Configuración de la tabla
+    const tableTop = doc.y;
+    const colWidths = [30, 190, 85, 205, 80, 122]; // Total: 712 para landscape letter
+    const colNames = ["#", "Nombre Completo", "RUT", "Email", "Tipo", "Carrera / Cargo"];
+    const startX = 40;
+    let currentY = tableTop;
 
+    // Función para dibujar encabezado
+    const drawHeader = (y) => {
+      doc.rect(startX, y, 712, 20).fill("#f1f5f9").stroke("#cbd5e1");
+      doc.fillColor("#1e293b").font("Helvetica-Bold").fontSize(9);
+      
+      let x = startX;
+      colNames.forEach((name, i) => {
+        doc.text(name, x + 5, y + 6, { width: colWidths[i] - 10, align: "left" });
+        x += colWidths[i];
+      });
+      return y + 20;
+    };
+
+    // Dibujar primer encabezado
+    currentY = drawHeader(currentY);
+
+    // Filas de usuarios
+    usuarios.forEach((usuario, index) => {
+      // Calcular carrera o cargo
       const carreraOCargo = usuario.tipoUsuario?.Cod_TipoUsuario === 2 
-        ? usuario.carrera?.Nombre || "Sin carrera"
+        ? usuario.carrera?.Nombre_Carrera || "Sin carrera"
         : usuario.tipoUsuario?.Cod_TipoUsuario === 3 
-        ? usuario.cargo?.Nombre || "Sin cargo"
+        ? usuario.cargo?.Desc_Cargo || "Sin cargo"
         : "-";
 
-      doc
-        .fontSize(9)
-        .font("Helvetica-Bold")
-        .text(`${index + 1}. ${usuario.Nombre} ${usuario.Apellido}`, { continued: false })
-        .font("Helvetica")
-        .text(`RUT: ${usuario.Rut}`)
-        .text(`Email: ${usuario.Email}`)
-        .text(`Tipo: ${usuario.tipoUsuario?.Descripcion || "N/A"}`)
-        .text(`${usuario.tipoUsuario?.Cod_TipoUsuario === 2 ? "Carrera" : "Cargo"}: ${carreraOCargo}`)
-        .text(`Fecha Registro: ${new Date(usuario.createdAt).toLocaleDateString("es-CL")}`)
-        .moveDown(0.5);
+      // Determinar altura necesaria (por si el texto se envuelve)
+      const data = [
+        (index + 1).toString(),
+        usuario.Nombre_Completo || "N/A",
+        usuario.Rut || "N/A",
+        usuario.Correo || "N/A",
+        usuario.tipoUsuario?.Descripcion || "N/A",
+        carreraOCargo
+      ];
+
+      // Altura mínima de fila
+      const rowHeight = 25;
+
+      // Verificar si hay espacio en la página (Landscape: 612 height)
+      if (currentY + rowHeight > 550) {
+        doc.addPage({ size: "letter", layout: "landscape", margin: 40 });
+        const nextY = dibujarEncabezadoInstitucional(doc, "REPORTE DE USUARIOS", true);
+        currentY = drawHeader(nextY);
+      }
+
+      // Dibujar bordes de celda y texto
+      doc.font("Helvetica").fontSize(8).fillColor("#334155");
+      let x = startX;
+      data.forEach((text, i) => {
+        doc.rect(x, currentY, colWidths[i], rowHeight).stroke("#e2e8f0");
+        doc.text(text, x + 5, currentY + 8, { 
+          width: colWidths[i] - 10, 
+          height: rowHeight - 8,
+          ellipsis: true 
+        });
+        x += colWidths[i];
+      });
+
+      currentY += rowHeight;
     });
 
     return doc;
@@ -801,14 +909,14 @@ export async function generarReporteUsuariosCSV(filtros = {}) {
     const userRepository = AppDataSource.getRepository(User);
     
     let queryBuilder = userRepository
-      .createQueryBuilder("user")
-      .leftJoinAndSelect("user.tipoUsuario", "tipoUsuario")
-      .leftJoinAndSelect("user.carrera", "carrera")
-      .leftJoinAndSelect("user.cargo", "cargo")
-      .orderBy("user.createdAt", "DESC");
+      .createQueryBuilder("u")
+      .leftJoinAndSelect("u.tipoUsuario", "tipoUsuario")
+      .leftJoinAndSelect("u.carrera", "carrera")
+      .leftJoinAndSelect("u.cargo", "cargo")
+      .orderBy("u.Nombre_Completo", "ASC");
 
     if (filtros.tipoUsuario) {
-      queryBuilder.andWhere("tipoUsuario.Tipo = :tipoUsuario", { 
+      queryBuilder.andWhere("tipoUsuario.Descripcion = :tipoUsuario", { 
         tipoUsuario: filtros.tipoUsuario 
       });
     }
@@ -816,22 +924,20 @@ export async function generarReporteUsuariosCSV(filtros = {}) {
     const usuarios = await queryBuilder.getMany();
 
     // Crear CSV
-    let csv = "\uFEFFRUT,Nombre,Apellido,Email,Tipo Usuario,Carrera/Cargo,Fecha Registro\n";
+    let csv = "\uFEFFRUT,Nombre Completo,Email,Tipo Usuario,Carrera/Cargo\n";
     
     usuarios.forEach(usuario => {
       const carreraOCargo = usuario.tipoUsuario?.Cod_TipoUsuario === 2 
-        ? usuario.carrera?.Nombre || "Sin carrera"
+        ? usuario.carrera?.Nombre_Carrera || "Sin carrera"
         : usuario.tipoUsuario?.Cod_TipoUsuario === 3 
-        ? usuario.cargo?.Nombre || "Sin cargo"
+        ? usuario.cargo?.Desc_Cargo || "Sin cargo"
         : "-";
       
       csv += `${usuario.Rut},`;
-      csv += `"${usuario.Nombre}",`;
-      csv += `"${usuario.Apellido}",`;
-      csv += `${usuario.Email},`;
+      csv += `"${usuario.Nombre_Completo}",`;
+      csv += `${usuario.Correo},`;
       csv += `"${usuario.tipoUsuario?.Descripcion || "N/A"}",`;
-      csv += `"${carreraOCargo}",`;
-      csv += `${new Date(usuario.createdAt).toLocaleDateString("es-CL")}\n`;
+      csv += `"${carreraOCargo}"\n`;
     });
 
     return csv;
@@ -844,7 +950,7 @@ export async function generarReporteUsuariosCSV(filtros = {}) {
 /**
  * Obtener datos para gráficos
  */
-export async function obtenerDatosGraficos() {
+export async function obtenerDatosGraficos(filtros = {}) {
   try {
     const solicitudRepository = AppDataSource.getRepository(Solicitud);
     const prestamoRepository = AppDataSource.getRepository(Prestamo);
@@ -871,7 +977,7 @@ export async function obtenerDatosGraficos() {
       const estado = obtenerEstadoSolicitud(sol);
       if (estado === "Pendiente") solicitudesPorEstado.pendientes++;
       else if (estado === "Listo para Entregar") solicitudesPorEstado.listoParaEntregar++;
-      else if (estado === "Entregado") solicitudesPorEstado.entregados++;
+      else if (estado === "Listo para recepcionar") solicitudesPorEstado.entregados++;
       else if (estado === "Devuelto") solicitudesPorEstado.devueltos++;
       else if (estado === "Rechazado") solicitudesPorEstado.rechazados++;
     });
@@ -910,36 +1016,53 @@ export async function obtenerDatosGraficos() {
 
     const usuariosPorTipo = {
       alumnos: 0,
-      profesores: 0,
-      administradores: 0
+      profesores: 0
     };
 
     usuarios.forEach(user => {
       const tipo = user.tipoUsuario?.Descripcion;
       if (tipo === "Alumno") usuariosPorTipo.alumnos++;
       else if (tipo === "Profesor") usuariosPorTipo.profesores++;
-      else if (tipo === "Administrador") usuariosPorTipo.administradores++;
     });
 
-    // Solicitudes por mes (últimos 6 meses)
-    const haceSeismeses = new Date();
-    haceSeismeses.setMonth(haceSeismeses.getMonth() - 6);
+    // Solicitudes por mes (rango dinámico)
+    const meses = filtros.meses || 6;
+    const d = new Date();
+    d.setMonth(d.getMonth() - meses);
+    d.setDate(1);
 
     const solicitudesPorMes = await solicitudRepository
       .createQueryBuilder("solicitud")
       .select("DATE_TRUNC('month', solicitud.Fecha_Sol)", "mes")
       .addSelect("COUNT(*)", "cantidad")
-      .where("solicitud.Fecha_Sol >= :fecha", { fecha: haceSeismeses })
+      .where("solicitud.Fecha_Sol >= :fecha", { fecha: d })
       .groupBy("DATE_TRUNC('month', solicitud.Fecha_Sol)")
       .orderBy("DATE_TRUNC('month', solicitud.Fecha_Sol)", "ASC")
       .getRawMany();
+
+    // Solicitudes por carrera
+    const solicitudesPorCarreraRaw = await solicitudRepository
+      .createQueryBuilder("solicitud")
+      .leftJoin("solicitud.usuario", "usuario")
+      .leftJoin("usuario.carrera", "carrera")
+      .select("carrera.Nombre_Carrera", "carrera")
+      .addSelect("COUNT(*)", "cantidad")
+      .groupBy("carrera.Nombre_Carrera")
+      .getRawMany();
+
+    const solicitudesPorCarrera = {};
+    solicitudesPorCarreraRaw.forEach(row => {
+      const nombre = row.carrera || "Personal/Docente";
+      solicitudesPorCarrera[nombre] = parseInt(row.cantidad);
+    });
 
     return {
       solicitudesPorEstado,
       solicitudesPorTipo,
       equiposPorCategoria,
       usuariosPorTipo,
-      solicitudesPorMes
+      solicitudesPorMes,
+      solicitudesPorCarrera
     };
   } catch (error) {
     console.error("Error al obtener datos para gráficos:", error);

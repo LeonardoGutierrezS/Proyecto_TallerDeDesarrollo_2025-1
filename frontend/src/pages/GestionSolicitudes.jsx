@@ -58,14 +58,14 @@ const GestionSolicitudes = () => {
                 // Mapear estados por código
                 if (codEstado === 1) return 'Pendiente';
                 if (codEstado === 2) return 'Listo para Entregar';
-                if (codEstado === 3) return 'Entregado';
+                if (codEstado === 3) return 'Listo para recepcionar';
                 if (codEstado === 4) return 'Devuelto';
                 if (codEstado === 5) return 'Rechazado';
                 
                 // Fallback a descripción si existe
                 const descripcion = estadoMasReciente.estadoPrestamo.Descripcion;
                 if (descripcion === 'Listo para Entregar') return 'Listo para Entregar';
-                if (descripcion === 'Entregado') return 'Entregado';
+                if (descripcion === 'Entregado') return 'Listo para recepcionar';
                 if (descripcion === 'Devuelto') return 'Devuelto';
                 if (descripcion === 'Rechazado') return 'Rechazado';
                 return descripcion || 'Desconocido';
@@ -141,7 +141,7 @@ const GestionSolicitudes = () => {
                 filtered = filterByEstado('Listo para Entregar');
                 break;
             case 'entregados':
-                filtered = filterByEstado('Entregado');
+                filtered = filterByEstado('Listo para recepcionar');
                 break;
             case 'devueltos':
                 filtered = filterByEstado('Devuelto');
@@ -466,7 +466,7 @@ const GestionSolicitudes = () => {
                     <h2>
                         {activeTab === 'pendientes' && '⏳ Solicitudes Pendientes'}
                         {activeTab === 'listo-entregar' && '✅ Listo para Entregar'}
-                        {activeTab === 'entregados' && '📦 Equipos Entregados'}
+                        {activeTab === 'entregados' && '📦 Listo para recepcionar'}
                         {activeTab === 'devueltos' && '🔙 Equipos Devueltos'}
                         {activeTab === 'rechazados' && '❌ Solicitudes Rechazadas'}
                         <span className="count-badge">({filteredSolicitudes.length})</span>
@@ -521,7 +521,7 @@ const GestionSolicitudes = () => {
                                         No hay solicitudes {activeTab === 'pendientes' ? 'pendientes' : 
                                                            activeTab === 'listo-entregar' ? 'listas para entregar' :
                                                            activeTab === 'rechazados' ? 'rechazadas' :
-                                                           activeTab === 'entregados' ? 'entregadas' : 'devueltas'}
+                                                           activeTab === 'entregados' ? 'listas para recepcionar' : 'devueltas'}
                                     </td>
                                 </tr>
                             ) : (
@@ -686,7 +686,7 @@ const GestionSolicitudes = () => {
                     className={`tab-button ${activeTab === 'entregados' ? 'active' : ''}`}
                     onClick={() => setActiveTab('entregados')}
                 >
-                    📦 Entregados
+                    📦 Listo para recepcionar
                 </button>
                 <button 
                     className={`tab-button ${activeTab === 'devueltos' ? 'active' : ''}`}

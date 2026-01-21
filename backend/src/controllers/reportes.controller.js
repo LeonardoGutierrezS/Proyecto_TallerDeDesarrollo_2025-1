@@ -165,7 +165,8 @@ export async function descargarReporteEquiposCSV(req, res) {
  */
 export async function descargarReporteEstadisticasPDF(req, res) {
   try {
-    const doc = await generarReporteEstadisticasPDF();
+    const { meses } = req.query;
+    const doc = await generarReporteEstadisticasPDF({ meses: meses ? parseInt(meses) : 6 });
 
     res.setHeader("Content-Type", "application/pdf");
     res.setHeader(
@@ -237,7 +238,8 @@ export async function descargarReporteUsuariosCSV(req, res) {
  */
 export async function obtenerDatosGraficosController(req, res) {
   try {
-    const datos = await obtenerDatosGraficos();
+    const { meses } = req.query;
+    const datos = await obtenerDatosGraficos({ meses: meses ? parseInt(meses) : 6 });
     res.status(200).json({
       status: "Success",
       data: datos

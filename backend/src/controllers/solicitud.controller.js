@@ -44,9 +44,18 @@ export async function getSolicitudesController(req, res) {
 
     if (errorSolicitudes) return handleErrorClient(res, 404, errorSolicitudes);
 
-    solicitudes.length === 0
+    let filteredSolicitudes = solicitudes;
+
+    // Si el usuario es Director, filtrar por su carrera
+    if (req.user.esDirectorEscuela && req.user.idCarrera) {
+      filteredSolicitudes = solicitudes.filter(sol => 
+        sol.usuario?.ID_Carrera === req.user.idCarrera
+      );
+    }
+
+    filteredSolicitudes.length === 0
       ? handleSuccess(res, 204)
-      : handleSuccess(res, 200, "Solicitudes encontradas", solicitudes);
+      : handleSuccess(res, 200, "Solicitudes encontradas", filteredSolicitudes);
   } catch (error) {
     handleErrorServer(res, 500, error.message);
   }

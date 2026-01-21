@@ -177,20 +177,21 @@ export async function generarPDFAutorizacion(idSolicitud) {
       .text(solicitud.Motivo_Sol || "No especificado", { align: "justify" })
       .moveDown(1);
 
-    // Condiciones (si hay)
-    if (solicitud.prestamo.Condiciones_Prestamo) {
-      doc
-        .fontSize(headerSize)
-        .font("Helvetica-Bold")
-        .text("CONDICIONES DEL PRÉSTAMO")
-        .moveDown(0.5);
+    // Texto de aceptación por el Director
+    const autorizador = solicitud.prestamo.autorizacion.usuario;
+    const cargoAutorizador = autorizador.cargo?.Desc_Cargo || "Director/a de Escuela";
+    
+    doc
+      .fontSize(normalSize)
+      .font("Helvetica-Bold")
+      .text("ESTADO DE AUTORIZACIÓN")
+      .moveDown(0.5);
 
-      doc
-        .fontSize(normalSize)
-        .font("Helvetica")
-        .text(solicitud.prestamo.Condiciones_Prestamo, { align: "justify" })
-        .moveDown(1);
-    }
+    doc
+      .fontSize(normalSize)
+      .font("Helvetica")
+      .text(`El/La ${cargoAutorizador}, ${autorizador.Nombre_Completo}, ha aceptado esta solicitud de préstamo.`, { align: "justify" })
+      .moveDown(1.5);
 
     // Responsabilidades
     doc
@@ -209,53 +210,41 @@ export async function generarPDFAutorizacion(idSolicitud) {
         "El equipo debe ser devuelto en la fecha acordada.",
         "El equipo es de uso exclusivo del solicitante y no puede ser transferido a terceros.",
       ])
-      .moveDown(1.5);
+      .moveDown(2);
 
-    // Firmas
-    const autorizador = solicitud.prestamo.autorizacion.usuario;
-    const cargoAutorizador = autorizador.cargo?.Desc_Cargo || "Director de Escuela";
+    // Firmas - 3 columnas
+    const columnWidth = 160;
+    const spacing = 20;
+    const startY = doc.y;
+    const lineX1 = 50;
+    const lineX2 = lineX1 + columnWidth + spacing;
+    const lineX3 = lineX2 + columnWidth + spacing;
 
-    doc.moveDown(2);
+    doc.fontSize(smallSize).font("Helvetica-Bold");
 
-    // Firma del director (ya firmado)
-    const leftMargin = 80;
-    const rightMargin = 350;
-    const lineY = doc.y;
+    // 1. Alumno/a
+    doc.text("_________________________", lineX1, startY);
+    doc.text(usuario.Nombre_Completo, lineX1, doc.y + 5, { width: columnWidth, align: "center" });
+    doc.text(`RUT: ${usuario.Rut}`, lineX1, doc.y + 2, { width: columnWidth, align: "center" });
+    doc.text("Firma del Alumno/a", lineX1, doc.y + 2, { width: columnWidth, align: "center" });
 
-    doc
-      .fontSize(normalSize)
-      .font("Helvetica-Bold")
-      .text("_________________________", leftMargin, lineY)
-      .moveDown(0.3)
-      .text(autorizador.Nombre_Completo, leftMargin, doc.y, { width: 200, align: "center" })
-      .moveDown(0.2)
-      .font("Helvetica")
-      .fontSize(smallSize)
-      .text(`RUT: ${autorizador.Rut}`, leftMargin, doc.y, { width: 200, align: "center" })
-      .moveDown(0.2)
-      .text(cargoAutorizador, leftMargin, doc.y, { width: 200, align: "center" });
+    // 2. Encargado/a de Laboratorio
+    doc.text("_________________________", lineX2, startY);
+    doc.text("Nombre: ________________", lineX2, doc.y + 5, { width: columnWidth, align: "center" });
+    doc.text("Encargado/a Laboratorio", lineX2, doc.y + 12, { width: columnWidth, align: "center" });
 
-    // Espacio para firma del alumno
-    doc
-      .fontSize(normalSize)
-      .font("Helvetica-Bold")
-      .text("_________________________", rightMargin, lineY)
-      .moveDown(0.3)
-      .text(usuario.Nombre_Completo, rightMargin, doc.y, { width: 200, align: "center" })
-      .moveDown(0.2)
-      .font("Helvetica")
-      .fontSize(smallSize)
-      .text(`RUT: ${usuario.Rut}`, rightMargin, doc.y, { width: 200, align: "center" })
-      .moveDown(0.2)
-      .text("Firma del Solicitante", rightMargin, doc.y, { width: 200, align: "center" });
+    // 3. Bodega
+    doc.text("_________________________", lineX3, startY);
+    doc.text("Nombre: ________________", lineX3, doc.y + 5, { width: columnWidth, align: "center" });
+    doc.text("Firma Bodega", lineX3, doc.y + 12, { width: columnWidth, align: "center" });
 
     // Pie de página
     doc
-      .moveDown(2)
-      .fontSize(smallSize)
+      .moveDown(4)
+      .fontSize(smallSize - 1)
       .font("Helvetica-Oblique")
       .text(
-        `Documento generado el ${new Date().toLocaleString('es-CL')}`,
+        `Documento generado electrónicamente el ${new Date().toLocaleString('es-CL')}`,
         { align: "center" }
       );
 

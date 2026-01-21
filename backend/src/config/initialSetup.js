@@ -8,6 +8,7 @@ import CategoriaSchema from "../entity/categoria.entity.js";
 import EstadoSchema from "../entity/estado.entity.js";
 import EstadoPrestamoSchema from "../entity/estado_prestamo.entity.js";
 import EquiposSchema from "../entity/equipos.entity.js";
+import EspecificacionesHWSchema from "../entity/especificaciones_hw.entity.js";
 import PenalizacionesSchema from "../entity/penalizaciones.entity.js";
 import { AppDataSource } from "./configDb.js";
 import { encryptPassword } from "../helpers/bcrypt.helper.js";
@@ -59,17 +60,23 @@ async function createCargos() {
       cargoRepository.save(
         cargoRepository.create({
           ID_Cargo: 1,
-          Desc_Cargo: "Director de Escuela",
+          Desc_Cargo: "Director/a de Escuela IECI",
         }),
       ),
       cargoRepository.save(
         cargoRepository.create({
           ID_Cargo: 2,
+          Desc_Cargo: "Director/a de Escuela ICI",
+        }),
+      ),
+      cargoRepository.save(
+        cargoRepository.create({
+          ID_Cargo: 3,
           Desc_Cargo: "Otro",
         }),
       ),
     ]);
-    console.log("* => Cargos creados exitosamente (Director de Escuela, Otro)");
+    console.log("* => Cargos creados exitosamente (Director/a de Escuela IECI, Director/a de Escuela ICI, Otro)");
   } catch (error) {
     console.error("Error al crear cargos:", error);
   }
@@ -123,8 +130,9 @@ async function createUsers() {
     const tipoAlumno = await tipoUsuarioRepository.findOne({ where: { Descripcion: "Alumno" } });
     const tipoProfesor = await tipoUsuarioRepository.findOne({ where: { Descripcion: "Profesor" } });
     
-    const cargoDirector = await cargoRepository.findOne({ where: { ID_Cargo: 1 } }); // Director de Escuela
-    const cargoOtro = await cargoRepository.findOne({ where: { ID_Cargo: 2 } }); // Otro
+    const cargoDirectorIECI = await cargoRepository.findOne({ where: { ID_Cargo: 1 } }); 
+    const cargoDirectorICI = await cargoRepository.findOne({ where: { ID_Cargo: 2 } });
+    const cargoOtro = await cargoRepository.findOne({ where: { ID_Cargo: 3 } }); 
     
     const carreraInformatica = await carreraRepository.findOne({ 
       where: { Nombre_Carrera: "Ingeniería Civil Informática" } 
@@ -133,7 +141,7 @@ async function createUsers() {
       where: { Nombre_Carrera: "Ingeniería de Ejecución en Computación e Informática" } 
     });
 
-    if (!tipoAdmin || !tipoAlumno || !tipoProfesor || !cargoDirector || !cargoOtro || !carreraInformatica) {
+    if (!tipoAdmin || !tipoAlumno || !tipoProfesor || !cargoDirectorIECI || !cargoDirectorICI || !cargoOtro || !carreraInformatica || !carreraEjecucion) {
       console.error("Error: No se encontraron los tipos de usuario, cargos o carreras necesarios");
       return;
     }
@@ -146,36 +154,60 @@ async function createUsers() {
         Correo: "administrador@gmail.cl",
         Contrasenia: await encryptPassword("admin1234"),
         Vigente: true,
+        Aprobado: true,
         Cod_TipoUsuario: tipoAdmin.Cod_TipoUsuario,
         ID_Carrera: null,
         ID_Cargo: null,
       }),
     );
 
-    // 2. Crear Director de Escuela (Profesor con cargo Director de Escuela)
-    const director = await userRepository.save(
+    // 2. Crear Director de Escuela IECI
+    const directorIECI = await userRepository.save(
       userRepository.create({
-        Nombre_Completo: "María Elena González Pérez",
+        Nombre_Completo: "Pabla Lucía Ortega Aras",
         Rut: "15234567-8",
-        Correo: "director2024@gmail.cl",
+        Correo: "directorieci@gmail.cl",
         Contrasenia: await encryptPassword("director1234"),
         Vigente: true,
+        Aprobado: true,
         Cod_TipoUsuario: tipoProfesor.Cod_TipoUsuario,
-        ID_Carrera: null,
-        ID_Cargo: cargoDirector.ID_Cargo,
+        ID_Carrera: carreraEjecucion.ID_Carrera,
+        ID_Cargo: cargoDirectorIECI.ID_Cargo,
       }),
     );
 
-    // Registrar en posee_cargo para el Director
     await poseeCargoRepository.save({
-      Rut_profesor: director.Rut,
-      ID_Cargo: cargoDirector.ID_Cargo,
-      Descripcion_Cargo: null, // Director no necesita descripción adicional
+      Rut_profesor: directorIECI.Rut,
+      ID_Cargo: cargoDirectorIECI.ID_Cargo,
+      Descripcion_Cargo: null,
       Fecha_Inicio: new Date(),
-      Fecha_Fin: null, // Cargo activo
+      Fecha_Fin: null,
     });
 
-    // 3. Crear Profesores con cargo "Otro"
+    // 3. Crear Director de Escuela ICI
+    const directorICI = await userRepository.save(
+      userRepository.create({
+        Nombre_Completo: "Tatiana Noemí Sanhueza",
+        Rut: "16234567-9",
+        Correo: "directorici@gmail.cl",
+        Contrasenia: await encryptPassword("director1234"),
+        Vigente: true,
+        Aprobado: true,
+        Cod_TipoUsuario: tipoProfesor.Cod_TipoUsuario,
+        ID_Carrera: carreraInformatica.ID_Carrera,
+        ID_Cargo: cargoDirectorICI.ID_Cargo,
+      }),
+    );
+
+    await poseeCargoRepository.save({
+      Rut_profesor: directorICI.Rut,
+      ID_Cargo: cargoDirectorICI.ID_Cargo,
+      Descripcion_Cargo: null,
+      Fecha_Inicio: new Date(),
+      Fecha_Fin: null,
+    });
+
+    // 4. Crear Profesores con cargo "Otro"
     const profesor1 = await userRepository.save(
       userRepository.create({
         Nombre_Completo: "Carlos Alberto Fernández López",
@@ -183,6 +215,7 @@ async function createUsers() {
         Correo: "profesor1.2024@gmail.cl",
         Contrasenia: await encryptPassword("profesor1234"),
         Vigente: true,
+        Aprobado: true,
         Cod_TipoUsuario: tipoProfesor.Cod_TipoUsuario,
         ID_Carrera: null,
         ID_Cargo: cargoOtro.ID_Cargo,
@@ -204,6 +237,7 @@ async function createUsers() {
         Correo: "profesor2.2024@gmail.cl",
         Contrasenia: await encryptPassword("profesor1234"),
         Vigente: true,
+        Aprobado: true,
         Cod_TipoUsuario: tipoProfesor.Cod_TipoUsuario,
         ID_Carrera: null,
         ID_Cargo: cargoOtro.ID_Cargo,
@@ -227,6 +261,7 @@ async function createUsers() {
           Correo: "alumno1.2024@gmail.cl",
           Contrasenia: await encryptPassword("alumno1234"),
           Vigente: true,
+          Aprobado: true,
           Cod_TipoUsuario: tipoAlumno.Cod_TipoUsuario,
           ID_Carrera: carreraInformatica.ID_Carrera,
           ID_Cargo: null,
@@ -239,6 +274,7 @@ async function createUsers() {
           Correo: "alumno2.2024@gmail.cl",
           Contrasenia: await encryptPassword("alumno1234"),
           Vigente: true,
+          Aprobado: true,
           Cod_TipoUsuario: tipoAlumno.Cod_TipoUsuario,
           ID_Carrera: carreraInformatica.ID_Carrera,
           ID_Cargo: null,
@@ -251,6 +287,7 @@ async function createUsers() {
           Correo: "alumno3.2024@gmail.cl",
           Contrasenia: await encryptPassword("alumno1234"),
           Vigente: true,
+          Aprobado: true,
           Cod_TipoUsuario: tipoAlumno.Cod_TipoUsuario,
           ID_Carrera: carreraEjecucion.ID_Carrera,
           ID_Cargo: null,
@@ -263,6 +300,7 @@ async function createUsers() {
           Correo: "alumno4.2024@gmail.cl",
           Contrasenia: await encryptPassword("alumno1234"),
           Vigente: true,
+          Aprobado: true,
           Cod_TipoUsuario: tipoAlumno.Cod_TipoUsuario,
           ID_Carrera: carreraInformatica.ID_Carrera,
           ID_Cargo: null,
@@ -275,6 +313,7 @@ async function createUsers() {
           Correo: "alumno5.2024@gmail.cl",
           Contrasenia: await encryptPassword("alumno1234"),
           Vigente: true,
+          Aprobado: true,
           Cod_TipoUsuario: tipoAlumno.Cod_TipoUsuario,
           ID_Carrera: carreraEjecucion.ID_Carrera,
           ID_Cargo: null,
@@ -287,6 +326,7 @@ async function createUsers() {
           Correo: "alumno6.2024@gmail.cl",
           Contrasenia: await encryptPassword("alumno1234"),
           Vigente: true,
+          Aprobado: true,
           Cod_TipoUsuario: tipoAlumno.Cod_TipoUsuario,
           ID_Carrera: carreraInformatica.ID_Carrera,
         }),
@@ -296,7 +336,7 @@ async function createUsers() {
     const countAfter = await userRepository.count();
     console.log("* => Usuarios creados exitosamente:");
     console.log("  - 1 Administrador");
-    console.log("  - 1 Director de Escuela (Profesor con cargo Director)");
+    console.log("  - 2 Directores de Escuela (IECI e ICI)");
     console.log("  - 2 Profesores con cargo \"Otro\"");
     console.log("  - 6 Alumnos");
     console.log(`  Total: ${countAfter} usuarios`);
@@ -397,7 +437,7 @@ async function createEstadosPrestamo() {
     await Promise.all([
       estadoPrestamoRepository.save(estadoPrestamoRepository.create({ Descripcion: "Pendiente" })),
       estadoPrestamoRepository.save(estadoPrestamoRepository.create({ Descripcion: "Listo para Entregar" })),
-      estadoPrestamoRepository.save(estadoPrestamoRepository.create({ Descripcion: "Entregado" })),
+      estadoPrestamoRepository.save(estadoPrestamoRepository.create({ Descripcion: "Listo para recepcionar" })),
       estadoPrestamoRepository.save(estadoPrestamoRepository.create({ Descripcion: "Devuelto" })),
       estadoPrestamoRepository.save(estadoPrestamoRepository.create({ Descripcion: "Rechazado" })),
     ]);
@@ -441,43 +481,65 @@ async function createEquipos() {
       return;
     }
 
+    const especificacionesRepository = AppDataSource.getRepository(EspecificacionesHWSchema);
+
+    const notebook1 = await equipoRepository.save(
+      equipoRepository.create({
+        ID_Num_Inv: "NB-2024-001",
+        Modelo: "HP Pavilion 15",
+        Numero_Serie: "5CD1234ABC",
+        Comentarios: "Notebook para préstamo a estudiantes",
+        Disponible: true,
+        marca: hp,
+        categoria: notebook,
+        estado: disponible,
+      }),
+    );
+
+    const notebook2 = await equipoRepository.save(
+      equipoRepository.create({
+        ID_Num_Inv: "NB-2024-002",
+        Modelo: "Dell Latitude 5420",
+        Numero_Serie: "DELL5420XYZ",
+        Comentarios: "Notebook para profesores",
+        Disponible: true,
+        marca: dell,
+        categoria: notebook,
+        estado: disponible,
+      }),
+    );
+
+    const notebook3 = await equipoRepository.save(
+      equipoRepository.create({
+        ID_Num_Inv: "NB-2024-003",
+        Modelo: "Lenovo ThinkPad E14",
+        Numero_Serie: "LEN14GEN3",
+        Comentarios: null,
+        Disponible: false,
+        marca: lenovo,
+        categoria: notebook,
+        estado: ocupado,
+      }),
+    );
+
+    // Crear especificaciones para los notebooks
     await Promise.all([
-      equipoRepository.save(
-        equipoRepository.create({
-          ID_Num_Inv: "NB-2024-001",
-          Modelo: "HP Pavilion 15",
-          Numero_Serie: "5CD1234ABC",
-          Comentarios: "Notebook para préstamo a estudiantes",
-          Disponible: true,
-          marca: hp,
-          categoria: notebook,
-          estado: disponible,
-        }),
-      ),
-      equipoRepository.save(
-        equipoRepository.create({
-          ID_Num_Inv: "NB-2024-002",
-          Modelo: "Dell Latitude 5420",
-          Numero_Serie: "DELL5420XYZ",
-          Comentarios: "Notebook para profesores",
-          Disponible: true,
-          marca: dell,
-          categoria: notebook,
-          estado: disponible,
-        }),
-      ),
-      equipoRepository.save(
-        equipoRepository.create({
-          ID_Num_Inv: "NB-2024-003",
-          Modelo: "Lenovo ThinkPad E14",
-          Numero_Serie: "LEN14GEN3",
-          Comentarios: null,
-          Disponible: false,
-          marca: lenovo,
-          categoria: notebook,
-          estado: ocupado,
-        }),
-      ),
+      // Especificaciones NB1
+      especificacionesRepository.save(especificacionesRepository.create({ ID_Num_Inv: notebook1.ID_Num_Inv, Tipo_Especificacion_HW: "Procesador", Descripcion: "Intel Core i5-1135G7" })),
+      especificacionesRepository.save(especificacionesRepository.create({ ID_Num_Inv: notebook1.ID_Num_Inv, Tipo_Especificacion_HW: "RAM", Descripcion: "8GB DDR4" })),
+      especificacionesRepository.save(especificacionesRepository.create({ ID_Num_Inv: notebook1.ID_Num_Inv, Tipo_Especificacion_HW: "Almacenamiento", Descripcion: "256GB SSD NVMe" })),
+
+      // Especificaciones NB2
+      especificacionesRepository.save(especificacionesRepository.create({ ID_Num_Inv: notebook2.ID_Num_Inv, Tipo_Especificacion_HW: "Procesador", Descripcion: "Intel Core i7-1185G7" })),
+      especificacionesRepository.save(especificacionesRepository.create({ ID_Num_Inv: notebook2.ID_Num_Inv, Tipo_Especificacion_HW: "RAM", Descripcion: "16GB DDR4" })),
+      especificacionesRepository.save(especificacionesRepository.create({ ID_Num_Inv: notebook2.ID_Num_Inv, Tipo_Especificacion_HW: "Almacenamiento", Descripcion: "512GB SSD NVMe" })),
+
+      // Especificaciones NB3
+      especificacionesRepository.save(especificacionesRepository.create({ ID_Num_Inv: notebook3.ID_Num_Inv, Tipo_Especificacion_HW: "Procesador", Descripcion: "AMD Ryzen 5 5500U" })),
+      especificacionesRepository.save(especificacionesRepository.create({ ID_Num_Inv: notebook3.ID_Num_Inv, Tipo_Especificacion_HW: "RAM", Descripcion: "8GB DDR4" })),
+      especificacionesRepository.save(especificacionesRepository.create({ ID_Num_Inv: notebook3.ID_Num_Inv, Tipo_Especificacion_HW: "Almacenamiento", Descripcion: "256GB SSD" })),
+
+      // Otros equipos
       equipoRepository.save(
         equipoRepository.create({
           ID_Num_Inv: "DT-2024-001",

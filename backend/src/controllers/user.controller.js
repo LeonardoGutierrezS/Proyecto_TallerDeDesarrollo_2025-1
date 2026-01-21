@@ -92,6 +92,35 @@ export async function updateUser(req, res) {
       );
     }
 
+    // Seguridad: Si no es administrador, solo puede editar su propio perfil
+    const currentUser = req.user;
+    const isAdminUser = currentUser.tipoUsuario?.toLowerCase() === "administrador";
+
+    if (!isAdminUser) {
+      // Validar que el RUT o Email consultado sea el del usuario autenticado
+      if (rut !== currentUser.rut && email !== currentUser.email) {
+        return handleErrorClient(
+          res,
+          403,
+          "No autorizado",
+          "No tienes permiso para modificar la información de otro usuario.",
+        );
+      }
+
+      // Impedir que un usuario no-admin cambie campos sensibles
+      const forbiddenFields = ["codTipoUsuario", "vigente", "aprobado", "rut"];
+      for (const field of forbiddenFields) {
+        if (body[field] !== undefined) {
+          return handleErrorClient(
+            res,
+            403,
+            "Acción no permitida",
+            `No tienes permisos para modificar el campo: ${field}`,
+          );
+        }
+      }
+    }
+
     const [user, userError] = await updateUserService({ rut, email }, body);
 
     if (userError) {

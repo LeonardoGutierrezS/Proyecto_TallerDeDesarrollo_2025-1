@@ -31,6 +31,11 @@ const UserSchema = new EntitySchema({
       nullable: false,
       default: true,
     },
+    Aprobado: {
+      type: "boolean",
+      nullable: false,
+      default: false,
+    },
     ID_Cargo: {
       type: "int",
       nullable: true,

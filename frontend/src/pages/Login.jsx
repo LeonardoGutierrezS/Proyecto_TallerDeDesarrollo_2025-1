@@ -34,9 +34,6 @@ const Login = () => {
 
     const validatePassword = (password) => {
         if (!password) return 'La contraseña es obligatoria';
-        if (password.length < 8) return 'La contraseña debe tener al menos 8 caracteres';
-        if (password.length > 26) return 'La contraseña debe tener máximo 26 caracteres';
-        if (!/^[a-zA-Z0-9]+$/.test(password)) return 'La contraseña solo puede contener letras y números';
         return '';
     };
 
@@ -104,7 +101,14 @@ const Login = () => {
                             autoComplete="email"
                         />
                         {(formErrors.email || errorEmail) && (
-                            <span className="error-text">⚠ {formErrors.email || errorEmail}</span>
+                            <span className="error-text">
+                                ⚠ {formErrors.email || errorEmail}
+                                {(errorEmail === 'Este correo electrónico no está registrado.') && (
+                                    <a href="/register" style={{ marginLeft: '5px', color: '#dc2626', fontWeight: 'bold', textDecoration: 'underline' }}>
+                                        ¿Deseas registrarte?
+                                    </a>
+                                )}
+                            </span>
                         )}
                     </div>
 

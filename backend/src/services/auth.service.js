@@ -23,18 +23,18 @@ export async function loginService(user) {
 
     console.log("Usuario encontrado:", userFound ? "Sí" : "No");
     if (!userFound) {
-      return [null, createErrorMessage("email", "Usuario y/o contraseña incorrectos")];
+      return [null, createErrorMessage("email", "Este correo electrónico no está registrado.")];
     }
 
     // Verificar si el usuario está vigente (aprobado y activo)
     if (!userFound.Vigente) {
-      return [null, createErrorMessage("email", "Usuario inactivo. Contáctese con el administrador del sistema")];
+      return [null, createErrorMessage("email", "Tu cuenta aún no ha sido aprobada o se encuentra inactiva. Por favor, contacta al administrador.")];
     }
 
     const isMatch = await comparePassword(password, userFound.Contrasenia);
 
     if (!isMatch) {
-      return [null, createErrorMessage("password", "Usuario y/o contraseña incorrectos")];
+      return [null, createErrorMessage("password", "Contraseña incorrecta.")];
     }
 
     // Obtener cargo activo (sin fecha fin)
@@ -107,7 +107,8 @@ export async function registerService(user) {
       Nombre_Completo: nombreCompleto,
       Correo: email,
       Contrasenia: await encryptPassword(user.password),
-      Vigente: false, // Los usuarios registrados quedan inactivos hasta ser aprobados
+      Vigente: false, // Inactivo hasta ser aprobado
+      Aprobado: false, // No aprobado inicialmente
       Cod_TipoUsuario: tipoUsuarioObj.Cod_TipoUsuario,
     };
 

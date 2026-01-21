@@ -119,9 +119,13 @@ export const descargarReporteEquiposCSV = async () => {
 /**
  * Descargar reporte de estadísticas generales en PDF
  */
-export const descargarReporteEstadisticasPDF = async () => {
+export const descargarReporteEstadisticasPDF = async (meses) => {
   try {
+    const params = {};
+    if (meses) params.meses = meses;
+
     const response = await axios.get('/reportes/estadisticas/pdf', {
+      params,
       responseType: 'blob'
     });
     
@@ -174,9 +178,12 @@ export const descargarReporteUsuariosCSV = async (tipoUsuario) => {
 /**
  * Obtener datos para gráficos
  */
-export const obtenerDatosGraficos = async () => {
+export const obtenerDatosGraficos = async (meses) => {
   try {
-    const response = await axios.get('/reportes/graficos');
+    const params = {};
+    if (meses) params.meses = meses;
+
+    const response = await axios.get('/reportes/graficos', { params });
     return response.data.data;
   } catch (error) {
     console.error('Error fetching graficos data:', error);

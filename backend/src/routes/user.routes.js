@@ -17,20 +17,18 @@ import {
 
 const router = Router();
 
-router
-  .use(authenticateJwt)
-  .use(isAdmin);
+router.use(authenticateJwt);
 
 router
-  .get("/", getUsers)
-  .get("/all", getAllUsers)
-  .get("/pending", getPendingUsers)
-  .get("/detail/", getUser)
-  .post("/create", createUserByAdmin)
-  .patch("/detail/", updateUser)
-  .patch("/:rut/approve", approveUser)
-  .patch("/:rut/status", updateUserStatus)
-  .delete("/detail/", deleteUser)
-  .delete("/:rut/reject", rejectUser);
+  .get("/", isAdmin, getUsers)
+  .get("/all", isAdmin, getAllUsers)
+  .get("/pending", isAdmin, getPendingUsers)
+  .get("/detail/", getUser) // Acceso permitido a todos los autenticados (validación en controlador)
+  .post("/create", isAdmin, createUserByAdmin)
+  .patch("/detail/", updateUser) // Acceso permitido a todos los autenticados (validación en controlador)
+  .patch("/:rut/approve", isAdmin, approveUser)
+  .patch("/:rut/status", isAdmin, updateUserStatus)
+  .delete("/detail/", isAdmin, deleteUser)
+  .delete("/:rut/reject", isAdmin, rejectUser);
 
 export default router;

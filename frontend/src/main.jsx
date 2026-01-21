@@ -14,6 +14,7 @@ import Reportes from '@pages/Reportes';
 import GenerarSolicitud from '@pages/GenerarSolicitud';
 import EstadoSolicitud from '@pages/EstadoSolicitud';
 import Error404 from '@pages/Error404';
+import Perfil from '@pages/Perfil';
 import Root from '@pages/Root';
 import ProtectedRoute from '@components/ProtectedRoute';
 import '@styles/styles.css';
@@ -91,6 +92,10 @@ const router = createBrowserRouter([
           <EstadoSolicitud />
         </ProtectedRoute>
         ),
+      },
+      {
+        path: '/perfil',
+        element: <Perfil />
       }
     ]
   },

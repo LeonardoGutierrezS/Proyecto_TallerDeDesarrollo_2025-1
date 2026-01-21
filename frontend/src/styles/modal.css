@@ -55,8 +55,10 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 20px 30px;
-    border-bottom: 2px solid #e0e0e0;
+    padding: 22px 30px;
+    background: linear-gradient(135deg, #003366 0%, #001f3f 100%);
+    border-radius: 12px 12px 0 0;
+    border-bottom: 3px solid #006edf;
 }
 
 .modal-content-small .modal-header {
@@ -84,28 +86,33 @@
 
 .modal-header h2 {
     margin: 0;
-    color: #003366;
-    font-size: 1.5em;
+    color: white;
+    font-size: 1.4em;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
 }
 
 .modal-close {
-    background: none;
+    background: rgba(255, 255, 255, 0.1);
     border: none;
-    font-size: 1.5em;
-    color: #666;
+    font-size: 1.4em;
+    color: white;
     cursor: pointer;
-    width: 30px;
-    height: 30px;
+    width: 32px;
+    height: 32px;
     display: flex;
     align-items: center;
     justify-content: center;
-    border-radius: 50%;
-    transition: all 0.3s ease;
+    border-radius: 8px;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .modal-close:hover {
-    background-color: #f44336;
-    color: white;
+    background-color: #ef4444;
+    transform: rotate(90deg);
 }
 
 .modal-form {
@@ -179,7 +186,8 @@
 .form-group textarea:focus {
     outline: none;
     border-color: #006edf;
-    box-shadow: 0 0 0 3px rgba(0, 110, 223, 0.1);
+    box-shadow: 0 0 0 4px rgba(0, 110, 223, 0.15);
+    background-color: #fff;
 }
 
 .modal-content-small .form-group input:focus {
@@ -503,19 +511,23 @@ input::-webkit-outer-spin-button {
 
 /* Estilos para especificaciones de Notebook */
 .notebook-specs {
-    margin-top: 25px;
-    padding: 20px;
-    background: #f8fafc;
-    border-radius: 8px;
+    margin-top: 30px;
+    padding: 24px;
+    background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
+    border-radius: 12px;
     border: 1px solid #e2e8f0;
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.02);
 }
 
 .specs-title {
-    color: #003b7a;
-    font-size: 16px;
-    font-weight: 600;
-    margin: 0 0 15px 0;
-    padding-bottom: 10px;
-    border-bottom: 2px solid #003b7a;
+    color: #003366;
+    font-size: 1.1em;
+    font-weight: 700;
+    margin: 0 0 20px 0;
+    padding-bottom: 12px;
+    border-bottom: 2px solid #006edf;
+    display: flex;
+    align-items: center;
+    gap: 10px;
 }
 

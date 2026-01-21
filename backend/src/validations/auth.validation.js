@@ -12,17 +12,11 @@ export const authValidation = Joi.object({
       "string.email": "El correo electrónico debe ser un email válido.",
     }),
   password: Joi.string()
-    .min(8)
-    .max(26)
-    .pattern(/^[a-zA-Z0-9]+$/)
     .required()
     .messages({
       "string.empty": "La contraseña no puede estar vacía.",
       "any.required": "La contraseña es obligatoria.",
       "string.base": "La contraseña debe ser de tipo texto.",
-      "string.min": "La contraseña debe tener al menos 8 caracteres.",
-      "string.max": "La contraseña debe tener como máximo 26 caracteres.",
-      "string.pattern.base": "La contraseña solo puede contener letras y números.",
     }),
 }).unknown(false).messages({
   "object.unknown": "No se permiten propiedades adicionales.",
@@ -47,6 +41,26 @@ export const registerValidation = Joi.object({
     .max(12)
     .required()
     .pattern(/^(?:(?:[1-9]\d{0}|[1-2]\d{1})(\.\d{3}){2}|[1-9]\d{6}|[1-2]\d{7}|29\.999\.999|29999999)-[\dkK]$/)
+    .custom((value, helpers) => {
+      const clean = value.replace(/\./g, "").replace("-", "").toUpperCase();
+      const body = clean.slice(0, -1);
+      const dv = clean.slice(-1);
+      
+      let sum = 0;
+      let multiplier = 2;
+      for (let i = body.length - 1; i >= 0; i--) {
+        sum += parseInt(body[i]) * multiplier;
+        multiplier = multiplier === 7 ? 2 : multiplier + 1;
+      }
+      
+      const expectedDv = 11 - (sum % 11);
+      let dvChar = expectedDv === 11 ? "0" : expectedDv === 10 ? "K" : expectedDv.toString();
+      
+      if (dvChar !== dv) {
+        return helpers.message("El RUT ingresado no es válido (dígito verificador incorrecto).");
+      }
+      return value;
+    })
     .messages({
       "string.empty": "El rut no puede estar vacío.",
       "string.base": "El rut debe ser de tipo string.",
@@ -66,7 +80,7 @@ export const registerValidation = Joi.object({
   password: Joi.string()
     .min(8)
     .max(26)
-    .pattern(/^[a-zA-Z0-9]+$/)
+    .pattern(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[a-zA-Z\d]+$/)
     .required()
     .messages({
       "string.empty": "La contraseña no puede estar vacía.",
@@ -74,7 +88,7 @@ export const registerValidation = Joi.object({
       "string.base": "La contraseña debe ser de tipo texto.",
       "string.min": "La contraseña debe tener al menos 8 caracteres.",
       "string.max": "La contraseña debe tener como máximo 26 caracteres.",
-      "string.pattern.base": "La contraseña solo puede contener letras y números.",
+      "string.pattern.base": "La contraseña debe tener al menos una mayúscula, una minúscula y un número (solo letras y números).",
     }),
   tipoUsuario: Joi.string()
     .valid('Alumno', 'Profesor')

@@ -199,6 +199,41 @@ export async function updateEquipoService(id, body) {
       ...dataEquipoUpdate,
     });
 
+    // Actualizar especificaciones si vienen en el body
+    if (body.especificaciones) {
+      const especificacionesRepository = AppDataSource.getRepository(EspecificacionesHW);
+      const specs = body.especificaciones;
+
+      // Buscar especificaciones existentes para este equipo
+      const existingSpecs = await especificacionesRepository.find({
+        where: { ID_Num_Inv: id }
+      });
+
+      // Función auxiliar para actualizar o crear una especificación
+      const upsertSpec = async (tipo, valor) => {
+        if (!valor) return;
+        const spec = existingSpecs.find(s => s.Tipo_Especificacion_HW === tipo);
+        if (spec) {
+          spec.Descripcion = valor;
+          await especificacionesRepository.save(spec);
+        } else {
+          await especificacionesRepository.save(
+            especificacionesRepository.create({
+              ID_Num_Inv: id,
+              Tipo_Especificacion_HW: tipo,
+              Descripcion: valor
+            })
+          );
+        }
+      };
+
+      await Promise.all([
+        upsertSpec("Procesador", specs.Procesador),
+        upsertSpec("RAM", specs.RAM),
+        upsertSpec("Almacenamiento", specs.Almacenamiento)
+      ]);
+    }
+
     const equipoUpdated = await equipoRepository.findOne({
       where: { ID_Num_Inv: id },
       relations: ["marca", "categoria", "estado", "especificaciones"],

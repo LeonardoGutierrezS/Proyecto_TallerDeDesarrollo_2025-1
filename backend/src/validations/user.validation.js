@@ -64,27 +64,27 @@ export const userBodyValidation = Joi.object({
   password: Joi.string()
     .min(8)
     .max(26)
-    .pattern(/^[a-zA-Z0-9]+$/)
+    .pattern(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[a-zA-Z\d]+$/)
     .messages({
       "string.empty": "La contraseña no puede estar vacía.",
       "string.base": "La contraseña debe ser de tipo string.",
       "string.min": "La contraseña debe tener como mínimo 8 caracteres.",
       "string.max": "La contraseña debe tener como máximo 26 caracteres.",
       "string.pattern.base":
-        "La contraseña solo puede contener letras y números.",
+        "La contraseña debe tener al menos una mayúscula, una minúscula y un número (solo letras y números).",
     }),
   newPassword: Joi.string()
     .min(8)
     .max(26)
     .allow("")
-    .pattern(/^[a-zA-Z0-9]+$/)
+    .pattern(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[a-zA-Z\d]+$/)
     .messages({
       "string.empty": "La nueva contraseña no puede estar vacía.",
       "string.base": "La nueva contraseña debe ser de tipo string.",
       "string.min": "La nueva contraseña debe tener como mínimo 8 caracteres.",
       "string.max": "La nueva contraseña debe tener como máximo 26 caracteres.",
       "string.pattern.base":
-        "La nueva contraseña solo puede contener letras y números.",
+        "La nueva contraseña debe tener al menos una mayúscula, una minúscula y un número (solo letras y números).",
     }),
   rut: Joi.string()
     .min(9)

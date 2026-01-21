@@ -26,8 +26,8 @@ const Users = () => {
 
   const { handleDelete } = useDeleteUser(fetchUsers, setDataUser);
 
-  const handleRutFilterChange = (e) => {
-    setFilterRut(e.target.value);
+  const handleRutFilterChange = (value) => {
+    setFilterRut(value);
   };
 
   const handleSelectionChange = useCallback((selectedUsers) => {
@@ -46,10 +46,11 @@ const Users = () => {
       responsive: 2,
       formatter: function(cell) {
         const rowData = cell.getRow().getData();
+        const tipoDesc = rowData.tipoUsuario?.toLowerCase();
         // Mostrar carrera para Alumnos, cargo para Profesores
-        if (rowData.codTipoUsuario === 2) {
+        if (tipoDesc === 'alumno') {
           return rowData.carrera || 'Sin carrera';
-        } else if (rowData.codTipoUsuario === 3) {
+        } else if (tipoDesc === 'profesor') {
           return rowData.cargo || 'Sin cargo';
         }
         return '-';

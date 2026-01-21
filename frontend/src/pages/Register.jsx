@@ -2,7 +2,7 @@ import { useNavigate } from 'react-router-dom';
 import { register } from '@services/auth.service.js';
 import useRegister from '@hooks/auth/useRegister.jsx';
 import { showErrorAlert, showSuccessAlert } from '@helpers/sweetAlert.js';
-import { formatRut } from '@helpers/rutFormatter.js';
+import { formatRut, validateRut, validateRutFormat } from '@helpers/rutFormatter.js';
 import { useState, useEffect } from 'react';
 import '@styles/register.css';
 import HideIcon from '../assets/HideIcon.svg';
@@ -43,18 +43,10 @@ const validateNombreCompleto = (nombre) => {
 		return '';
 	};
 
-	const validateRut = (rut) => {
+	const validateRutInternal = (rut) => {
 		if (!rut) return 'El rut es obligatorio';
-		const rutPattern = /^(?:(?:[1-9]\d{0}|[1-2]\d{1})(\.\d{3}){2}|[1-9]\d{6}|[1-2]\d{7}|29\.999\.999|29999999)-[\dkK]$/;
-		if (!rutPattern.test(rut)) return 'Formato rut inválido, debe ser xx.xxx.xxx-x o xxxxxxxx-x';
-		return '';
-	};
-
-	const validateEmail = (email) => {
-		if (!email) return 'El correo electrónico es obligatorio';
-		if (!email.includes('@')) return 'El correo debe ser válido';
-		const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-		if (!emailRegex.test(email)) return 'El correo electrónico no es válido';
+		if (!validateRutFormat(rut)) return 'Formato rut inválido, debe ser xx.xxx.xxx-x o xxxxxxxx-x';
+		if (!validateRut(rut)) return 'El RUT ingresado no es válido (dígito verificador incorrecto)';
 		return '';
 	};
 
@@ -62,6 +54,9 @@ const validateNombreCompleto = (nombre) => {
 		if (!password) return 'La contraseña es obligatoria';
 		if (password.length < 8) return 'La contraseña debe tener al menos 8 caracteres';
 		if (password.length > 26) return 'La contraseña debe tener máximo 26 caracteres';
+		if (!/[A-Z]/.test(password)) return 'Debe contener al menos una letra mayúscula';
+		if (!/[a-z]/.test(password)) return 'Debe contener al menos una letra minúscula';
+		if (!/[0-9]/.test(password)) return 'Debe contener al menos un número';
 		if (!/^[a-zA-Z0-9]+$/.test(password)) return 'La contraseña solo puede contener letras y números';
 		return '';
 	};
@@ -111,7 +106,7 @@ const validateNombreCompleto = (nombre) => {
 		
 		const errors = {
 			nombreCompleto: validateNombreCompleto(formData.nombreCompleto),
-			rut: validateRut(formData.rut),
+			rut: validateRutInternal(formData.rut),
 			email: validateEmail(formData.email),
 			password: validatePassword(formData.password),
 		};
@@ -319,6 +314,37 @@ const validateNombreCompleto = (nombre) => {
 						{formErrors.password && (
 							<span className="error-text">⚠ {formErrors.password}</span>
 						)}
+					</div>
+
+					{/* Requisitos de seguridad interactivos (Paridad con ResetPassword) */}
+					<div style={{ 
+						backgroundColor: '#f8f9fa', 
+						padding: '15px', 
+						borderRadius: '5px', 
+						marginBottom: '20px',
+						fontSize: '14px',
+						border: '1px solid #e2e8f0'
+					}}>
+						<strong style={{ display: 'block', marginBottom: '10px', color: '#1e293b' }}>
+							Requisitos de seguridad:
+						</strong>
+						<div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+							<div style={{ color: (formData.password.length >= 8 && formData.password.length <= 26) ? '#28a745' : '#666' }}>
+								{(formData.password.length >= 8 && formData.password.length <= 26) ? '✓' : '○'} 8-26 caracteres
+							</div>
+							<div style={{ color: /[A-Z]/.test(formData.password) ? '#28a745' : '#666' }}>
+								{/[A-Z]/.test(formData.password) ? '✓' : '○'} Al menos una mayúscula
+							</div>
+							<div style={{ color: /[a-z]/.test(formData.password) ? '#28a745' : '#666' }}>
+								{/[a-z]/.test(formData.password) ? '✓' : '○'} Al menos una minúscula
+							</div>
+							<div style={{ color: /[0-9]/.test(formData.password) ? '#28a745' : '#666' }}>
+								{/[0-9]/.test(formData.password) ? '✓' : '○'} Al menos un número
+							</div>
+							<div style={{ color: /^[a-zA-Z0-9]*$/.test(formData.password) && formData.password.length > 0 ? '#28a745' : '#666' }}>
+								{(/^[a-zA-Z0-9]*$/.test(formData.password) && formData.password.length > 0) ? '✓' : '○'} Solo letras y números
+							</div>
+						</div>
 					</div>
 
 					<button type="submit" className="submit-button" disabled={isSubmitting}>

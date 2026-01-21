@@ -3,7 +3,7 @@ import { createUser } from '@services/user.service.js';
 import { getCarreras } from '@services/carrera.service.js';
 import { getCargos } from '@services/cargo.service.js';
 import { showErrorAlert, showSuccessAlert } from '@helpers/sweetAlert.js';
-import { formatRut } from '@helpers/rutFormatter.js';
+import { formatRut, validateRut, validateRutFormat } from '@helpers/rutFormatter.js';
 import '@styles/modal.css';
 
 const CreateUserModal = ({ onClose, onSuccess }) => {
@@ -92,6 +92,19 @@ const CreateUserModal = ({ onClose, onSuccess }) => {
         setLoading(true);
 
         try {
+            // Validar RUT antes de enviar
+            if (!validateRutFormat(formData.rut)) {
+                showErrorAlert('Error', 'Formato de RUT inválido');
+                setLoading(false);
+                return;
+            }
+
+            if (!validateRut(formData.rut)) {
+                showErrorAlert('Error', 'El RUT ingresado no es válido (dígito verificador incorrecto)');
+                setLoading(false);
+                return;
+            }
+
             const userData = {
                 nombreCompleto: formData.nombreCompleto,
                 email: formData.correo,
@@ -190,6 +203,7 @@ const CreateUserModal = ({ onClose, onSuccess }) => {
                             required
                         >
                             <option value="">Seleccione un tipo de usuario</option>
+                            <option value="1">Administrador</option>
                             <option value="2">Alumno</option>
                             <option value="3">Profesor</option>
                         </select>

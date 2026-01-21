@@ -1,6 +1,13 @@
 import '@styles/styles.css';
 import '@styles/gestion-solicitudes.css';
+import '@styles/DashboardStats.css';
 import { useState, useEffect } from 'react';
+import DatePicker, { registerLocale } from 'react-datepicker';
+import 'react-datepicker/dist/react-datepicker.css';
+import { es } from 'date-fns/locale/es';
+import { format } from 'date-fns';
+registerLocale('es', es);
+
 import { 
   descargarReporteSolicitudesPDF,
   descargarReporteSolicitudesCSV,
@@ -15,26 +22,37 @@ import {
 } from '@services/reportes.service';
 import { showErrorAlert, showSuccessAlert } from '@helpers/sweetAlert';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faFilePdf, faFileCsv, faCalendar, faDownload, faChartBar, faEye, faUsers } from '@fortawesome/free-solid-svg-icons';
+import { faFilePdf, faFileCsv, faCalendar, faDownload, faChartBar, faEye, faUsers, faClipboardList, faBoxOpen, faLaptop } from '@fortawesome/free-solid-svg-icons';
 import GraficosReportes from '@components/GraficosReportes';
 
 const Reportes = () => {
   const [activeTab, setActiveTab] = useState('solicitudes');
-  const [fechaInicio, setFechaInicio] = useState('');
-  const [fechaFin, setFechaFin] = useState('');
+  const [fechaInicio, setFechaInicio] = useState(null);
+  const [fechaFin, setFechaFin] = useState(new Date());
   const [tipoUsuarioFiltro, setTipoUsuarioFiltro] = useState('');
   const [loading, setLoading] = useState(false);
   const [datosGraficos, setDatosGraficos] = useState(null);
-  const [mostrarGraficos, setMostrarGraficos] = useState(false);
+  const [mesesHistorial, setMesesHistorial] = useState(6);
 
-  // Cargar datos de gráficos al montar
+  // Cargar datos de gráficos al montar o cuando cambie el historial
   useEffect(() => {
     cargarDatosGraficos();
-  }, []);
+  }, [mesesHistorial]);
+
+  useEffect(() => {
+    if (datosGraficos && datosGraficos.solicitudesPorMes && datosGraficos.solicitudesPorMes.length > 0) {
+      const primeraFechaStr = datosGraficos.solicitudesPorMes[0].mes;
+      if (primeraFechaStr) {
+        setFechaInicio(new Date(primeraFechaStr));
+      }
+    } else if (!fechaInicio) {
+        setFechaInicio(new Date(new Date().getFullYear(), 0, 1));
+    }
+  }, [datosGraficos]);
 
   const cargarDatosGraficos = async () => {
     try {
-      const datos = await obtenerDatosGraficos();
+      const datos = await obtenerDatosGraficos(mesesHistorial);
       setDatosGraficos(datos);
     } catch {
       console.error('Error al cargar datos de gráficos');
@@ -62,11 +80,14 @@ const Reportes = () => {
     }, 100);
   };
 
+  // Helper para formatear fechas para la API (YYYY-MM-DD)
+  const formatFecha = (date) => (date ? format(date, 'yyyy-MM-dd') : '');
+
   // Handlers para Solicitudes
   const handlePrevisualizarSolicitudesPDF = async () => {
     try {
       setLoading(true);
-      const blob = await descargarReporteSolicitudesPDF(fechaInicio, fechaFin);
+      const blob = await descargarReporteSolicitudesPDF(formatFecha(fechaInicio), formatFecha(fechaFin));
       previsualizarPDF(blob);
       showSuccessAlert('Vista previa abierta', 'El reporte se ha abierto en una nueva pestaña');
     } catch {
@@ -79,7 +100,7 @@ const Reportes = () => {
   const handleDescargarSolicitudesPDF = async () => {
     try {
       setLoading(true);
-      const blob = await descargarReporteSolicitudesPDF(fechaInicio, fechaFin);
+      const blob = await descargarReporteSolicitudesPDF(formatFecha(fechaInicio), formatFecha(fechaFin));
       descargarArchivo(blob, `reporte-solicitudes-${Date.now()}.pdf`);
       showSuccessAlert('Descarga exitosa', 'El reporte ha sido descargado');
     } catch {
@@ -92,7 +113,7 @@ const Reportes = () => {
   const handleDescargarSolicitudesCSV = async () => {
     try {
       setLoading(true);
-      const blob = await descargarReporteSolicitudesCSV(fechaInicio, fechaFin);
+      const blob = await descargarReporteSolicitudesCSV(formatFecha(fechaInicio), formatFecha(fechaFin));
       descargarArchivo(blob, `reporte-solicitudes-${Date.now()}.csv`);
       showSuccessAlert('Descarga exitosa', 'El reporte ha sido descargado');
     } catch {
@@ -106,7 +127,7 @@ const Reportes = () => {
   const handlePrevisualizarPrestamosPDF = async () => {
     try {
       setLoading(true);
-      const blob = await descargarReportePrestamosPDF(fechaInicio, fechaFin);
+      const blob = await descargarReportePrestamosPDF(formatFecha(fechaInicio), formatFecha(fechaFin));
       previsualizarPDF(blob);
       showSuccessAlert('Vista previa abierta', 'El reporte se ha abierto en una nueva pestaña');
     } catch {
@@ -119,7 +140,7 @@ const Reportes = () => {
   const handleDescargarPrestamosPDF = async () => {
     try {
       setLoading(true);
-      const blob = await descargarReportePrestamosPDF(fechaInicio, fechaFin);
+      const blob = await descargarReportePrestamosPDF(formatFecha(fechaInicio), formatFecha(fechaFin));
       descargarArchivo(blob, `reporte-prestamos-${Date.now()}.pdf`);
       showSuccessAlert('Descarga exitosa', 'El reporte ha sido descargado');
     } catch {
@@ -132,7 +153,7 @@ const Reportes = () => {
   const handleDescargarPrestamosCSV = async () => {
     try {
       setLoading(true);
-      const blob = await descargarReportePrestamosCSV(fechaInicio, fechaFin);
+      const blob = await descargarReportePrestamosCSV(formatFecha(fechaInicio), formatFecha(fechaFin));
       descargarArchivo(blob, `reporte-prestamos-${Date.now()}.csv`);
       showSuccessAlert('Descarga exitosa', 'El reporte ha sido descargado');
     } catch {
@@ -226,7 +247,7 @@ const Reportes = () => {
   const handlePrevisualizarEstadisticasPDF = async () => {
     try {
       setLoading(true);
-      const blob = await descargarReporteEstadisticasPDF();
+      const blob = await descargarReporteEstadisticasPDF(mesesHistorial);
       previsualizarPDF(blob);
       showSuccessAlert('Vista previa abierta', 'El reporte se ha abierto en una nueva pestaña');
     } catch {
@@ -239,7 +260,7 @@ const Reportes = () => {
   const handleDescargarEstadisticasPDF = async () => {
     try {
       setLoading(true);
-      const blob = await descargarReporteEstadisticasPDF();
+      const blob = await descargarReporteEstadisticasPDF(mesesHistorial);
       descargarArchivo(blob, `reporte-estadisticas-${Date.now()}.pdf`);
       showSuccessAlert('Descarga exitosa', 'El reporte ha sido descargado');
     } catch {
@@ -249,29 +270,75 @@ const Reportes = () => {
     }
   };
 
+  const renderFiltrosFechas = () => (
+    <div className="filters-section">
+      <div className="filter-group">
+        <label className="filter-label"><FontAwesomeIcon icon={faCalendar} /> Fecha de Inicio:</label>
+        <DatePicker
+          selected={fechaInicio}
+          onChange={(date) => setFechaInicio(date)}
+          selectsStart
+          startDate={fechaInicio}
+          endDate={fechaFin}
+          maxDate={new Date()}
+          locale="es"
+          placeholderText="Seleccione fecha inicio"
+          dateFormat="dd/MM/yyyy"
+          className="date-input-picker"
+        />
+      </div>
+      <div className="filter-group">
+        <label className="filter-label"><FontAwesomeIcon icon={faCalendar} /> Fecha de Término:</label>
+        <DatePicker
+          selected={fechaFin}
+          onChange={(date) => setFechaFin(date)}
+          selectsEnd
+          startDate={fechaInicio}
+          endDate={fechaFin}
+          minDate={fechaInicio}
+          maxDate={new Date()}
+          locale="es"
+          placeholderText="Seleccione fecha fin"
+          dateFormat="dd/MM/yyyy"
+          className="date-input-picker"
+        />
+      </div>
+      <button 
+        className="btn-clear"
+        onClick={() => {
+          setFechaInicio(null);
+          setFechaFin(new Date());
+        }}
+        disabled={!fechaInicio && !fechaFin}
+      >
+        Limpiar Filtros
+      </button>
+    </div>
+  );
+
   return (
     <div className="main-container">
       <h1 className="title-page">📊 Reportes del Sistema</h1>
       
-      {/* Tabs */}
+      {/* Tabs Navigation */}
       <div className="tabs-container">
         <button 
           className={`tab-button ${activeTab === 'solicitudes' ? 'active' : ''}`}
           onClick={() => setActiveTab('solicitudes')}
         >
-          📝 Solicitudes
+          <FontAwesomeIcon icon={faClipboardList} /> Solicitudes
         </button>
         <button 
           className={`tab-button ${activeTab === 'prestamos' ? 'active' : ''}`}
           onClick={() => setActiveTab('prestamos')}
         >
-          📦 Préstamos
+          <FontAwesomeIcon icon={faBoxOpen} /> Préstamos
         </button>
         <button 
           className={`tab-button ${activeTab === 'equipos' ? 'active' : ''}`}
           onClick={() => setActiveTab('equipos')}
         >
-          💻 Equipos
+          <FontAwesomeIcon icon={faLaptop} /> Equipos
         </button>
         <button 
           className={`tab-button ${activeTab === 'usuarios' ? 'active' : ''}`}
@@ -289,210 +356,106 @@ const Reportes = () => {
 
       {/* Contenido de pestañas */}
       <div className="tab-content">
+        
         {/* Reporte de Solicitudes */}
         {activeTab === 'solicitudes' && (
-          <div className="reporte-section">
+          <div className="reporte-section animate-fade-in">
             <div className="info-section">
-              <h3>📝 Reporte de Solicitudes</h3>
-              <p>Genera un informe completo de todas las solicitudes registradas en el sistema.</p>
-              <ul className="info-list">
-                <li>✓ Información de usuario y equipo solicitado</li>
-                <li>✓ Estado actual de cada solicitud</li>
-                <li>✓ Tipo de préstamo (diario/largo plazo)</li>
-                <li>✓ Fechas y motivos de solicitud</li>
-              </ul>
+              <h3>Reporte de Solicitudes</h3>
+              <p>Genera y descarga el informe detallado de solicitudes.</p>
             </div>
 
-            {/* Filtros */}
-            <div className="filters-section">
-              <div className="filter-group">
-                <label><FontAwesomeIcon icon={faCalendar} /> Fecha Inicio:</label>
-                <input 
-                  type="date" 
-                  value={fechaInicio}
-                  onChange={(e) => setFechaInicio(e.target.value)}
-                  className="date-input"
-                />
-              </div>
-              <div className="filter-group">
-                <label><FontAwesomeIcon icon={faCalendar} /> Fecha Fin:</label>
-                <input 
-                  type="date" 
-                  value={fechaFin}
-                  onChange={(e) => setFechaFin(e.target.value)}
-                  className="date-input"
-                />
-              </div>
-              {(fechaInicio || fechaFin) && (
-                <button 
-                  className="btn-clear"
-                  onClick={() => {
-                    setFechaInicio('');
-                    setFechaFin('');
-                  }}
-                >
-                  Limpiar
-                </button>
-              )}
-            </div>
+            {renderFiltrosFechas()}
 
-            <div className="actions-section">
-              <button 
-                className="btn-action btn-preview"
-                onClick={handlePrevisualizarSolicitudesPDF}
-                disabled={loading}
-              >
-                <FontAwesomeIcon icon={faEye} /> Vista Previa
-              </button>
-              <button 
-                className="btn-action btn-download-pdf"
-                onClick={handleDescargarSolicitudesPDF}
-                disabled={loading}
-              >
-                <FontAwesomeIcon icon={faFilePdf} /> Descargar PDF
-              </button>
-              <button 
-                className="btn-action btn-download-csv"
-                onClick={handleDescargarSolicitudesCSV}
-                disabled={loading}
-              >
-                <FontAwesomeIcon icon={faFileCsv} /> Descargar CSV
-              </button>
+            <div className="actions-grid">
+              <div className="action-card" onClick={handlePrevisualizarSolicitudesPDF}>
+                <FontAwesomeIcon icon={faEye} className="action-icon" />
+                <span className="action-title">Vista Previa</span>
+                <span className="action-desc">Ver en el navegador</span>
+              </div>
+              <div className="action-card" onClick={handleDescargarSolicitudesPDF}>
+                <FontAwesomeIcon icon={faFilePdf} className="action-icon" />
+                <span className="action-title">Descargar PDF</span>
+                <span className="action-desc">Formato documento portátil</span>
+              </div>
+              <div className="action-card" onClick={handleDescargarSolicitudesCSV}>
+                <FontAwesomeIcon icon={faFileCsv} className="action-icon" />
+                <span className="action-title">Descargar CSV</span>
+                <span className="action-desc">Formato separado por comas</span>
+              </div>
             </div>
           </div>
         )}
 
         {/* Reporte de Préstamos */}
         {activeTab === 'prestamos' && (
-          <div className="reporte-section">
+          <div className="reporte-section animate-fade-in">
             <div className="info-section">
-              <h3>📦 Reporte de Préstamos</h3>
-              <p>Genera un historial completo de todos los préstamos realizados.</p>
-              <ul className="info-list">
-                <li>✓ Préstamos activos y finalizados</li>
-                <li>✓ Información de usuarios y equipos prestados</li>
-                <li>✓ Fechas de inicio y término del préstamo</li>
-                <li>✓ Estados y condiciones de cada préstamo</li>
-              </ul>
+              <h3>Reporte de Préstamos</h3>
+              <p>Historial completo de préstamos y devoluciones.</p>
             </div>
 
-            {/* Filtros */}
-            <div className="filters-section">
-              <div className="filter-group">
-                <label><FontAwesomeIcon icon={faCalendar} /> Fecha Inicio:</label>
-                <input 
-                  type="date" 
-                  value={fechaInicio}
-                  onChange={(e) => setFechaInicio(e.target.value)}
-                  className="date-input"
-                />
-              </div>
-              <div className="filter-group">
-                <label><FontAwesomeIcon icon={faCalendar} /> Fecha Fin:</label>
-                <input 
-                  type="date" 
-                  value={fechaFin}
-                  onChange={(e) => setFechaFin(e.target.value)}
-                  className="date-input"
-                />
-              </div>
-              {(fechaInicio || fechaFin) && (
-                <button 
-                  className="btn-clear"
-                  onClick={() => {
-                    setFechaInicio('');
-                    setFechaFin('');
-                  }}
-                >
-                  Limpiar
-                </button>
-              )}
-            </div>
+            {renderFiltrosFechas()}
 
-            <div className="actions-section">
-              <button 
-                className="btn-action btn-preview"
-                onClick={handlePrevisualizarPrestamosPDF}
-                disabled={loading}
-              >
-                <FontAwesomeIcon icon={faEye} /> Vista Previa
-              </button>
-              <button 
-                className="btn-action btn-download-pdf"
-                onClick={handleDescargarPrestamosPDF}
-                disabled={loading}
-              >
-                <FontAwesomeIcon icon={faFilePdf} /> Descargar PDF
-              </button>
-              <button 
-                className="btn-action btn-download-csv"
-                onClick={handleDescargarPrestamosCSV}
-                disabled={loading}
-              >
-                <FontAwesomeIcon icon={faFileCsv} /> Descargar CSV
-              </button>
+            <div className="actions-grid">
+              <div className="action-card" onClick={handlePrevisualizarPrestamosPDF}>
+                <FontAwesomeIcon icon={faEye} className="action-icon" />
+                <span className="action-title">Vista Previa</span>
+                <span className="action-desc">Ver en el navegador</span>
+              </div>
+              <div className="action-card" onClick={handleDescargarPrestamosPDF}>
+                <FontAwesomeIcon icon={faFilePdf} className="action-icon" />
+                <span className="action-title">Descargar PDF</span>
+                <span className="action-desc">Formato documento portátil</span>
+              </div>
+              <div className="action-card" onClick={handleDescargarPrestamosCSV}>
+                <FontAwesomeIcon icon={faFileCsv} className="action-icon" />
+                <span className="action-title">Descargar CSV</span>
+                <span className="action-desc">Formato separado por comas</span>
+              </div>
             </div>
           </div>
         )}
 
         {/* Reporte de Equipos */}
         {activeTab === 'equipos' && (
-          <div className="reporte-section">
+          <div className="reporte-section animate-fade-in">
             <div className="info-section">
-              <h3>💻 Reporte de Equipos</h3>
-              <p>Genera un inventario completo de todos los equipos del sistema.</p>
-              <ul className="info-list">
-                <li>✓ Listado de todos los equipos disponibles</li>
-                <li>✓ Estado de disponibilidad y condición física</li>
-                <li>✓ Categorías, marcas y modelos</li>
-                <li>✓ Estadísticas de uso y disponibilidad</li>
-              </ul>
+              <h3>Reporte de Equipos</h3>
+              <p>Inventario actualizado y estado de los equipos.</p>
             </div>
 
-            <div className="actions-section">
-              <button 
-                className="btn-action btn-preview"
-                onClick={handlePrevisualizarEquiposPDF}
-                disabled={loading}
-              >
-                <FontAwesomeIcon icon={faEye} /> Vista Previa
-              </button>
-              <button 
-                className="btn-action btn-download-pdf"
-                onClick={handleDescargarEquiposPDF}
-                disabled={loading}
-              >
-                <FontAwesomeIcon icon={faFilePdf} /> Descargar PDF
-              </button>
-              <button 
-                className="btn-action btn-download-csv"
-                onClick={handleDescargarEquiposCSV}
-                disabled={loading}
-              >
-                <FontAwesomeIcon icon={faFileCsv} /> Descargar CSV
-              </button>
+            <div className="actions-grid">
+              <div className="action-card" onClick={handlePrevisualizarEquiposPDF}>
+                <FontAwesomeIcon icon={faEye} className="action-icon" />
+                <span className="action-title">Vista Previa</span>
+                <span className="action-desc">Ver en el navegador</span>
+              </div>
+              <div className="action-card" onClick={handleDescargarEquiposPDF}>
+                <FontAwesomeIcon icon={faFilePdf} className="action-icon" />
+                <span className="action-title">Descargar PDF</span>
+                <span className="action-desc">Formato documento portátil</span>
+              </div>
+              <div className="action-card" onClick={handleDescargarEquiposCSV}>
+                <FontAwesomeIcon icon={faFileCsv} className="action-icon" />
+                <span className="action-title">Descargar CSV</span>
+                <span className="action-desc">Formato separado por comas</span>
+              </div>
             </div>
           </div>
         )}
 
         {/* Reporte de Usuarios */}
         {activeTab === 'usuarios' && (
-          <div className="reporte-section">
+          <div className="reporte-section animate-fade-in">
             <div className="info-section">
-              <h3><FontAwesomeIcon icon={faUsers} /> Reporte de Usuarios</h3>
-              <p>Genera un listado completo de todos los usuarios registrados.</p>
-              <ul className="info-list">
-                <li>✓ Información completa de usuarios</li>
-                <li>✓ Tipos de usuario (Alumnos, Profesores, Administradores)</li>
-                <li>✓ Carreras y cargos asociados</li>
-                <li>✓ Fechas de registro</li>
-              </ul>
+              <h3>Reporte de Usuarios</h3>
+              <p>Listado de usuarios registrados en la plataforma.</p>
             </div>
 
-            {/* Filtros */}
             <div className="filters-section">
               <div className="filter-group">
-                <label>Tipo de Usuario:</label>
+                <label className="filter-label">Tipo de Usuario:</label>
                 <select 
                   value={tipoUsuarioFiltro}
                   onChange={(e) => setTipoUsuarioFiltro(e.target.value)}
@@ -509,83 +472,55 @@ const Reportes = () => {
                   className="btn-clear"
                   onClick={() => setTipoUsuarioFiltro('')}
                 >
-                  Limpiar
+                  Limpiar Filtro
                 </button>
               )}
             </div>
 
-            <div className="actions-section">
-              <button 
-                className="btn-action btn-preview"
-                onClick={handlePrevisualizarUsuariosPDF}
-                disabled={loading}
-              >
-                <FontAwesomeIcon icon={faEye} /> Vista Previa
-              </button>
-              <button 
-                className="btn-action btn-download-pdf"
-                onClick={handleDescargarUsuariosPDF}
-                disabled={loading}
-              >
-                <FontAwesomeIcon icon={faFilePdf} /> Descargar PDF
-              </button>
-              <button 
-                className="btn-action btn-download-csv"
-                onClick={handleDescargarUsuariosCSV}
-                disabled={loading}
-              >
-                <FontAwesomeIcon icon={faFileCsv} /> Descargar CSV
-              </button>
+            <div className="actions-grid">
+              <div className="action-card" onClick={handlePrevisualizarUsuariosPDF}>
+                <FontAwesomeIcon icon={faEye} className="action-icon" />
+                <span className="action-title">Vista Previa</span>
+                <span className="action-desc">Ver en el navegador</span>
+              </div>
+              <div className="action-card" onClick={handleDescargarUsuariosPDF}>
+                <FontAwesomeIcon icon={faFilePdf} className="action-icon" />
+                <span className="action-title">Descargar PDF</span>
+                <span className="action-desc">Formato documento portátil</span>
+              </div>
+              <div className="action-card" onClick={handleDescargarUsuariosCSV}>
+                <FontAwesomeIcon icon={faFileCsv} className="action-icon" />
+                <span className="action-title">Descargar CSV</span>
+                <span className="action-desc">Formato separado por comas</span>
+              </div>
             </div>
           </div>
         )}
 
-        {/* Reporte de Estadísticas con Gráficos */}
         {activeTab === 'estadisticas' && (
-          <div className="reporte-section">
-            <div className="info-section">
-              <h3><FontAwesomeIcon icon={faChartBar} /> Estadísticas Generales</h3>
-              <p>Visualiza estadísticas generales del sistema y genera reportes.</p>
-              <ul className="info-list">
-                <li>✓ Total de solicitudes y préstamos realizados</li>
-                <li>✓ Equipos disponibles vs equipos en préstamo</li>
-                <li>✓ Tasa de disponibilidad del inventario</li>
-                <li>✓ Gráficos interactivos y visualización de datos</li>
-              </ul>
+          <div className="reporte-section animate-fade-in">
+            <div className="info-section" style={{ marginBottom: '2rem' }}>
+              <h3>Estadísticas Generales</h3>
+              <p>Dashboard interactivo de KPIs y métricas del sistema.</p>
             </div>
 
-            {/* Botón para mostrar/ocultar gráficos */}
-            <div className="actions-section" style={{ marginBottom: '20px' }}>
-              <button 
-                className="btn-action"
-                onClick={() => setMostrarGraficos(!mostrarGraficos)}
-                style={{ backgroundColor: '#667eea' }}
-              >
-                <FontAwesomeIcon icon={faChartBar} /> 
-                {mostrarGraficos ? 'Ocultar Gráficos' : 'Mostrar Gráficos'}
-              </button>
-            </div>
+            <GraficosReportes 
+              datosGraficos={datosGraficos} 
+              mesesHistorial={mesesHistorial}
+              setMesesHistorial={setMesesHistorial}
+            />
 
-            {/* Gráficos */}
-            {mostrarGraficos && datosGraficos && (
-              <GraficosReportes datosGraficos={datosGraficos} />
-            )}
-
-            <div className="actions-section">
-              <button 
-                className="btn-action btn-preview"
-                onClick={handlePrevisualizarEstadisticasPDF}
-                disabled={loading}
-              >
-                <FontAwesomeIcon icon={faEye} /> Vista Previa PDF
-              </button>
-              <button 
-                className="btn-action btn-download-pdf"
-                onClick={handleDescargarEstadisticasPDF}
-                disabled={loading}
-              >
-                <FontAwesomeIcon icon={faFilePdf} /> Descargar PDF
-              </button>
+            <div className="actions-grid" style={{ marginTop: '3rem', borderTop: '1px solid #e2e8f0', paddingTop: '2rem' }}>
+              <div className="action-card" onClick={handlePrevisualizarEstadisticasPDF}>
+                <FontAwesomeIcon icon={faEye} className="action-icon" />
+                <span className="action-title">Reporte PDF</span>
+                <span className="action-desc">Previsualizar reporte estadístico</span>
+              </div>
+              <div className="action-card" onClick={handleDescargarEstadisticasPDF}>
+                <FontAwesomeIcon icon={faFilePdf} className="action-icon" />
+                <span className="action-title">Descargar PDF</span>
+                <span className="action-desc">Guardar reporte estadístico</span>
+              </div>
             </div>
           </div>
         )}

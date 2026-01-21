@@ -260,7 +260,7 @@ export async function getPendingUsersService() {
     const userRepository = AppDataSource.getRepository(User);
 
     const pendingUsers = await userRepository.find({
-      where: { Vigente: false },
+      where: { Aprobado: false },
       relations: ["tipoUsuario", "carrera", "cargo"],
     });
 
@@ -286,9 +286,9 @@ export async function approveUserService(rut) {
 
     if (!userFound) return [null, "Usuario no encontrado"];
 
-    if (userFound.Vigente) return [null, "El usuario ya está aprobado"];
+    if (userFound.Aprobado) return [null, "El usuario ya está aprobado"];
 
-    await userRepository.update({ Rut: rut }, { Vigente: true });
+    await userRepository.update({ Rut: rut }, { Vigente: true, Aprobado: true });
 
     const userUpdated = await userRepository.findOne({
       where: { Rut: rut },
@@ -428,6 +428,7 @@ export async function createUserByAdminService(data) {
       Correo: data.email,
       Contrasenia: hashedPassword,
       Vigente: true, // Usuarios creados por admin se aprueban automáticamente
+      Aprobado: true,
       Cod_TipoUsuario: data.codTipoUsuario,
       ID_Cargo: data.idCargo || null,
       ID_Carrera: data.idCarrera || null,

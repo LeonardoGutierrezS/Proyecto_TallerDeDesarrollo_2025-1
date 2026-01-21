@@ -7,7 +7,10 @@ import MarcasSection from '@components/equipos/MarcasSection';
 import CategoriasSection from '@components/equipos/CategoriasSection';
 import EstadosSection from '@components/equipos/EstadosSection';
 import CreateEquipoModal from '@components/equipos/CreateEquipoModal';
+import EditEquipoModal from '@components/equipos/EditEquipoModal';
 import EquipoDetailsModal from '@components/equipos/EquipoDetailsModal';
+import { deleteEquipo } from '@services/equipo.service';
+import { showConfirmAlert, showSuccessAlert, showErrorAlert } from '@helpers/sweetAlert';
 
 const GestionEquipos = () => {
     const [activeTab, setActiveTab] = useState('equipos');
@@ -17,6 +20,7 @@ const GestionEquipos = () => {
     const [filterCategoria, setFilterCategoria] = useState('');
     const [filterDisponible, setFilterDisponible] = useState('');
     const [showCreateEquipoModal, setShowCreateEquipoModal] = useState(false);
+    const [showEditModal, setShowEditModal] = useState(false);
     const [selectedEquipo, setSelectedEquipo] = useState(null);
     const [showDetailsModal, setShowDetailsModal] = useState(false);
 
@@ -78,6 +82,37 @@ const GestionEquipos = () => {
     const handleCloseDetailsModal = () => {
         setShowDetailsModal(false);
         setSelectedEquipo(null);
+    };
+
+    const handleEdit = (equipo) => {
+        setSelectedEquipo(equipo);
+        setShowEditModal(true);
+    };
+
+    const handleEditSuccess = () => {
+        refetch();
+    };
+
+    const handleDelete = async (equipo) => {
+        const confirmed = await showConfirmAlert(
+            `¿Eliminar equipo ${equipo.ID_Num_Inv}?`,
+            'Esta acción eliminará permanentemente el equipo del sistema.'
+        );
+
+        if (!confirmed) return;
+
+        try {
+            const response = await deleteEquipo(equipo.ID_Num_Inv);
+            if (response.status === 'Success') {
+                showSuccessAlert('¡Eliminado!', 'El equipo ha sido eliminado correctamente.');
+                refetch();
+            } else {
+                showErrorAlert('Error', response.message || 'No se pudo eliminar el equipo');
+            }
+        } catch (error) {
+            console.error('Error al eliminar equipo:', error);
+            showErrorAlert('Error', 'Ocurrió un error al intentar eliminar el equipo');
+        }
     };
 
     const renderEquiposSection = () => {
@@ -145,14 +180,14 @@ const GestionEquipos = () => {
                     <table className="equipos-table">
                         <thead>
                             <tr>
-                                <th>N° Inventario</th>
+                                <th className="text-center">N° Inventario</th>
+                                <th className="text-center">N° Serie</th>
+                                <th className="text-center">Categoría</th>
+                                <th className="text-center">Marca</th>
                                 <th>Modelo</th>
-                                <th>N° Serie</th>
-                                <th>Marca</th>
-                                <th>Categoría</th>
-                                <th>Estado</th>
-                                <th>Disponible</th>
-                                <th>Acciones</th>
+                                <th className="text-center">Estado</th>
+                                <th className="text-center">Disponible</th>
+                                <th className="text-center">Acciones</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -163,13 +198,13 @@ const GestionEquipos = () => {
                             ) : (
                                 filteredEquipos.map((equipo) => (
                                     <tr key={equipo.ID_Num_Inv}>
-                                        <td>{equipo.ID_Num_Inv}</td>
+                                        <td className="text-center">{equipo.ID_Num_Inv}</td>
+                                        <td className="text-center">{equipo.Numero_Serie}</td>
+                                        <td className="text-center">{equipo.categoria?.Descripcion || 'N/A'}</td>
+                                        <td className="text-center">{equipo.marca?.Descripcion || 'N/A'}</td>
                                         <td>{equipo.Modelo}</td>
-                                        <td>{equipo.Numero_Serie}</td>
-                                        <td>{equipo.marca?.Descripcion || 'N/A'}</td>
-                                        <td>{equipo.categoria?.Descripcion || 'N/A'}</td>
-                                        <td>{equipo.estado?.Descripcion || 'N/A'}</td>
-                                        <td>
+                                        <td className="text-center">{equipo.estado?.Descripcion || 'N/A'}</td>
+                                        <td className="text-center">
                                             <span className={`disponible-badge ${equipo.Disponible ? 'disponible' : 'no-disponible'}`}>
                                                 {equipo.Disponible ? 'Sí' : 'No'}
                                             </span>
@@ -185,12 +220,14 @@ const GestionEquipos = () => {
                                                 </button>
                                                 <button 
                                                     className="btn-edit"
+                                                    onClick={() => handleEdit(equipo)}
                                                     title="Editar equipo"
                                                 >
                                                     ✏️
                                                 </button>
                                                 <button 
                                                     className="btn-delete"
+                                                    onClick={() => handleDelete(equipo)}
                                                     title="Eliminar equipo"
                                                 >
                                                     🗑️
@@ -208,6 +245,15 @@ const GestionEquipos = () => {
                     <EquipoDetailsModal 
                         equipo={selectedEquipo}
                         onClose={handleCloseDetailsModal}
+                    />
+                )}
+
+                {showEditModal && (
+                    <EditEquipoModal
+                        show={showEditModal}
+                        onClose={() => setShowEditModal(false)}
+                        onSuccess={handleEditSuccess}
+                        equipo={selectedEquipo}
                     />
                 )}
             </>

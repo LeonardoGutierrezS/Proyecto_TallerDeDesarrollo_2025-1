@@ -169,6 +169,33 @@ export const equipoUpdateValidation = Joi.object({
       "number.integer": "El ID de estado debe ser un número entero.",
       "number.positive": "El ID de estado debe ser un número positivo.",
     }),
+  especificaciones: Joi.object({
+    Procesador: Joi.string()
+      .max(200)
+      .allow(null, "")
+      .messages({
+        "string.base": "El procesador debe ser de tipo texto.",
+        "string.max": "El procesador debe tener como máximo 200 caracteres.",
+      }),
+    RAM: Joi.string()
+      .max(100)
+      .allow(null, "")
+      .messages({
+        "string.base": "La RAM debe ser de tipo texto.",
+        "string.max": "La RAM debe tener como máximo 100 caracteres.",
+      }),
+    Almacenamiento: Joi.string()
+      .max(100)
+      .allow(null, "")
+      .messages({
+        "string.base": "El almacenamiento debe ser de tipo texto.",
+        "string.max": "El almacenamiento debe tener como máximo 100 caracteres.",
+      }),
+  })
+    .optional()
+    .messages({
+      "object.base": "Las especificaciones deben ser un objeto.",
+    }),
 })
   .min(1)
   .unknown(false)

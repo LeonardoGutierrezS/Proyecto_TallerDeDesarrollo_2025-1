@@ -88,6 +88,16 @@ const Navbar = () => {
                                 <span className="text">Inicio</span>
                             </NavLink>
                         </li>
+                        <li>
+                            <NavLink 
+                                to="/perfil" 
+                                className={({ isActive }) => isActive ? 'active' : ''}
+                                onClick={() => setMenuOpen(false)}
+                            >
+                                <span className="icon">👤</span>
+                                <span className="text">Mi Perfil</span>
+                            </NavLink>
+                        </li>
                         
                         {userRole === 'Administrador' && (
                             <>

@@ -79,30 +79,32 @@ export async function isDirector(req, res, next) {
         res,
         403,
         "Error al acceder al recurso",
-        "Se requiere ser Profesor con cargo de Director de Escuela para realizar esta acción.",
+        "Se requiere ser Profesor con cargo de Director/a de Escuela para realizar esta acción.",
       );
     }
 
-    // Verificar que tenga cargo de Director de Escuela (ID_Cargo = 1)
+    // Verificar que tenga cargo de Director de Escuela (ID_Cargo = 1 o 2)
     const cargo = await poseeCargoRepository.findOne({
-      where: { 
-        Rut_profesor: userFound.Rut,
-        ID_Cargo: 1  // 1 = Director de Escuela
-      },
+      where: [
+        { Rut_profesor: userFound.Rut, ID_Cargo: 1, Fecha_Fin: null },
+        { Rut_profesor: userFound.Rut, ID_Cargo: 2, Fecha_Fin: null }
+      ],
       relations: ["cargo"],
     });
 
-    if (!cargo || cargo.Fecha_Fin !== null) {
+    if (!cargo) {
       return handleErrorClient(
         res,
         403,
         "Error al acceder al recurso",
-        "Se requiere cargo activo de Director de Escuela para realizar esta acción.",
+        "Se requiere cargo activo de Director/a de Escuela para realizar esta acción.",
       );
     }
 
     req.user.tipoUsuario = tipoUsuarioDesc;
-    req.user.cargo = cargo.cargo?.Desc_Cargo || "Director de Escuela";
+    req.user.cargo = cargo.cargo?.Desc_Cargo || "Director/a de Escuela";
+    req.user.idCarrera = userFound.ID_Carrera; // Para filtrar solicitudes
+    req.user.rut = userFound.Rut;
     req.user.vigente = userFound.Vigente;
     next();
   } catch (error) {
@@ -317,19 +319,20 @@ export async function isAdminOrDirector(req, res, next) {
     // Si es profesor, verificar si tiene cargo de Director de Escuela activo
     if (tipoLower === "profesor") {
       const cargo = await poseeCargoRepository.findOne({
-        where: { 
-          Rut_profesor: userFound.Rut,
-          ID_Cargo: 1  // 1 = Director de Escuela
-        },
+        where: [
+          { Rut_profesor: userFound.Rut, ID_Cargo: 1, Fecha_Fin: null },
+          { Rut_profesor: userFound.Rut, ID_Cargo: 2, Fecha_Fin: null }
+        ],
         relations: ["cargo"],
       });
 
-      if (cargo && cargo.Fecha_Fin === null) {
+      if (cargo) {
         // Es profesor con cargo de Director de Escuela activo
         req.user.tipoUsuario = tipoUsuarioDesc;
-        req.user.cargo = cargo.cargo?.Desc_Cargo || "Director de Escuela";
+        req.user.cargo = cargo.cargo?.Desc_Cargo || "Director/a de Escuela";
         req.user.vigente = userFound.Vigente;
         req.user.rut = userFound.Rut;
+        req.user.idCarrera = userFound.ID_Carrera;
         req.user.esDirectorEscuela = true;
         next();
         return;
@@ -341,7 +344,7 @@ export async function isAdminOrDirector(req, res, next) {
       res,
       403,
       "Error al acceder al recurso",
-      "Se requiere ser Administrador o Profesor con cargo de Director de Escuela para realizar esta acción.",
+      "Se requiere ser Administrador o Profesor con cargo de Director/a de Escuela para realizar esta acción.",
     );
   } catch (error) {
     handleErrorServer(

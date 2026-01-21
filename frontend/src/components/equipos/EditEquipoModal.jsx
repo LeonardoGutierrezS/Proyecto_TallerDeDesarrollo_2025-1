@@ -2,11 +2,11 @@ import { useForm } from 'react-hook-form';
 import { useState, useEffect } from 'react';
 import '@styles/modal.css';
 import { showErrorAlert, showSuccessAlert } from '@helpers/sweetAlert.js';
-import { createEquipo } from '@services/equipo.service.js';
+import { updateEquipo } from '@services/equipo.service.js';
 import { getMarcas, getCategorias, getEstados } from '@services/catalogo.service.js';
 
-const CreateEquipoModal = ({ show, onClose, onSuccess }) => {
-    const { register, handleSubmit, formState: { errors }, reset, watch } = useForm();
+const EditEquipoModal = ({ show, onClose, onSuccess, equipo }) => {
+    const { register, handleSubmit, formState: { errors }, reset, watch, setValue } = useForm();
     const [marcas, setMarcas] = useState([]);
     const [categorias, setCategorias] = useState([]);
     const [estados, setEstados] = useState([]);
@@ -21,6 +21,30 @@ const CreateEquipoModal = ({ show, onClose, onSuccess }) => {
             fetchCatalogos();
         }
     }, [show]);
+
+    // Cargar datos del equipo en el formulario
+    useEffect(() => {
+        if (equipo && marcas.length > 0 && categorias.length > 0 && estados.length > 0) {
+            setValue('Modelo', equipo.Modelo);
+            setValue('Numero_Serie', equipo.Numero_Serie);
+            setValue('Comentarios', equipo.Comentarios || '');
+            setValue('Disponible', equipo.Disponible.toString());
+            setValue('ID_Marca', equipo.ID_Marca || equipo.marca?.ID_Marca);
+            setValue('ID_Categoria', equipo.ID_Categoria || equipo.categoria?.ID_Categoria);
+            setValue('ID_Estado', equipo.ID_Estado || equipo.estado?.Cod_Estado);
+
+            // Cargar especificaciones si existen
+            if (equipo.especificaciones && Array.isArray(equipo.especificaciones)) {
+                const proc = equipo.especificaciones.find(s => s.Tipo_Especificacion_HW === 'Procesador')?.Descripcion;
+                const ram = equipo.especificaciones.find(s => s.Tipo_Especificacion_HW === 'RAM')?.Descripcion;
+                const alm = equipo.especificaciones.find(s => s.Tipo_Especificacion_HW === 'Almacenamiento')?.Descripcion;
+                
+                if (proc) setValue('Procesador', proc);
+                if (ram) setValue('RAM', ram);
+                if (alm) setValue('Almacenamiento', alm);
+            }
+        }
+    }, [equipo, marcas, categorias, estados, setValue]);
 
     // Detectar si la categoría seleccionada es "Notebook"
     useEffect(() => {
@@ -57,7 +81,6 @@ const CreateEquipoModal = ({ show, onClose, onSuccess }) => {
     const onSubmit = async (data) => {
         try {
             const equipoData = {
-                ID_Num_Inv: data.ID_Num_Inv,
                 Modelo: data.Modelo,
                 Numero_Serie: data.Numero_Serie,
                 Comentarios: data.Comentarios || null,
@@ -76,19 +99,19 @@ const CreateEquipoModal = ({ show, onClose, onSuccess }) => {
                 };
             }
 
-            const response = await createEquipo(equipoData);
+            const response = await updateEquipo(equipo.ID_Num_Inv, equipoData);
             
             if (response.status === 'Success') {
-                showSuccessAlert('¡Equipo creado!', 'El equipo ha sido creado exitosamente.');
+                showSuccessAlert('¡Equipo actualizado!', 'El equipo ha sido actualizado exitosamente.');
                 reset();
                 onSuccess();
                 onClose();
             } else {
-                showErrorAlert('Error', response.message || 'No se pudo crear el equipo');
+                showErrorAlert('Error', response.message || 'No se pudo actualizar el equipo');
             }
         } catch (error) {
-            console.error('Error al crear equipo:', error);
-            showErrorAlert('Error', 'Ocurrió un error al crear el equipo');
+            console.error('Error al actualizar equipo:', error);
+            showErrorAlert('Error', 'Ocurrió un error al actualizar el equipo');
         }
     };
 
@@ -97,13 +120,13 @@ const CreateEquipoModal = ({ show, onClose, onSuccess }) => {
         onClose();
     };
 
-    if (!show) return null;
+    if (!show || !equipo) return null;
 
     return (
         <div className="modal-overlay" onClick={handleClose}>
             <div className="modal-content" onClick={(e) => e.stopPropagation()}>
                 <div className="modal-header">
-                    <h2><span>➕</span> Crear Nuevo Equipo</h2>
+                    <h2><span>✏️</span> Editar Equipo: {equipo.ID_Num_Inv}</h2>
                     <button className="modal-close" onClick={handleClose}>&times;</button>
                 </div>
 
@@ -113,40 +136,6 @@ const CreateEquipoModal = ({ show, onClose, onSuccess }) => {
                     </div>
                 ) : (
                     <form onSubmit={handleSubmit(onSubmit)}>
-                        <div className="form-row">
-                            <div className="form-group">
-                                <label htmlFor="ID_Num_Inv">🏷️ Número de Inventario *</label>
-                                <input
-                                    type="text"
-                                    id="ID_Num_Inv"
-                                    placeholder="Ej: NB-2024-001"
-                                    autoComplete="off"
-                                    {...register('ID_Num_Inv', {
-                                        required: 'El número de inventario es obligatorio',
-                                        minLength: { value: 3, message: 'Debe tener al menos 3 caracteres' },
-                                        maxLength: { value: 50, message: 'Debe tener máximo 50 caracteres' }
-                                    })}
-                                />
-                                {errors.ID_Num_Inv && <span className="error-message">{errors.ID_Num_Inv.message}</span>}
-                            </div>
-
-                            <div className="form-group">
-                                <label htmlFor="Numero_Serie">🔢 Número de Serie *</label>
-                                <input
-                                    type="text"
-                                    id="Numero_Serie"
-                                    placeholder="Ej: 5CD1234ABC"
-                                    autoComplete="off"
-                                    {...register('Numero_Serie', {
-                                        required: 'El número de serie es obligatorio',
-                                        minLength: { value: 5, message: 'Debe tener al menos 5 caracteres' },
-                                        maxLength: { value: 100, message: 'Debe tener máximo 100 caracteres' }
-                                    })}
-                                />
-                                {errors.Numero_Serie && <span className="error-message">{errors.Numero_Serie.message}</span>}
-                            </div>
-                        </div>
-
                         <div className="form-group">
                             <label htmlFor="Modelo">💻 Modelo del Equipo *</label>
                             <input
@@ -161,6 +150,22 @@ const CreateEquipoModal = ({ show, onClose, onSuccess }) => {
                                 })}
                             />
                             {errors.Modelo && <span className="error-message">{errors.Modelo.message}</span>}
+                        </div>
+
+                        <div className="form-group">
+                            <label htmlFor="Numero_Serie">🔢 Número de Serie *</label>
+                            <input
+                                type="text"
+                                id="Numero_Serie"
+                                placeholder="Ej: 5CD1234ABC"
+                                autoComplete="off"
+                                {...register('Numero_Serie', {
+                                    required: 'El número de serie es obligatorio',
+                                    minLength: { value: 5, message: 'Debe tener al menos 5 caracteres' },
+                                    maxLength: { value: 100, message: 'Debe tener máximo 100 caracteres' }
+                                })}
+                            />
+                            {errors.Numero_Serie && <span className="error-message">{errors.Numero_Serie.message}</span>}
                         </div>
 
                         <div className="form-row">
@@ -189,7 +194,7 @@ const CreateEquipoModal = ({ show, onClose, onSuccess }) => {
 
                         <div className="form-row">
                             <div className="form-group">
-                                <label htmlFor="ID_Estado">🛠️ Estado inicial *</label>
+                                <label htmlFor="ID_Estado">🛠️ Estado actual *</label>
                                 <select id="ID_Estado" {...register('ID_Estado', { required: 'El estado es obligatorio' })}>
                                     <option value="">Seleccione estado</option>
                                     {estados.map((estado) => (
@@ -201,7 +206,7 @@ const CreateEquipoModal = ({ show, onClose, onSuccess }) => {
 
                             <div className="form-group">
                                 <label htmlFor="Disponible">✅ Disponibilidad *</label>
-                                <select id="Disponible" defaultValue="true" {...register('Disponible')}>
+                                <select id="Disponible" {...register('Disponible')}>
                                     <option value="true">SÍ (Disponible para préstamo)</option>
                                     <option value="false">NO (No disponible)</option>
                                 </select>
@@ -228,12 +233,10 @@ const CreateEquipoModal = ({ show, onClose, onSuccess }) => {
                                         <input
                                             type="text"
                                             id="Procesador"
-                                            placeholder="Ej: Intel Core i5-10210U"
+                                            placeholder="Ej: Intel Core i5"
                                             {...register('Procesador', { maxLength: { value: 200, message: 'Máximo 200 caracteres' } })}
                                         />
-                                        {errors.Procesador && <span className="error-message">{errors.Procesador.message}</span>}
                                     </div>
-
                                     <div className="form-group">
                                         <label htmlFor="RAM">🧠 Memoria RAM</label>
                                         <input
@@ -242,10 +245,8 @@ const CreateEquipoModal = ({ show, onClose, onSuccess }) => {
                                             placeholder="Ej: 8GB DDR4"
                                             {...register('RAM', { maxLength: { value: 100, message: 'Máximo 100 caracteres' } })}
                                         />
-                                        {errors.RAM && <span className="error-message">{errors.RAM.message}</span>}
                                     </div>
                                 </div>
-
                                 <div className="form-group">
                                     <label htmlFor="Almacenamiento">💾 Almacenamiento</label>
                                     <input
@@ -254,18 +255,13 @@ const CreateEquipoModal = ({ show, onClose, onSuccess }) => {
                                         placeholder="Ej: 256GB SSD"
                                         {...register('Almacenamiento', { maxLength: { value: 100, message: 'Máximo 100 caracteres' } })}
                                     />
-                                    {errors.Almacenamiento && <span className="error-message">{errors.Almacenamiento.message}</span>}
                                 </div>
                             </div>
                         )}
 
                         <div className="modal-actions">
-                            <button type="button" onClick={handleClose} className="btn-cancel">
-                                Cancelar
-                            </button>
-                            <button type="submit" className="btn-submit">
-                                ✨ Crear Equipo
-                            </button>
+                            <button type="button" onClick={handleClose} className="btn-cancel">Cancelar</button>
+                            <button type="submit" className="btn-submit">💾 Guardar Cambios</button>
                         </div>
                     </form>
                 )}
@@ -274,4 +270,4 @@ const CreateEquipoModal = ({ show, onClose, onSuccess }) => {
     );
 };
 
-export default CreateEquipoModal;
+export default EditEquipoModal;

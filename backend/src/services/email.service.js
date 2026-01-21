@@ -1,5 +1,8 @@
 import nodemailer from "nodemailer";
 import { emailConfig } from "../config/configEnv.js";
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
 const transporter = nodemailer.createTransport({
     service: emailConfig.service,
@@ -30,6 +33,124 @@ export const sendEmail = async (to, subject, text, html, attachments = []) => {
 
 /**
  * =======================================================================
+ * HELPERS DE DISEÑO Y NOTIFICACIONES
+ * =======================================================================
+ */
+
+/**
+ * Genera el HTML unificado para los correos del sistema
+ */
+function getUnifiedEmailTemplate({ title, greeting, intro, details, actions, color = "#003b7a", logoCid = "sirec-logo-blanco" }) {
+  const frontendUrl = process.env.FRONTEND_URL || "http://localhost:5173";
+  
+  return `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <style>
+        body { font-family: 'Segoe UI', Arial, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; background-color: #f4f4f4; }
+        .container { max-width: 600px; margin: 20px auto; background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .header { background: linear-gradient(135deg, ${color} 0%, #002855 100%); padding: 30px 20px; text-align: center; color: white; }
+        .logo-container { margin-bottom: 15px; }
+        .logo-container img { max-height: 80px; width: auto; }
+        .header-title { margin: 0; font-size: 24px; font-weight: bold; }
+        .content { padding: 35px 25px; background-color: #ffffff; }
+        .details-box { background-color: #f8f9fa; border-left: 4px solid ${color}; padding: 20px; margin: 20px 0; border-radius: 4px; }
+        .detail-item { margin: 8px 0; font-size: 14px; }
+        .detail-label { font-weight: bold; color: #555; }
+        .action-container { text-align: center; margin: 30px 0; }
+        .button { display: inline-block; padding: 12px 30px; background-color: ${color}; color: white; text-decoration: none; border-radius: 25px; font-weight: bold; }
+        .footer { background-color: #003b7a; color: white; text-align: center; padding: 25px 20px; font-size: 12px; }
+        .footer-logo { margin-top: 15px; }
+        .footer-logo img { max-height: 45px; width: auto; }
+        .specs-list { margin-top: 10px; padding-left: 20px; font-size: 13px; color: #666; }
+      </style>
+    </head>
+    <body>
+      <div class="container">
+        <div class="header">
+          <div class="logo-container">
+            <img src="cid:${logoCid}" alt="SIREC" />
+          </div>
+          <h1 class="header-title">${title}</h1>
+        </div>
+        <div class="content">
+          <p>Estimado/a <strong>${greeting}</strong>,</p>
+          <p>${intro}</p>
+          
+          <div class="details-box">
+            ${details}
+          </div>
+          
+          ${actions ? `<div class="action-container">${actions}</div>` : ""}
+          
+          <p style="font-size: 13px; color: #888; margin-top: 30px; border-top: 1px solid #eee; padding-top: 15px;">
+            Este es un correo automático generado por SIREC, por favor no respondas a este mensaje.
+          </p>
+        </div>
+        <div class="footer">
+          <p><strong>Sistema de Reserva de Equipos Computacionales (SIREC)</strong><br>
+          Facultad de Ciencias Empresariales<br>
+          Universidad del Bío-Bío</p>
+          <div class="footer-logo">
+            <img src="cid:face-logo" alt="FACE UBB" />
+          </div>
+        </div>
+      </div>
+    </body>
+    </html>
+  `;
+}
+
+/**
+ * Formatea la información del equipo para el correo
+ */
+function formatEquipoDetails(equipo) {
+  if (!equipo) return "<p>Información de equipo no disponible</p>";
+  
+  let specsHtml = "";
+  if (equipo.especificaciones && equipo.especificaciones.length > 0) {
+    specsHtml = '<ul class="specs-list">';
+    equipo.especificaciones.forEach(spec => {
+      specsHtml += `<li><strong>${spec.Tipo_Especificacion_HW}:</strong> ${spec.Descripcion}</li>`;
+    });
+    specsHtml += '</ul>';
+  }
+
+  return `
+    <div class="detail-item"><span class="detail-label">N° de Inventario:</span> ${equipo.ID_Num_Inv}</div>
+    <div class="detail-item"><span class="detail-label">Categoría:</span> ${equipo.categoria?.Nombre_Categoria || "No especificada"}</div>
+    <div class="detail-item"><span class="detail-label">Modelo:</span> ${equipo.Modelo}</div>
+    <div class="detail-item"><span class="detail-label">Marca:</span> ${equipo.marca?.Nombre_Marca || "No especificada"}</div>
+    ${specsHtml}
+  `;
+}
+
+/**
+ * Adjuntos comunes (logos)
+ */
+const getCommonAttachments = async () => {
+  const __dirname = path.dirname(fileURLToPath(import.meta.url));
+  
+  // Nota: Buscamos los logos en la carpeta public del backend (un nivel arriba de src)
+  const logoPath = path.join(__dirname, '../../public/images');
+  
+  return [
+    {
+      filename: 'sirec-logo-blanco.png',
+      path: path.join(logoPath, 'sirec-logo-blanco.png'),
+      cid: 'sirec-logo-blanco'
+    },
+    {
+      filename: 'face-logo.png',
+      path: path.join(logoPath, 'face-logo.png'),
+      cid: 'face-logo'
+    }
+  ];
+};
+
+/**
+ * =======================================================================
  * NOTIFICACIONES DE SOLICITUDES DE PRÉSTAMO
  * =======================================================================
  */
@@ -39,69 +160,37 @@ export const sendEmail = async (to, subject, text, html, attachments = []) => {
  */
 export async function enviarEmailSolicitudCreada(solicitud) {
   try {
-    const tipoSolicitud = solicitud.Fecha_inicio_sol && solicitud.Fecha_termino_sol
-      ? "Largo Plazo"
-      : "Diaria";
+    const attachments = await getCommonAttachments();
+    const equipmentInfo = formatEquipoDetails(solicitud.equipo);
+    
+    const tipoSolicitud = solicitud.Fecha_inicio_sol && solicitud.Fecha_termino_sol ? "Largo Plazo" : "Diaria";
+    const fechasText = tipoSolicitud === "Largo Plazo" 
+      ? `del ${new Date(solicitud.Fecha_inicio_sol).toLocaleDateString('es-CL')} al ${new Date(solicitud.Fecha_termino_sol).toLocaleDateString('es-CL')}`
+      : `para el día ${new Date(solicitud.Fecha_Sol).toLocaleDateString('es-CL')}`;
 
-    const fechasInfo = tipoSolicitud === "Largo Plazo"
-      ? `
-        <p><strong>Fecha Inicio:</strong> ${new Date(solicitud.Fecha_inicio_sol).toLocaleDateString('es-CL')}</p>
-        <p><strong>Fecha Término:</strong> ${new Date(solicitud.Fecha_termino_sol).toLocaleDateString('es-CL')}</p>
-      `
-      : `<p><strong>Tipo:</strong> Solicitud para el día</p>`;
-
-    const html = `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #ddd; border-radius: 10px;">
-        <div style="background: linear-gradient(135deg, #003366 0%, #006edf 100%); color: white; padding: 20px; border-radius: 8px 8px 0 0; text-align: center;">
-          <h1 style="margin: 0;">SIREC - UBB</h1>
-          <p style="margin: 5px 0 0 0;">Sistema de Registro y Control de Equipos</p>
-        </div>
-        
-        <div style="padding: 30px; background: #f9f9f9;">
-          <h2 style="color: #003366; margin-top: 0;">Solicitud de Préstamo Registrada</h2>
-          
-          <p>Estimado/a <strong>${solicitud.usuario.Nombre} ${solicitud.usuario.Apellido}</strong>,</p>
-          
-          <p>Tu solicitud de préstamo ha sido registrada exitosamente en el sistema.</p>
-          
-          <div style="background: white; padding: 20px; border-radius: 8px; margin: 20px 0;">
-            <h3 style="color: #006edf; margin-top: 0;">Detalles de la Solicitud</h3>
-            <p><strong>ID Solicitud:</strong> ${solicitud.ID_Solicitud}</p>
-            <p><strong>Equipo:</strong> ${solicitud.ID_Num_Inv}</p>
-            <p><strong>Tipo de Préstamo:</strong> ${tipoSolicitud}</p>
-            ${fechasInfo}
-            <p><strong>Motivo:</strong> ${solicitud.Motivo_Sol || 'No especificado'}</p>
-            <p><strong>Fecha de Solicitud:</strong> ${new Date(solicitud.Fecha_Sol).toLocaleString('es-CL')}</p>
-          </div>
-          
-          <div style="background: #e3f2fd; padding: 15px; border-left: 4px solid #2196f3; border-radius: 4px; margin: 20px 0;">
-            <p style="margin: 0;"><strong>📌 Próximos Pasos:</strong></p>
-            <ul style="margin: 10px 0;">
-              ${tipoSolicitud === "Largo Plazo" 
-                ? "<li>Tu solicitud será revisada por el Director de Escuela</li>"
-                : "<li>Tu solicitud será procesada por el administrador</li>"
-              }
-              <li>Recibirás una notificación cuando haya una actualización</li>
-              <li>Puedes revisar el estado de tu solicitud en el sistema</li>
-            </ul>
-          </div>
-          
-          <p style="color: #666; font-size: 14px; margin-top: 30px;">
-            Este es un correo automático, por favor no responder.
-          </p>
-        </div>
-        
-        <div style="background: #003366; color: white; padding: 15px; text-align: center; border-radius: 0 0 8px 8px; font-size: 12px;">
-          <p style="margin: 0;">Universidad del Bío-Bío - Escuela de Ingeniería Civil Informática</p>
-        </div>
-      </div>
-    `;
+    const html = getUnifiedEmailTemplate({
+      title: "Solicitud Recibida",
+      greeting: `${solicitud.usuario.Nombre_Completo}`,
+      intro: `Tu solicitud de préstamo ha sido registrada exitosamente. A continuación, los detalles del equipo solicitado:`,
+      details: `
+        <h3 style="color: #003b7a; margin-top: 0;">Información del Equipo</h3>
+        ${equipmentInfo}
+        <h3 style="color: #003b7a; margin-bottom: 5px;">Detalles de la Solicitud</h3>
+        <div class="detail-item"><span class="detail-label">ID Solicitud:</span> ${solicitud.ID_Solicitud}</div>
+        <div class="detail-item"><span class="detail-label">Tipo:</span> ${tipoSolicitud}</div>
+        <div class="detail-item"><span class="detail-label">Período:</span> ${fechasText}</div>
+        <div class="detail-item"><span class="detail-label">Motivo:</span> ${solicitud.Motivo_Sol || 'No especificado'}</div>
+      `,
+      actions: `<p>Recibirás una notificación cuando tu solicitud sea procesada.</p>`,
+      color: "#003b7a"
+    });
 
     await transporter.sendMail({
-      from: emailConfig.user,
+      from: `"SIREC UBB" <${emailConfig.user}>`,
       to: solicitud.usuario.Correo,
       subject: "✅ Solicitud de Préstamo Recibida - SIREC UBB",
       html: html,
+      attachments: attachments
     });
 
     console.log(`✉️ Email de solicitud creada enviado a: ${solicitud.usuario.Correo}`);
@@ -115,55 +204,33 @@ export async function enviarEmailSolicitudCreada(solicitud) {
  */
 export async function enviarEmailSolicitudAprobada(solicitud, prestamo) {
   try {
-    const html = `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #ddd; border-radius: 10px;">
-        <div style="background: linear-gradient(135deg, #4caf50 0%, #2e7d32 100%); color: white; padding: 20px; border-radius: 8px 8px 0 0; text-align: center;">
-          <h1 style="margin: 0;">✅ Solicitud Aprobada</h1>
-        </div>
-        
-        <div style="padding: 30px; background: #f9f9f9;">
-          <h2 style="color: #2e7d32; margin-top: 0;">¡Tu solicitud ha sido aprobada!</h2>
-          
-          <p>Estimado/a <strong>${solicitud.usuario.Nombre} ${solicitud.usuario.Apellido}</strong>,</p>
-          
-          <p>Nos complace informarte que tu solicitud de préstamo ha sido aprobada.</p>
-          
-          <div style="background: white; padding: 20px; border-radius: 8px; margin: 20px 0;">
-            <h3 style="color: #4caf50; margin-top: 0;">Detalles del Préstamo</h3>
-            <p><strong>ID Préstamo:</strong> ${prestamo.ID_Prestamo}</p>
-            <p><strong>Equipo:</strong> ${solicitud.ID_Num_Inv}</p>
-            <p><strong>Período:</strong></p>
-            <p style="padding-left: 20px;">
-              Desde: ${new Date(prestamo.Fecha_inicio_prestamo).toLocaleDateString('es-CL')}<br>
-              Hasta: ${new Date(prestamo.Fecha_fin_prestamo).toLocaleDateString('es-CL')}
-            </p>
-          </div>
-          
-          <div style="background: #e8f5e9; padding: 15px; border-left: 4px solid #4caf50; border-radius: 4px; margin: 20px 0;">
-            <p style="margin: 0;"><strong>📌 Próximos Pasos:</strong></p>
-            <ul style="margin: 10px 0;">
-              <li>El equipo estará listo para ser retirado próximamente</li>
-              <li>Deberás presentarte en la oficina de administración</li>
-              <li>Recibirás una notificación cuando el equipo esté listo para entrega</li>
-            </ul>
-          </div>
-          
-          <p style="color: #666; font-size: 14px; margin-top: 30px;">
-            Este es un correo automático, por favor no responder.
-          </p>
-        </div>
-        
-        <div style="background: #2e7d32; color: white; padding: 15px; text-align: center; border-radius: 0 0 8px 8px; font-size: 12px;">
-          <p style="margin: 0;">Universidad del Bío-Bío - Escuela de Ingeniería Civil Informática</p>
-        </div>
-      </div>
-    `;
+    const attachments = await getCommonAttachments();
+    const equipmentInfo = formatEquipoDetails(solicitud.equipo);
+
+    const html = getUnifiedEmailTemplate({
+      title: "Solicitud Aprobada",
+      greeting: `${solicitud.usuario.Nombre_Completo}`,
+      intro: `¡Buenas noticias! Tu solicitud de préstamo ha sido <strong>aprobada</strong>.`,
+      details: `
+        <h3 style="color: #28a745; margin-top: 0;">Equipo Autorizado</h3>
+        ${equipmentInfo}
+        <h3 style="color: #28a745; margin-bottom: 5px;">Información del Préstamo</h3>
+        <div class="detail-item"><span class="detail-label">ID Préstamo:</span> ${prestamo.ID_Prestamo}</div>
+        <div class="detail-item"><span class="detail-label">Fecha Límite:</span> ${new Date(prestamo.Fecha_fin_prestamo).toLocaleDateString('es-CL')}</div>
+      `,
+      actions: `
+        <p>El equipo estará disponible para su retiro. Por favor, acércate a la unidad correspondiente.</p>
+        <a href="${process.env.FRONTEND_URL || "http://localhost:5173"}/mis-solicitudes" class="button" style="background-color: #28a745;">Ver mis solicitudes</a>
+      `,
+      color: "#28a745"
+    });
 
     await transporter.sendMail({
-      from: emailConfig.user,
+      from: `"SIREC UBB" <${emailConfig.user}>`,
       to: solicitud.usuario.Correo,
       subject: "✅ Solicitud Aprobada - SIREC UBB",
       html: html,
+      attachments: attachments
     });
 
     console.log(`✉️ Email de solicitud aprobada enviado a: ${solicitud.usuario.Correo}`);
@@ -177,68 +244,38 @@ export async function enviarEmailSolicitudAprobada(solicitud, prestamo) {
  */
 export async function enviarEmailEquipoEntregado(solicitud, prestamo) {
   try {
-    const html = `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #ddd; border-radius: 10px;">
-        <div style="background: linear-gradient(135deg, #4caf50 0%, #2e7d32 100%); color: white; padding: 20px; border-radius: 8px 8px 0 0; text-align: center;">
-          <h1 style="margin: 0;">📦 Equipo Entregado</h1>
+    const attachments = await getCommonAttachments();
+    const equipmentInfo = formatEquipoDetails(solicitud.equipo);
+
+    const html = getUnifiedEmailTemplate({
+      title: "Equipo Entregado",
+      greeting: `${solicitud.usuario.Nombre_Completo}`,
+      intro: `Se ha registrado la entrega del equipo bajo tu responsabilidad.`,
+      details: `
+        <h3 style="color: #003b7a; margin-top: 0;">Equipo en Préstamo</h3>
+        ${equipmentInfo}
+        <h3 style="color: #003b7a; margin-bottom: 5px;">Compromiso de Devolución</h3>
+        <div class="detail-item"><span class="detail-label">Fecha de Devolución:</span> <strong>${new Date(prestamo.Fecha_fin_prestamo).toLocaleDateString('es-CL')}</strong></div>
+      `,
+      actions: `
+        <div style="background-color: #fff3cd; padding: 15px; border-radius: 5px; color: #856404; font-size: 13px; text-align: left;">
+          <strong>Recordatorio:</strong>
+          <ul>
+            <li>Eres responsable del cuidado y buen uso del equipo.</li>
+            <li>Cualquier avería debe ser informada inmediatamente.</li>
+            <li>El retraso en la devolución puede generar sanciones.</li>
+          </ul>
         </div>
-        
-        <div style="padding: 30px; background: #f9f9f9;">
-          <h2 style="color: #2e7d32; margin-top: 0;">Equipo entregado exitosamente</h2>
-          
-          <p>Estimado/a <strong>${solicitud.usuario.Nombre} ${solicitud.usuario.Apellido}</strong>,</p>
-          
-          <p>Confirmamos que el equipo ha sido entregado correctamente.</p>
-          
-          <div style="background: white; padding: 20px; border-radius: 8px; margin: 20px 0;">
-            <h3 style="color: #4caf50; margin-top: 0;">Información de la Entrega</h3>
-            <p><strong>Equipo:</strong> ${solicitud.ID_Num_Inv}</p>
-            <p><strong>ID Préstamo:</strong> ${prestamo.ID_Prestamo}</p>
-            <p><strong>Período del Préstamo:</strong></p>
-            <p style="padding-left: 20px;">
-              Desde: ${new Date(prestamo.Fecha_inicio_prestamo).toLocaleDateString('es-CL')}<br>
-              Hasta: ${new Date(prestamo.Fecha_fin_prestamo).toLocaleDateString('es-CL')}
-            </p>
-          </div>
-          
-          <div style="background: #fff3e0; padding: 15px; border-left: 4px solid #ff9800; border-radius: 4px; margin: 20px 0;">
-            <p style="margin: 0;"><strong>⚠️ Responsabilidades:</strong></p>
-            <ul style="margin: 10px 0; font-size: 14px;">
-              <li>Eres responsable del equipo durante todo el período del préstamo</li>
-              <li>Debes cuidar el equipo y usarlo adecuadamente</li>
-              <li>Cualquier daño debe ser reportado inmediatamente</li>
-              <li><strong>Debes devolver el equipo en la fecha indicada</strong></li>
-            </ul>
-          </div>
-          
-          <div style="background: #e3f2fd; padding: 15px; border-radius: 4px; margin: 20px 0; text-align: center;">
-            <p style="margin: 0; font-size: 16px;"><strong>📅 Fecha Límite de Devolución:</strong></p>
-            <p style="margin: 10px 0 0 0; font-size: 20px; color: #1565c0; font-weight: bold;">
-              ${new Date(prestamo.Fecha_fin_prestamo).toLocaleDateString('es-CL', { 
-                weekday: 'long', 
-                year: 'numeric', 
-                month: 'long', 
-                day: 'numeric' 
-              })}
-            </p>
-          </div>
-          
-          <p style="color: #666; font-size: 14px; margin-top: 30px;">
-            Este es un correo automático, por favor no responder.
-          </p>
-        </div>
-        
-        <div style="background: #2e7d32; color: white; padding: 15px; text-align: center; border-radius: 0 0 8px 8px; font-size: 12px;">
-          <p style="margin: 0;">Universidad del Bío-Bío - Escuela de Ingeniería Civil Informática</p>
-        </div>
-      </div>
-    `;
+      `,
+      color: "#003b7a"
+    });
 
     await transporter.sendMail({
-      from: emailConfig.user,
+      from: `"SIREC UBB" <${emailConfig.user}>`,
       to: solicitud.usuario.Correo,
       subject: "📦 Equipo Entregado - SIREC UBB",
       html: html,
+      attachments: attachments
     });
 
     console.log(`✉️ Email de equipo entregado enviado a: ${solicitud.usuario.Correo}`);
@@ -252,58 +289,31 @@ export async function enviarEmailEquipoEntregado(solicitud, prestamo) {
  */
 export async function enviarEmailEquipoDevuelto(solicitud, devolucion) {
   try {
-    const html = `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #ddd; border-radius: 10px;">
-        <div style="background: linear-gradient(135deg, #4caf50 0%, #2e7d32 100%); color: white; padding: 20px; border-radius: 8px 8px 0 0; text-align: center;">
-          <h1 style="margin: 0;">✅ Devolución Completada</h1>
-        </div>
-        
-        <div style="padding: 30px; background: #f9f9f9;">
-          <h2 style="color: #2e7d32; margin-top: 0;">Equipo devuelto exitosamente</h2>
-          
-          <p>Estimado/a <strong>${solicitud.usuario.Nombre} ${solicitud.usuario.Apellido}</strong>,</p>
-          
-          <p>Confirmamos que la devolución del equipo ha sido registrada correctamente.</p>
-          
-          <div style="background: white; padding: 20px; border-radius: 8px; margin: 20px 0;">
-            <h3 style="color: #4caf50; margin-top: 0;">Información de la Devolución</h3>
-            <p><strong>Equipo:</strong> ${solicitud.ID_Num_Inv}</p>
-            <p><strong>Fecha de Devolución:</strong> ${new Date(devolucion.Fecha_devolucion).toLocaleString('es-CL')}</p>
-            <p><strong>Recibido por:</strong> ${devolucion.usuario?.Nombre || 'Administrador'} ${devolucion.usuario?.Apellido || ''}</p>
-            ${devolucion.Estado_equipo ? `<p><strong>Estado del Equipo:</strong> ${devolucion.Estado_equipo}</p>` : ''}
-            ${devolucion.Observaciones ? `
-              <div style="background: #f5f5f5; padding: 10px; border-radius: 4px; margin-top: 10px;">
-                <p style="margin: 0;"><strong>Observaciones:</strong></p>
-                <p style="margin: 5px 0 0 0;">${devolucion.Observaciones}</p>
-              </div>
-            ` : ''}
-          </div>
-          
-          <div style="background: #e8f5e9; padding: 15px; border-left: 4px solid #4caf50; border-radius: 4px; margin: 20px 0; text-align: center;">
-            <p style="margin: 0; font-size: 18px; color: #2e7d32;">
-              <strong>¡Gracias por cuidar el equipo!</strong>
-            </p>
-            <p style="margin: 10px 0 0 0; font-size: 14px;">
-              El préstamo ha sido finalizado correctamente.
-            </p>
-          </div>
-          
-          <p style="color: #666; font-size: 14px; margin-top: 30px;">
-            Este es un correo automático, por favor no responder.
-          </p>
-        </div>
-        
-        <div style="background: #2e7d32; color: white; padding: 15px; text-align: center; border-radius: 0 0 8px 8px; font-size: 12px;">
-          <p style="margin: 0;">Universidad del Bío-Bío - Escuela de Ingeniería Civil Informática</p>
-        </div>
-      </div>
-    `;
+    const attachments = await getCommonAttachments();
+    const equipmentInfo = formatEquipoDetails(solicitud.equipo);
+
+    const html = getUnifiedEmailTemplate({
+      title: "Devolución Exitosa",
+      greeting: `${solicitud.usuario.Nombre_Completo}`,
+      intro: `Se ha registrado correctamente la devolución del equipo. El préstamo ha finalizado.`,
+      details: `
+        <h3 style="color: #28a745; margin-top: 0;">Equipo Devuelto</h3>
+        ${equipmentInfo}
+        <h3 style="color: #28a745; margin-bottom: 5px;">Detalles de Recepción</h3>
+        <div class="detail-item"><span class="detail-label">Fecha de Devolución:</span> ${new Date(devolucion.Fecha_devolucion).toLocaleString('es-CL')}</div>
+        <div class="detail-item"><span class="detail-label">Estado:</span> ${devolucion.Estado_equipo || "Recibido Conforme"}</div>
+        ${devolucion.Observaciones ? `<div class="detail-item"><span class="detail-label">Observaciones:</span> ${devolucion.Observaciones}</div>` : ""}
+      `,
+      actions: `<p style="color: #28a745; font-weight: bold;">¡Gracias por utilizar el sistema y cuidar el equipo!</p>`,
+      color: "#28a745"
+    });
 
     await transporter.sendMail({
-      from: emailConfig.user,
+      from: `"SIREC UBB" <${emailConfig.user}>`,
       to: solicitud.usuario.Correo,
       subject: "✅ Devolución de Equipo Registrada - SIREC UBB",
       html: html,
+      attachments: attachments
     });
 
     console.log(`✉️ Email de equipo devuelto enviado a: ${solicitud.usuario.Correo}`);
@@ -317,55 +327,31 @@ export async function enviarEmailEquipoDevuelto(solicitud, devolucion) {
  */
 export async function enviarEmailSolicitudRechazada(solicitud, observaciones) {
   try {
-    const html = `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #ddd; border-radius: 10px;">
-        <div style="background: linear-gradient(135deg, #f44336 0%, #c62828 100%); color: white; padding: 20px; border-radius: 8px 8px 0 0; text-align: center;">
-          <h1 style="margin: 0;">❌ Solicitud Rechazada</h1>
+    const attachments = await getCommonAttachments();
+    const equipmentInfo = formatEquipoDetails(solicitud.equipo);
+
+    const html = getUnifiedEmailTemplate({
+      title: "Solicitud Rechazada",
+      greeting: `${solicitud.usuario.Nombre_Completo}`,
+      intro: `Lamentamos informarte que tu solicitud de préstamo no ha sido autorizada en esta ocasión.`,
+      details: `
+        <h3 style="color: #dc3545; margin-top: 0;">Información de la Solicitud</h3>
+        ${equipmentInfo}
+        <div style="background-color: #ffebee; border-left: 4px solid #dc3545; padding: 15px; margin-top: 15px;">
+          <p style="margin: 0; color: #c62828;"><strong>Motivo del Rechazo:</strong></p>
+          <p style="margin: 5px 0 0 0;">${observaciones || "No especificado"}</p>
         </div>
-        
-        <div style="padding: 30px; background: #f9f9f9;">
-          <h2 style="color: #c62828; margin-top: 0;">Tu solicitud no ha sido aprobada</h2>
-          
-          <p>Estimado/a <strong>${solicitud.usuario.Nombre} ${solicitud.usuario.Apellido}</strong>,</p>
-          
-          <p>Lamentamos informarte que tu solicitud de préstamo no ha sido aprobada.</p>
-          
-          <div style="background: white; padding: 20px; border-radius: 8px; margin: 20px 0;">
-            <h3 style="color: #f44336; margin-top: 0;">Información de la Solicitud</h3>
-            <p><strong>ID Solicitud:</strong> ${solicitud.ID_Solicitud}</p>
-            <p><strong>Equipo:</strong> ${solicitud.ID_Num_Inv}</p>
-            <p><strong>Fecha de Solicitud:</strong> ${new Date(solicitud.Fecha_Sol).toLocaleString('es-CL')}</p>
-          </div>
-          
-          ${observaciones ? `
-            <div style="background: #ffebee; padding: 15px; border-left: 4px solid #f44336; border-radius: 4px; margin: 20px 0;">
-              <p style="margin: 0;"><strong>Motivo del Rechazo:</strong></p>
-              <p style="margin: 10px 0 0 0;">${observaciones}</p>
-            </div>
-          ` : ''}
-          
-          <div style="background: #e3f2fd; padding: 15px; border-radius: 4px; margin: 20px 0;">
-            <p style="margin: 0; font-size: 14px;">
-              Si tienes dudas sobre el rechazo de tu solicitud, puedes contactar con la administración de equipos para obtener más información.
-            </p>
-          </div>
-          
-          <p style="color: #666; font-size: 14px; margin-top: 30px;">
-            Este es un correo automático, por favor no responder.
-          </p>
-        </div>
-        
-        <div style="background: #c62828; color: white; padding: 15px; text-align: center; border-radius: 0 0 8px 8px; font-size: 12px;">
-          <p style="margin: 0;">Universidad del Bío-Bío - Escuela de Ingeniería Civil Informática</p>
-        </div>
-      </div>
-    `;
+      `,
+      actions: `<p>Si tienes dudas, puedes consultar con la administración de equipos.</p>`,
+      color: "#dc3545"
+    });
 
     await transporter.sendMail({
-      from: emailConfig.user,
+      from: `"SIREC UBB" <${emailConfig.user}>`,
       to: solicitud.usuario.Correo,
       subject: "❌ Solicitud Rechazada - SIREC UBB",
       html: html,
+      attachments: attachments
     });
 
     console.log(`✉️ Email de solicitud rechazada enviado a: ${solicitud.usuario.Correo}`);
