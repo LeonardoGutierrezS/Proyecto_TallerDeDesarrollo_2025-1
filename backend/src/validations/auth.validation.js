@@ -24,7 +24,7 @@ export const authValidation = Joi.object({
 
 export const registerValidation = Joi.object({
   nombreCompleto: Joi.string()
-    .min(15)
+    .min(3)
     .max(50)
     .pattern(/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/)
     .required()
@@ -80,7 +80,10 @@ export const registerValidation = Joi.object({
   password: Joi.string()
     .min(8)
     .max(26)
-    .pattern(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[a-zA-Z\d]+$/)
+    // Se elimina el patrón estricto para permitir caracteres especiales si se desea, 
+    // o se ajusta. Por ahora permitimos cualquier caracter siempre que cumpla longitud.
+    // O mejor, un patrón que permita simbolos:
+    .pattern(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[a-zA-Z\d\W_]+$/)
     .required()
     .messages({
       "string.empty": "La contraseña no puede estar vacía.",

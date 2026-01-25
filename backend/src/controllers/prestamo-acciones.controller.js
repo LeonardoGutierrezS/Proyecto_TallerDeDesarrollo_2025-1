@@ -16,10 +16,12 @@ export async function entregarPrestamoController(req, res) {
   try {
     const { idPrestamo } = req.params;
     const { rut } = req;
+    const { tipoDocumento } = req.body;
 
     const [prestamo, error] = await entregarPrestamoService(
       parseInt(idPrestamo),
-      rut
+      rut,
+      tipoDocumento
     );
 
     if (error) return handleErrorClient(res, 400, error);

@@ -10,9 +10,10 @@ import { enviarEmailEquipoEntregado, enviarEmailEquipoDevuelto } from "./email.s
  * Marcar préstamo como entregado (Admin entrega el equipo al alumno)
  * @param {number} idPrestamo - ID del préstamo
  * @param {string} rutAdmin - RUT del administrador que entrega
+ * @param {string} [tipoDocumento] - Tipo de documento en garantía (opcional)
  * @returns {Promise<[Object|null, string|null]>}
  */
-export async function entregarPrestamoService(idPrestamo, rutAdmin) {
+export async function entregarPrestamoService(idPrestamo, rutAdmin, tipoDocumento = null) {
   try {
     const prestamoRepository = AppDataSource.getRepository(Prestamo);
     const tieneEstadoRepository = AppDataSource.getRepository(TieneEstado);
@@ -33,6 +34,12 @@ export async function entregarPrestamoService(idPrestamo, rutAdmin) {
 
     if (!estadoActual || estadoActual.Cod_Estado !== 2) {
       return [null, "El préstamo no está en estado 'Listo para Entregar'"];
+    }
+
+    // Si se proporciona tipoDocumento, actualizar el préstamo
+    if (tipoDocumento) {
+        prestamo.Tipo_documento = tipoDocumento;
+        await prestamoRepository.save(prestamo);
     }
 
     // Crear nuevo estado "Entregado" (ID_Estado = 3)

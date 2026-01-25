@@ -37,7 +37,7 @@ const Register = () => {
 
 const validateNombreCompleto = (nombre) => {
 		if (!nombre) return 'El nombre completo es obligatorio';
-		if (nombre.length < 15) return 'El nombre debe tener al menos 15 caracteres';
+		if (nombre.length < 3) return 'El nombre debe tener al menos 3 caracteres';
 		if (nombre.length > 50) return 'El nombre debe tener máximo 50 caracteres';
 		if (!/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/.test(nombre)) return 'El nombre solo puede contener letras y espacios';
 		return '';
@@ -50,6 +50,13 @@ const validateNombreCompleto = (nombre) => {
 		return '';
 	};
 
+	const validateEmail = (email) => {
+		if (!email) return 'El correo electrónico es obligatorio';
+		const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+		if (!emailRegex.test(email)) return 'El correo electrónico no es válido';
+		return '';
+	};
+
 	const validatePassword = (password) => {
 		if (!password) return 'La contraseña es obligatoria';
 		if (password.length < 8) return 'La contraseña debe tener al menos 8 caracteres';
@@ -57,7 +64,7 @@ const validateNombreCompleto = (nombre) => {
 		if (!/[A-Z]/.test(password)) return 'Debe contener al menos una letra mayúscula';
 		if (!/[a-z]/.test(password)) return 'Debe contener al menos una letra minúscula';
 		if (!/[0-9]/.test(password)) return 'Debe contener al menos un número';
-		if (!/^[a-zA-Z0-9]+$/.test(password)) return 'La contraseña solo puede contener letras y números';
+		if (!/^[a-zA-Z0-9\W_]+$/.test(password)) return 'La contraseña contiene caracteres no válidos';
 		return '';
 	};
 
@@ -103,6 +110,7 @@ const validateNombreCompleto = (nombre) => {
 
 	const registerSubmit = async (e) => {
 		e.preventDefault();
+		console.log("Intentando registrar usuario...", formData);
 		
 		const errors = {
 			nombreCompleto: validateNombreCompleto(formData.nombreCompleto),
@@ -117,14 +125,18 @@ const validateNombreCompleto = (nombre) => {
 			errors.cargo = validateCargo(formData.cargo);
 		}
 
+		console.log("Errores de validación detectados:", errors);
+
 		const hasErrors = Object.values(errors).some(error => error !== '');
 		
 		if (hasErrors) {
+			console.log("Formulario contiene errores, deteniendo envío.");
 			setFormErrors(errors);
 			return;
 		}
 
 		setIsSubmitting(true);
+		console.log("Enviando datos al backend...");
 		try {
 			const dataToSend = {
 				nombreCompleto: formData.nombreCompleto,
@@ -134,8 +146,11 @@ const validateNombreCompleto = (nombre) => {
 				tipoUsuario: tipoUsuario,
 				...(tipoUsuario === 'Alumno' ? { carreraId: parseInt(formData.carreraId) } : { cargo: formData.cargo })
 			};
+            console.log("Payload:", dataToSend);
 
 			const response = await register(dataToSend);
+			console.log("Respuesta del servidor:", response);
+
 			if (response.status === 'Success') {
 				showSuccessAlert(
 					'¡Registro Exitoso!',
@@ -341,8 +356,8 @@ const validateNombreCompleto = (nombre) => {
 							<div style={{ color: /[0-9]/.test(formData.password) ? '#28a745' : '#666' }}>
 								{/[0-9]/.test(formData.password) ? '✓' : '○'} Al menos un número
 							</div>
-							<div style={{ color: /^[a-zA-Z0-9]*$/.test(formData.password) && formData.password.length > 0 ? '#28a745' : '#666' }}>
-								{(/^[a-zA-Z0-9]*$/.test(formData.password) && formData.password.length > 0) ? '✓' : '○'} Solo letras y números
+							<div style={{ color: /^[a-zA-Z0-9\W_]*$/.test(formData.password) && formData.password.length > 0 ? '#28a745' : '#666' }}>
+								{(/^[a-zA-Z0-9\W_]*$/.test(formData.password) && formData.password.length > 0) ? '✓' : '○'} Caracteres válidos (letras, números, símbolos)
 							</div>
 						</div>
 					</div>

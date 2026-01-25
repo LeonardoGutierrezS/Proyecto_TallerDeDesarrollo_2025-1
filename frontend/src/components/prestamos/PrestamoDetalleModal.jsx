@@ -28,7 +28,12 @@ const PrestamoDetalleModal = ({ show, onClose, prestamo }) => {
                 month: 'long', 
                 day: 'numeric'
             });
-            return hora ? `${fechaStr} - ${hora}` : fechaStr;
+            // Si hay hora, formatearla a HH:MM (sin segundos)
+            if (hora) {
+                const horaFormateada = hora.substring(0, 5); // Toma solo HH:MM
+                return `${fechaStr} - ${horaFormateada}`;
+            }
+            return fechaStr;
         } catch {
             return '-';
         }

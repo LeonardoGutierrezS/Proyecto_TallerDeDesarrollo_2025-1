@@ -95,9 +95,10 @@ export const descargarPDFAutorizacion = async (idSolicitud) => {
 /**
  * Marcar préstamo como entregado (Admin)
  */
-export const entregarPrestamo = async (idPrestamo) => {
+export const entregarPrestamo = async (idPrestamo, tipoDocumento = null) => {
   try {
-    const response = await axios.post(`/prestamo-acciones/${idPrestamo}/entregar`);
+    const data = tipoDocumento ? { tipoDocumento } : {};
+    const response = await axios.post(`/prestamo-acciones/${idPrestamo}/entregar`, data);
     return response.data;
   } catch (error) {
     console.error('Error al entregar préstamo:', error);

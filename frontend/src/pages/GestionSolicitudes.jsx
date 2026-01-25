@@ -254,6 +254,16 @@ const GestionSolicitudes = () => {
         });
 
         if (result.isConfirmed) {
+            // Mostrar loading
+            Swal.fire({
+                title: 'Procesando...',
+                text: 'Aprobando solicitud y generando préstamo...',
+                allowOutsideClick: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                }
+            });
+
             try {
                 const now = new Date();
                 const horaActual = now.toTimeString().split(' ')[0];
@@ -269,8 +279,8 @@ const GestionSolicitudes = () => {
                     ID_Solicitud: solicitud.ID_Solicitud,
                     Rut_Autorizador: user.rut,
                     ID_Num_Inv: solicitud.ID_Num_Inv,
-                    // Usar las fechas de la solicitud
-                    Fecha_inicio_prestamo: solicitud.Fecha_inicio_sol,
+                    // Usar las fechas de la solicitud, o la actual si es diaria
+                    Fecha_inicio_prestamo: solicitud.Fecha_inicio_sol || new Date().toISOString(),
                     Hora_inicio_prestamo: horaActual,
                     Fecha_fin_prestamo: solicitud.Fecha_termino_sol,
                     Hora_fin_prestamo: horaActual,
@@ -330,6 +340,16 @@ const GestionSolicitudes = () => {
         });
 
         if (result.isConfirmed) {
+            // Mostrar loading
+            Swal.fire({
+                title: 'Procesando...',
+                text: 'Rechazando solicitud...',
+                allowOutsideClick: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                }
+            });
+
             try {
                 const now = new Date();
                 const horaActual = now.toTimeString().split(' ')[0];
@@ -371,26 +391,65 @@ const GestionSolicitudes = () => {
 
     // Handler para marcar como entregado (Admin entrega equipo al alumno)
     const handleEntregar = async (solicitud) => {
-        const confirmed = await showConfirmAlert(
-            'Entregar Equipo',
-            `¿Confirmas que entregas el equipo ${solicitud.ID_Num_Inv} a ${solicitud.usuario.Nombre_Completo}?`,
-            'Sí, entregar'
-        );
+        const esDiaria = getTipoSolicitud(solicitud) === 'diaria';
+        let tipoDocumento = null;
 
-        if (confirmed) {
-            try {
-                const response = await entregarPrestamo(solicitud.prestamo.ID_Prestamo);
-                
-                if (response.status === 'Success') {
-                    showSuccessAlert('Equipo Entregado', 'El equipo ha sido marcado como entregado');
-                    fetchSolicitudes();
-                } else {
-                    showErrorAlert('Error', response.message || 'No se pudo marcar como entregado');
+        if (esDiaria) {
+            const { value: documento } = await Swal.fire({
+                title: 'Documento en Garantía',
+                html: `
+                    <p style="margin-bottom: 15px;">Para solicitudes diarias, el alumno debe dejar un documento en garantía.</p>
+                    <label for="tipo-documento" style="display: block; text-align: left; margin-bottom: 5px; font-weight: bold;">
+                        Selecciona el documento recibido:
+                    </label>
+                    <select id="tipo-documento" class="swal2-select" style="margin: 0; width: 100%;">
+                        <option value="Pase Escolar">Pase Escolar</option>
+                        <option value="Cédula de Identidad">Cédula de Identidad</option>
+                        <option value="Otro">Otro</option>
+                    </select>
+                `,
+                showCancelButton: true,
+                confirmButtonText: 'Confirmar Entrega',
+                cancelButtonText: 'Cancelar',
+                preConfirm: () => {
+                    return document.getElementById('tipo-documento').value;
                 }
-            } catch (error) {
-                console.error('Error al entregar:', error);
-                showErrorAlert('Error', 'Ocurrió un error al entregar el equipo');
+            });
+
+            if (!documento) return; // Si cancela, no hacemos nada
+            tipoDocumento = documento;
+        } else {
+            // Para solicitudes largo plazo, solo confirmación simple
+            const confirmed = await showConfirmAlert(
+                'Entregar Equipo',
+                `¿Confirmas que entregas el equipo ${solicitud.ID_Num_Inv} a ${solicitud.usuario.Nombre_Completo}?`,
+                'Sí, entregar'
+            );
+            if (!confirmed) return;
+        }
+
+        // Mostrar loading
+        Swal.fire({
+            title: 'Procesando...',
+            text: 'Registrando entrega del equipo...',
+            allowOutsideClick: false,
+            didOpen: () => {
+                Swal.showLoading();
             }
+        });
+
+        try {
+            const response = await entregarPrestamo(solicitud.prestamo.ID_Prestamo, tipoDocumento);
+            
+            if (response.status === 'Success') {
+                showSuccessAlert('Equipo Entregado', 'El equipo ha sido marcado como entregado');
+                fetchSolicitudes();
+            } else {
+                showErrorAlert('Error', response.message || 'No se pudo marcar como entregado');
+            }
+        } catch (error) {
+            console.error('Error al entregar:', error);
+            showErrorAlert('Error', 'Ocurrió un error al entregar el equipo');
         }
     };
 
@@ -403,6 +462,19 @@ const GestionSolicitudes = () => {
                     <p><strong>Usuario:</strong> ${solicitud.usuario.Nombre_Completo}</p>
                     <p><strong>Equipo:</strong> ${solicitud.ID_Num_Inv}</p>
                 </div>
+
+                <div style="margin-top: 15px; padding: 10px; background-color: #e3f2fd; border-radius: 5px;">
+                    <p style="margin-bottom: 5px; font-weight: bold; color: #1976d2;">Lista de Verificación:</p>
+                    <div style="text-align: left;">
+                        <input type="checkbox" id="check-visual" style="margin-right: 8px;">
+                        <label for="check-visual">Realicé inspección visual y funcional del equipo.</label>
+                    </div>
+                    <div style="text-align: left; margin-top: 5px;">
+                        <input type="checkbox" id="check-doc" style="margin-right: 8px;">
+                        <label for="check-doc">Devolví el documento de garantía al usuario.</label>
+                    </div>
+                </div>
+
                 <div style="margin-top: 15px;">
                     <label for="estado-equipo" style="display: block; text-align: left; margin-bottom: 5px;">
                         <strong>Estado del Equipo:</strong>
@@ -425,13 +497,31 @@ const GestionSolicitudes = () => {
             confirmButtonText: 'Registrar Devolución',
             cancelButtonText: 'Cancelar',
             preConfirm: () => {
+                const checkVisual = document.getElementById('check-visual').checked;
+                const checkDoc = document.getElementById('check-doc').checked;
                 const estadoEquipo = document.getElementById('estado-equipo').value;
                 const observaciones = document.getElementById('observaciones').value;
+
+                if (!checkVisual || !checkDoc) {
+                    Swal.showValidationMessage('Debes completar la lista de verificación para continuar');
+                    return false;
+                }
+
                 return { estadoEquipo, observaciones };
             }
         });
 
         if (result.isConfirmed) {
+            // Mostrar loading
+            Swal.fire({
+                title: 'Procesando...',
+                text: 'Registrando devolución...',
+                allowOutsideClick: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                }
+            });
+
             try {
                 const now = new Date();
                 const horaActual = now.toTimeString().split(' ')[0];
@@ -555,6 +645,20 @@ const GestionSolicitudes = () => {
                                             </td>
                                         )}
                                         
+                                        {activeTab === 'listo-entregar' && (
+                                            <td style={{ textAlign: 'center' }}>
+                                                {getTipoSolicitud(solicitud) === 'largo_plazo' ? (
+                                                    <button 
+                                                        className="btn-download"
+                                                        title="Descargar PDF de autorización"
+                                                        onClick={() => handleDescargarPDF(solicitud)}
+                                                    >
+                                                        <FontAwesomeIcon icon={faFilePdf} />
+                                                    </button>
+                                                ) : '-'}
+                                            </td>
+                                        )}
+                                        
                                         {activeTab === 'entregados' && (
                                             <td>{solicitud.prestamo?.Tipo_documento || '-'}</td>
                                         )}
@@ -603,18 +707,9 @@ const GestionSolicitudes = () => {
                                                     </>
                                                 )}
                                                 
-                                                {/* LISTO PARA ENTREGAR: Descargar PDF (solo largo plazo) + Entregar (solo Admin) */}
+                                                {/* LISTO PARA ENTREGAR: Entregar (solo Admin) */}
                                                 {activeTab === 'listo-entregar' && (
                                                     <>
-                                                        {getTipoSolicitud(solicitud) === 'largo_plazo' && (
-                                                            <button 
-                                                                className="btn-download"
-                                                                title="Descargar PDF de autorización"
-                                                                onClick={() => handleDescargarPDF(solicitud)}
-                                                            >
-                                                                <FontAwesomeIcon icon={faFilePdf} />
-                                                            </button>
-                                                        )}
                                                         {isAdmin && (
                                                             <button 
                                                                 className="btn-deliver"
