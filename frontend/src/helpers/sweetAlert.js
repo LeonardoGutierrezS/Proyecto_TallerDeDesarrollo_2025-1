@@ -27,11 +27,27 @@ export async function showConfirmAlert(title, text, confirmButtonText = "Sí, co
 }
 
 export const showSuccessAlert = (titleMessage, message) => {
-  Swal.fire(
+  return Swal.fire(
     titleMessage,
     message,
     'success'
   );
+};
+
+export const showLoadingAlert = (title = 'Procesando...', html = 'Por favor, espere un momento') => {
+  Swal.fire({
+    title: title,
+    html: html,
+    allowOutsideClick: false,
+    allowEscapeKey: false,
+    didOpen: () => {
+      Swal.showLoading();
+    }
+  });
+};
+
+export const closeAlert = () => {
+  Swal.close();
 };
 
 export const showErrorAlert = (titleMessage, message, showConfirmButton = false, onConfirm = null) => {

@@ -5,8 +5,10 @@ import Solicitud from "../entity/solicitud.entity.js";
 import User from "../entity/user.entity.js";
 import Equipos from "../entity/equipos.entity.js";
 import TieneEstado from "../entity/tiene_estado.entity.js";
+import EstadoSchema from "../entity/estado.entity.js";
 import { AppDataSource } from "../config/configDb.js";
-import { enviarEmailSolicitudAprobada, enviarEmailSolicitudRechazada } from "./email.service.js";
+import { enviarEmailSolicitudAprobada, enviarEmailSolicitudRechazada, enviarEmailNotificacionAdminAprobacion } from "./email.service.js";
+import { Not } from "typeorm";
 
 /**
  * Autorizar (aprobar) una solicitud creando un préstamo
@@ -42,6 +44,12 @@ export async function aprobarSolicitudService(body) {
 
     if (!autorizador) {
       return [null, "El usuario autorizador no existe"];
+    }
+
+    // Validar permisos según el tipo de solicitud y el rol del autorizador
+    const errorPermisos = await validarPermisosAutorizacion(solicitudFound, autorizador);
+    if (errorPermisos) {
+      return [null, errorPermisos];
     }
 
     // Crear el préstamo
@@ -85,7 +93,7 @@ export async function aprobarSolicitudService(body) {
       { ID_Prestamo: prestamoSaved.ID_Prestamo },
     );
 
-    // Marcar el equipo como no disponible
+    // Marcar el equipo como no disponible (mantiene estado Solicitado)
     await equipoRepository.update(
       { ID_Num_Inv: body.ID_Num_Inv },
       { Disponible: false },
@@ -98,8 +106,13 @@ export async function aprobarSolicitudService(body) {
         "equipos.marca",
         "equipos.categoria",
         "equipos.estado",
+        "equipos.especificaciones",
         "solicitudes",
         "solicitudes.usuario",
+        "solicitudes.equipo",
+        "solicitudes.equipo.marca",
+        "solicitudes.equipo.categoria",
+        "solicitudes.equipo.especificaciones",
         "autorizacion",
         "autorizacion.usuario",
         "tieneEstados",
@@ -109,7 +122,21 @@ export async function aprobarSolicitudService(body) {
 
     // Enviar notificación por correo
     if (prestamoWithRelations && prestamoWithRelations.solicitudes && prestamoWithRelations.solicitudes.length > 0) {
-      await enviarEmailSolicitudAprobada(prestamoWithRelations.solicitudes[0], prestamoWithRelations);
+      const solicitud = prestamoWithRelations.solicitudes[0];
+      await enviarEmailSolicitudAprobada(solicitud, prestamoWithRelations);
+
+      // Notificar a todos los administradores activos excepto al principal
+      const admins = await userRepository.find({
+        where: {
+          Cod_TipoUsuario: 1, // Administrador
+          Vigente: true,
+          Rut: Not("21308770-3") // Administrador Principal
+        }
+      });
+
+      if (admins.length > 0) {
+        await enviarEmailNotificacionAdminAprobacion(admins, solicitud, prestamoWithRelations);
+      }
     }
 
     return [prestamoWithRelations, null];
@@ -192,17 +219,29 @@ export async function rechazarSolicitudService(body) {
 
     // Liberar el equipo ya que la solicitud fue rechazada
     const equipoRepository = AppDataSource.getRepository(Equipos);
+    const estadoDisponible = await AppDataSource.getRepository(EstadoSchema).findOne({ where: { Descripcion: "Disponible" } });
+    
     await equipoRepository.update(
       { ID_Num_Inv: body.ID_Num_Inv },
-      { Disponible: true }
+      { 
+        Disponible: true,
+        estado: estadoDisponible
+      }
     );
 
     const prestamoWithRelations = await prestamoRepository.findOne({
       where: { ID_Prestamo: prestamoSaved.ID_Prestamo },
       relations: [
         "equipos",
+        "equipos.marca",
+        "equipos.categoria",
+        "equipos.especificaciones",
         "solicitudes",
         "solicitudes.usuario",
+        "solicitudes.equipo",
+        "solicitudes.equipo.marca",
+        "solicitudes.equipo.categoria",
+        "solicitudes.equipo.especificaciones",
         "autorizacion",
         "autorizacion.usuario",
         "tieneEstados",
@@ -247,4 +286,53 @@ export async function getAutorizacionesService() {
     console.error("Error al obtener las autorizaciones:", error);
     return [null, "Error interno del servidor"];
   }
+}
+
+/**
+ * Función interna para validar si un usuario tiene permiso para aprobar/rechazar una solicitud
+ */
+async function validarPermisosAutorizacion(solicitud, autorizador) {
+  // Es largo plazo solo si tiene fechas y estas son diferentes
+  const isLargoPlazo = solicitud.Fecha_inicio_sol && 
+                       solicitud.Fecha_termino_sol && 
+                       solicitud.Fecha_inicio_sol !== solicitud.Fecha_termino_sol;
+  const tipoAutorizador = autorizador.Cod_TipoUsuario; // 1: Admin, 2: Alumno, 3: Profesor
+  const cargoAutorizador = autorizador.ID_Cargo; // 1: Dir IECI, 2: Dir ICI
+
+  if (isLargoPlazo) {
+    // Si es largo plazo, administradores no pueden autorizar
+    if (tipoAutorizador === 1) {
+      return "Los administradores solo pueden visualizar solicitudes de largo plazo. La aprobación corresponde a Dirección de Escuela.";
+    }
+
+    // Si es una solicitud de un Alumno, validar carrera con el director
+    const userRepository = AppDataSource.getRepository(User);
+    const solicitante = await userRepository.findOne({
+      where: { Rut: solicitud.Rut },
+      relations: ["tipoUsuario", "carrera"]
+    });
+
+    if (solicitante.tipoUsuario.Descripcion === "Alumno") {
+      const carreraSolicitante = solicitante.ID_Carrera; // 1: IECI, 2: ICI
+      
+      if (carreraSolicitante === 1 && cargoAutorizador !== 1) {
+        return "Las solicitudes de alumnos IECI solo pueden ser aceptadas o rechazadas por el Director de Escuela IECI.";
+      }
+      if (carreraSolicitante === 2 && cargoAutorizador !== 2) {
+        return "Las solicitudes de alumnos ICI solo pueden ser aceptadas o rechazadas por el Director de Escuela ICI.";
+      }
+    } else if (solicitante.tipoUsuario.Descripcion === "Profesor") {
+      // Para profesores, cualquiera de los dos directores (Cargo 1 o 2)
+      if (cargoAutorizador !== 1 && cargoAutorizador !== 2) {
+        return "Las solicitudes de profesores deben ser gestionadas por un Director de Escuela.";
+      }
+    }
+  } else {
+    // Para solicitudes diarias, solo administradores pueden autorizar
+    if (tipoAutorizador !== 1) {
+      return "Solo los administradores pueden gestionar solicitudes diarias.";
+    }
+  }
+
+  return null;
 }

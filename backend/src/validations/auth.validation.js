@@ -91,7 +91,7 @@ export const registerValidation = Joi.object({
       "string.base": "La contraseña debe ser de tipo texto.",
       "string.min": "La contraseña debe tener al menos 8 caracteres.",
       "string.max": "La contraseña debe tener como máximo 26 caracteres.",
-      "string.pattern.base": "La contraseña debe tener al menos una mayúscula, una minúscula y un número (solo letras y números).",
+      "string.pattern.base": "La contraseña debe tener al menos una mayúscula, una minúscula y un número.",
     }),
   tipoUsuario: Joi.string()
     .valid('Alumno', 'Profesor')

@@ -31,6 +31,9 @@ import tienePenalizacionRoutes from "./tiene_penalizacion.routes.js";
 // Rutas de reportes
 import reportesRoutes from "./reportes.routes.js";
 
+// Rutas de documentos
+import documentosRoutes from "./documentos.routes.js";
+
 // Rutas de clasificaciones de usuarios
 import cargoRoutes from "./cargo.routes.js";
 import poseeCargoRoutes from "./posee_cargo.routes.js";
@@ -73,6 +76,9 @@ router
 
 // Reportes
 router.use("/reportes", reportesRoutes);
+
+// Documentos
+router.use("/documentos", documentosRoutes);
 
 // Clasificaciones de usuarios
 router

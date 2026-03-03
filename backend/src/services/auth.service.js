@@ -39,7 +39,8 @@ export async function loginService(user) {
 
     // Obtener cargo activo (sin fecha fin)
     const cargoActivo = userFound.poseesCargos?.find(pc => !pc.Fecha_Fin);
-    const esDirectorEscuela = cargoActivo?.cargo?.ID_Cargo === 1;
+    // esDirectorEscuela si el ID_Cargo es 1 (IECI) o 2 (ICI)
+    const esDirectorEscuela = cargoActivo?.cargo?.ID_Cargo === 1 || cargoActivo?.cargo?.ID_Cargo === 2;
     const descripcionCargo = cargoActivo?.Descripcion_Cargo || cargoActivo?.cargo?.Desc_Cargo || null;
 
     const payload = {
@@ -49,7 +50,8 @@ export async function loginService(user) {
       tipoUsuario: userFound.tipoUsuario?.Descripcion || "Alumno",
       cargo: descripcionCargo,
       esDirectorEscuela: esDirectorEscuela,
-      carrera: userFound.carrera?.Carrera || "",
+      carrera: userFound.carrera?.Nombre_Carrera || "", // Corregido para usar Nombre_Carrera
+      idCarrera: userFound.ID_Carrera, // Incluir ID_Carrera para filtrado
       vigente: userFound.Vigente,
     };
 

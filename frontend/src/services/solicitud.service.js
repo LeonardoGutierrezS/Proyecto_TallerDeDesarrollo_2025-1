@@ -32,7 +32,7 @@ export const getSolicitudes = async () => {
 export const getMisSolicitudes = async () => {
   try {
     // El RUT se obtiene automáticamente del token JWT en el backend
-    const response = await axios.get('/solicitud/usuario');
+    const response = await axios.get('/solicitud/mis-solicitudes');
     return response.data;
   } catch (error) {
     console.error('Error fetching mis solicitudes:', error);
@@ -89,6 +89,21 @@ export const descargarPDFAutorizacion = async (idSolicitud) => {
   } catch (error) {
     console.error('Error downloading PDF:', error);
     return { status: 'Error', message: 'Error al descargar el PDF' };
+  }
+};
+
+/**
+ * Visualizar PDF de autorización
+ */
+export const visualizarPDFAutorizacion = async (idSolicitud) => {
+  try {
+    const response = await axios.get(`/solicitud/${idSolicitud}/pdf`, {
+      responseType: 'blob',
+    });
+    return window.URL.createObjectURL(new Blob([response.data], { type: 'application/pdf' }));
+  } catch (error) {
+    console.error('Error viewing PDF:', error);
+    throw error.response?.data || error.message;
   }
 };
 

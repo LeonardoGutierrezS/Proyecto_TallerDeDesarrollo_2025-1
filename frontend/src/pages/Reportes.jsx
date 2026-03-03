@@ -22,17 +22,27 @@ import {
 } from '@services/reportes.service';
 import { showErrorAlert, showSuccessAlert } from '@helpers/sweetAlert';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faFilePdf, faFileCsv, faCalendar, faDownload, faChartBar, faEye, faUsers, faClipboardList, faBoxOpen, faLaptop } from '@fortawesome/free-solid-svg-icons';
+import { faFilePdf, faFileCsv, faCalendar, faDownload, faChartBar, faEye, faUsers, faClipboardList, faBoxOpen, faLaptop, faGraduationCap, faTags } from '@fortawesome/free-solid-svg-icons';
 import GraficosReportes from '@components/GraficosReportes';
+import { useGetCarreras } from '@hooks/catalogos/useGetCarreras';
+import { useGetCategorias } from '@hooks/catalogos/useGetCategorias';
 
 const Reportes = () => {
   const [activeTab, setActiveTab] = useState('solicitudes');
-  const [fechaInicio, setFechaInicio] = useState(null);
+  const [fechaInicio, setFechaInicio] = useState(new Date(new Date().getFullYear(), new Date().getMonth(), 1));
   const [fechaFin, setFechaFin] = useState(new Date());
   const [tipoUsuarioFiltro, setTipoUsuarioFiltro] = useState('');
+  const [carreraFiltro, setCarreraFiltro] = useState('');
+  const [categoriaFiltro, setCategoriaFiltro] = useState('');
+  const [tipoUsuarioSolFiltro, setTipoUsuarioSolFiltro] = useState('');
+  const [cargoSolFiltro, setCargoSolFiltro] = useState('');
+  const [rutPrestamoFiltro, setRutPrestamoFiltro] = useState('');
   const [loading, setLoading] = useState(false);
   const [datosGraficos, setDatosGraficos] = useState(null);
   const [mesesHistorial, setMesesHistorial] = useState(6);
+
+  const { carreras } = useGetCarreras();
+  const { categorias } = useGetCategorias();
 
   // Cargar datos de gráficos al montar o cuando cambie el historial
   useEffect(() => {
@@ -52,7 +62,14 @@ const Reportes = () => {
 
   const cargarDatosGraficos = async () => {
     try {
-      const datos = await obtenerDatosGraficos(mesesHistorial);
+      const filtros = {
+        meses: mesesHistorial,
+        fechaInicio: formatFecha(fechaInicio),
+        fechaFin: formatFecha(fechaFin),
+        carrera: carreraFiltro,
+        categoria: categoriaFiltro
+      };
+      const datos = await obtenerDatosGraficos(filtros);
       setDatosGraficos(datos);
     } catch {
       console.error('Error al cargar datos de gráficos');
@@ -87,7 +104,7 @@ const Reportes = () => {
   const handlePrevisualizarSolicitudesPDF = async () => {
     try {
       setLoading(true);
-      const blob = await descargarReporteSolicitudesPDF(formatFecha(fechaInicio), formatFecha(fechaFin));
+      const blob = await descargarReporteSolicitudesPDF(formatFecha(fechaInicio), formatFecha(fechaFin), tipoUsuarioSolFiltro, cargoSolFiltro);
       previsualizarPDF(blob);
       showSuccessAlert('Vista previa abierta', 'El reporte se ha abierto en una nueva pestaña');
     } catch {
@@ -100,7 +117,7 @@ const Reportes = () => {
   const handleDescargarSolicitudesPDF = async () => {
     try {
       setLoading(true);
-      const blob = await descargarReporteSolicitudesPDF(formatFecha(fechaInicio), formatFecha(fechaFin));
+      const blob = await descargarReporteSolicitudesPDF(formatFecha(fechaInicio), formatFecha(fechaFin), tipoUsuarioSolFiltro, cargoSolFiltro);
       descargarArchivo(blob, `reporte-solicitudes-${Date.now()}.pdf`);
       showSuccessAlert('Descarga exitosa', 'El reporte ha sido descargado');
     } catch {
@@ -113,7 +130,7 @@ const Reportes = () => {
   const handleDescargarSolicitudesCSV = async () => {
     try {
       setLoading(true);
-      const blob = await descargarReporteSolicitudesCSV(formatFecha(fechaInicio), formatFecha(fechaFin));
+      const blob = await descargarReporteSolicitudesCSV(formatFecha(fechaInicio), formatFecha(fechaFin), tipoUsuarioSolFiltro, cargoSolFiltro);
       descargarArchivo(blob, `reporte-solicitudes-${Date.now()}.csv`);
       showSuccessAlert('Descarga exitosa', 'El reporte ha sido descargado');
     } catch {
@@ -127,7 +144,7 @@ const Reportes = () => {
   const handlePrevisualizarPrestamosPDF = async () => {
     try {
       setLoading(true);
-      const blob = await descargarReportePrestamosPDF(formatFecha(fechaInicio), formatFecha(fechaFin));
+      const blob = await descargarReportePrestamosPDF(formatFecha(fechaInicio), formatFecha(fechaFin), tipoUsuarioSolFiltro, rutPrestamoFiltro);
       previsualizarPDF(blob);
       showSuccessAlert('Vista previa abierta', 'El reporte se ha abierto en una nueva pestaña');
     } catch {
@@ -140,7 +157,7 @@ const Reportes = () => {
   const handleDescargarPrestamosPDF = async () => {
     try {
       setLoading(true);
-      const blob = await descargarReportePrestamosPDF(formatFecha(fechaInicio), formatFecha(fechaFin));
+      const blob = await descargarReportePrestamosPDF(formatFecha(fechaInicio), formatFecha(fechaFin), tipoUsuarioSolFiltro, rutPrestamoFiltro);
       descargarArchivo(blob, `reporte-prestamos-${Date.now()}.pdf`);
       showSuccessAlert('Descarga exitosa', 'El reporte ha sido descargado');
     } catch {
@@ -153,7 +170,7 @@ const Reportes = () => {
   const handleDescargarPrestamosCSV = async () => {
     try {
       setLoading(true);
-      const blob = await descargarReportePrestamosCSV(formatFecha(fechaInicio), formatFecha(fechaFin));
+      const blob = await descargarReportePrestamosCSV(formatFecha(fechaInicio), formatFecha(fechaFin), tipoUsuarioSolFiltro, rutPrestamoFiltro);
       descargarArchivo(blob, `reporte-prestamos-${Date.now()}.csv`);
       showSuccessAlert('Descarga exitosa', 'El reporte ha sido descargado');
     } catch {
@@ -207,7 +224,7 @@ const Reportes = () => {
   const handlePrevisualizarUsuariosPDF = async () => {
     try {
       setLoading(true);
-      const blob = await descargarReporteUsuariosPDF(tipoUsuarioFiltro);
+      const blob = await descargarReporteUsuariosPDF(tipoUsuarioFiltro, carreraFiltro);
       previsualizarPDF(blob);
       showSuccessAlert('Vista previa abierta', 'El reporte se ha abierto en una nueva pestaña');
     } catch {
@@ -220,7 +237,7 @@ const Reportes = () => {
   const handleDescargarUsuariosPDF = async () => {
     try {
       setLoading(true);
-      const blob = await descargarReporteUsuariosPDF(tipoUsuarioFiltro);
+      const blob = await descargarReporteUsuariosPDF(tipoUsuarioFiltro, carreraFiltro);
       descargarArchivo(blob, `reporte-usuarios-${Date.now()}.pdf`);
       showSuccessAlert('Descarga exitosa', 'El reporte ha sido descargado');
     } catch {
@@ -233,7 +250,7 @@ const Reportes = () => {
   const handleDescargarUsuariosCSV = async () => {
     try {
       setLoading(true);
-      const blob = await descargarReporteUsuariosCSV(tipoUsuarioFiltro);
+      const blob = await descargarReporteUsuariosCSV(tipoUsuarioFiltro, carreraFiltro);
       descargarArchivo(blob, `reporte-usuarios-${Date.now()}.csv`);
       showSuccessAlert('Descarga exitosa', 'El reporte ha sido descargado');
     } catch {
@@ -271,7 +288,7 @@ const Reportes = () => {
   };
 
   const renderFiltrosFechas = () => (
-    <div className="filters-section">
+    <div className="filters-section" style={{ display: 'flex', flexWrap: 'wrap', gap: '15px' }}>
       <div className="filter-group">
         <label className="filter-label"><FontAwesomeIcon icon={faCalendar} /> Fecha de Inicio:</label>
         <DatePicker
@@ -303,22 +320,124 @@ const Reportes = () => {
           className="date-input-picker"
         />
       </div>
-      <button 
-        className="btn-clear"
-        onClick={() => {
-          setFechaInicio(null);
-          setFechaFin(new Date());
-        }}
-        disabled={!fechaInicio && !fechaFin}
-      >
-        Limpiar Filtros
-      </button>
+      
+      {/* Filtro Categoría */}
+      <div className="filter-group">
+        <label className="filter-label"><FontAwesomeIcon icon={faTags} /> Categoría:</label>
+        <select
+          value={categoriaFiltro}
+          onChange={(e) => setCategoriaFiltro(e.target.value)}
+          className="date-input-picker"
+          style={{ padding: '8px', minWidth: '150px' }}
+        >
+          <option value="">Todas las Categorías</option>
+          {categorias.map(c => (
+            <option key={c.ID_Categoria} value={c.Descripcion}>{c.Descripcion}</option>
+          ))}
+        </select>
+      </div>
+
+      {/* Filtro Tipo de Usuario (para pestañas Solicitudes y Préstamos) */}
+      {(activeTab === 'solicitudes' || activeTab === 'prestamos') && (
+          <div className="filter-group">
+            <label className="filter-label"><FontAwesomeIcon icon={faUsers} /> Tipo:</label>
+            <select
+              value={tipoUsuarioSolFiltro}
+              onChange={(e) => {
+                setTipoUsuarioSolFiltro(e.target.value);
+                if (e.target.value !== 'Alumno') setCarreraFiltro('');
+              }}
+              className="date-input-picker"
+              style={{ padding: '8px', minWidth: '130px' }}
+            >
+              <option value="">Todos</option>
+              <option value="Alumno">Alumno</option>
+              <option value="Profesor">Profesor</option>
+            </select>
+          </div>
+      )}
+
+      {/* Filtro Carrera - en Solicitudes/Préstamos solo si es Alumno, en otras pestañas siempre */}
+      {((!['solicitudes', 'prestamos'].includes(activeTab)) || tipoUsuarioSolFiltro === 'Alumno') && (
+      <div className="filter-group">
+        <label className="filter-label"><FontAwesomeIcon icon={faGraduationCap} /> Carrera:</label>
+        <select
+          value={carreraFiltro}
+          onChange={(e) => setCarreraFiltro(e.target.value)}
+          className="date-input-picker"
+          style={{ padding: '8px', minWidth: '200px' }}
+        >
+          <option value="">Todas las Carreras</option>
+          {carreras.map(c => (
+            <option key={c.ID_Carrera} value={c.Nombre_Carrera}>{c.Nombre_Carrera}</option>
+          ))}
+        </select>
+      </div>
+      )}
+
+      {/* Filtro RUT (solo para pestaña Préstamos) */}
+      {activeTab === 'prestamos' && (
+        <div className="filter-group">
+          <label className="filter-label">RUT:</label>
+          <input
+            type="text"
+            value={rutPrestamoFiltro}
+            onChange={(e) => {
+              let val = e.target.value.replace(/[^0-9kK]/g, '').toUpperCase();
+              if (val.length > 9) val = val.slice(0, 9);
+              if (val.length > 1) {
+                const cuerpo = val.slice(0, -1);
+                const dv = val.slice(-1);
+                let formatted = '';
+                const reversed = cuerpo.split('').reverse();
+                reversed.forEach((c, i) => {
+                  if (i > 0 && i % 3 === 0) formatted = '.' + formatted;
+                  formatted = c + formatted;
+                });
+                val = formatted + '-' + dv;
+              }
+              setRutPrestamoFiltro(val);
+            }}
+            placeholder="Ej: 12.345.678-9"
+            className="date-input-picker"
+            style={{ padding: '8px', minWidth: '140px' }}
+            maxLength={12}
+          />
+        </div>
+      )}
+
+      <div className="filter-group" style={{ display: 'flex', alignItems: 'flex-end', gap: '10px' }}>
+        <button 
+          className="btn-clear"
+          onClick={() => {
+            setFechaInicio(new Date(new Date().getFullYear(), new Date().getMonth(), 1));
+            setFechaFin(new Date());
+            setCarreraFiltro('');
+            setCategoriaFiltro('');
+            setTipoUsuarioSolFiltro('');
+            setRutPrestamoFiltro('');
+          }}
+          disabled={!fechaInicio && !fechaFin && !carreraFiltro && !categoriaFiltro && !tipoUsuarioSolFiltro && !rutPrestamoFiltro}
+        >
+          Limpiar
+        </button>
+        <button 
+          className="btn-create"
+          onClick={() => {
+            cargarDatosGraficos();
+            showSuccessAlert('Filtros aplicados', 'Los filtros se han aplicado correctamente. Genera el reporte con los botones de abajo.');
+          }}
+          style={{ height: '38px', margin: 0 }}
+        >
+          <FontAwesomeIcon icon={faChartBar} /> Filtrar
+        </button>
+      </div>
     </div>
   );
 
   return (
     <div className="main-container">
-      <h1 className="title-page">📊 Reportes del Sistema</h1>
+      <h1 className="title-page">Reportes del Sistema</h1>
       
       {/* Tabs Navigation */}
       <div className="tabs-container">
@@ -467,12 +586,34 @@ const Reportes = () => {
                   <option value="Administrador">Administradores</option>
                 </select>
               </div>
-              {tipoUsuarioFiltro && (
+
+              {/* Filtro Carrera (Solo para Alumnos) */}
+              {tipoUsuarioFiltro === 'Alumno' && (
+                <div className="filter-group">
+                  <label className="filter-label"><FontAwesomeIcon icon={faGraduationCap} /> Carrera:</label>
+                  <select
+                    value={carreraFiltro}
+                    onChange={(e) => setCarreraFiltro(e.target.value)}
+                    className="date-input"
+                    style={{ minWidth: '200px' }}
+                  >
+                    <option value="">Todas las Carreras</option>
+                    {carreras.map(c => (
+                      <option key={c.ID_Carrera} value={c.Nombre_Carrera}>{c.Nombre_Carrera}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              {(tipoUsuarioFiltro || carreraFiltro) && (
                 <button 
                   className="btn-clear"
-                  onClick={() => setTipoUsuarioFiltro('')}
+                  onClick={() => {
+                    setTipoUsuarioFiltro('');
+                    setCarreraFiltro('');
+                  }}
                 >
-                  Limpiar Filtro
+                  Limpiar Filtros
                 </button>
               )}
             </div>

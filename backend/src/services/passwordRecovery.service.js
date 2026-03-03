@@ -3,7 +3,7 @@ import User from "../entity/user.entity.js";
 import jwt from "jsonwebtoken";
 import { AppDataSource } from "../config/configDb.js";
 import { encryptPassword } from "../helpers/bcrypt.helper.js";
-import { ACCESS_TOKEN_SECRET } from "../config/configEnv.js";
+import { ACCESS_TOKEN_SECRET, FRONTEND_URL } from "../config/configEnv.js";
 import { sendEmail } from "./email.service.js";
 
 /**
@@ -34,7 +34,7 @@ export async function requestPasswordResetService(email) {
     );
 
     // URL del frontend para resetear contraseña
-    const resetUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/reset-password/${resetToken}`;
+    const resetUrl = `${FRONTEND_URL || 'http://localhost:5173'}/reset-password/${resetToken}`;
 
     // HTML del correo con diseño mejorado
     const htmlContent = `

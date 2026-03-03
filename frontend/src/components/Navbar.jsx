@@ -3,6 +3,7 @@ import { logout } from '@services/auth.service.js';
 import '@styles/navbar.css';
 import { useState, useEffect } from "react";
 import SirecLogo from '../Images/SIREC LOGO.png';
+import FaceLogo from '../Images/Face_Blanco.png';
 import { getSolicitudes } from '@services/solicitud.service';
 
 const Navbar = () => {
@@ -24,16 +25,16 @@ const Navbar = () => {
                         // Filtrar solo las pendientes (sin ID_Prestamo)
                         const pendientes = response.data.filter(s => !s.ID_Prestamo);
                         
-                        // Si es director, solo largo plazo
+                        // Si es director, solo largo plazo (fechas presentes y diferentes)
                         if (esDirectorEscuela) {
                             const largoPlazoPendientes = pendientes.filter(s => 
-                                s.Fecha_inicio_sol && s.Fecha_termino_sol
+                                s.Fecha_inicio_sol && s.Fecha_termino_sol && s.Fecha_inicio_sol !== s.Fecha_termino_sol
                             );
                             setSolicitudesPendientes(largoPlazoPendientes.length);
                         } else {
-                            // Si es admin, solo diarias (sin fechas de inicio y término)
+                            // Si es admin, solo diarias (sin fechas O fechas iguales)
                             const diariasPendientes = pendientes.filter(s => 
-                                !s.Fecha_inicio_sol && !s.Fecha_termino_sol
+                                !s.Fecha_inicio_sol || !s.Fecha_termino_sol || s.Fecha_inicio_sol === s.Fecha_termino_sol
                             );
                             setSolicitudesPendientes(diariasPendientes.length);
                         }
@@ -46,8 +47,8 @@ const Navbar = () => {
 
         fetchSolicitudesPendientes();
         
-        // Actualizar cada 30 segundos
-        const interval = setInterval(fetchSolicitudesPendientes, 30000);
+        // Actualizar cada 60 segundos
+        const interval = setInterval(fetchSolicitudesPendientes, 60000);
         
         return () => clearInterval(interval);
     }, [userRole, esDirectorEscuela]);
@@ -202,6 +203,8 @@ const Navbar = () => {
                             </>
                         )}
                         
+
+                        
                         <li className="logout">
                             <a onClick={logoutSubmit}>
                                 <span className="icon">🚪</span>
@@ -209,6 +212,11 @@ const Navbar = () => {
                             </a>
                         </li>
                     </ul>
+
+                    {/* Footer con Logo FACE */}
+                    <div className="sidebar-footer-logo">
+                        <img src={FaceLogo} alt="Facultad de Ciencias Empresariales" />
+                    </div>
                 </nav>
             </div>
 

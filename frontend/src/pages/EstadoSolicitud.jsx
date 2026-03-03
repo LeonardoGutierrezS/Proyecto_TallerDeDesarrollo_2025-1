@@ -212,9 +212,9 @@ const EstadoSolicitud = () => {
                                             </td>
                                             <td>{item.equipo?.categoria?.Descripcion || 'N/A'}</td>
                                             <td>{formatFecha(item.Fecha_inicio_sol || item.prestamo?.Fecha_inicio_prestamo || item.Fecha_Sol)}</td>
-                                            <td>{formatFecha(item.Fecha_termino_sol || item.prestamo?.Fecha_ter_prestamo || item.Fecha_Sol)}</td>
+                                            <td>{formatFecha(item.Fecha_termino_sol || item.prestamo?.Fecha_fin_prestamo || item.Fecha_Sol)}</td>
                                             {tipo === 'finalizadas' && (
-                                                <td>{formatFecha(item.prestamo?.devolucion?.Fecha_devolucion)}</td>
+                                                <td>{formatFecha(item.prestamo?.devolucion?.Fecha_Dev)}</td>
                                             )}
                                             <td>
                                                 <div className="actions-buttons">

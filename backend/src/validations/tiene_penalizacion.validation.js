@@ -6,13 +6,13 @@ import Joi from "joi";
  */
 export const asignarPenalizacionValidation = Joi.object({
   Rut: Joi.string()
-    .pattern(/^[0-9]{7,8}-[0-9Kk]$/)
+    .pattern(/^(?:(?:[1-9]\d{0}|[1-2]\d{1})(\.\d{3}){2}|[1-9]\d{6}|[1-2]\d{7})-[\dkK]$/)
     .required()
     .messages({
       "string.empty": "El RUT no puede estar vacío.",
       "any.required": "El RUT es obligatorio.",
       "string.base": "El RUT debe ser de tipo texto.",
-      "string.pattern.base": "El RUT debe tener el formato 12345678-9.",
+      "string.pattern.base": "El RUT debe tener el formato xx.xxx.xxx-x o xxxxxxxx-x.",
     }),
   ID_Penalizaciones: Joi.number()
     .integer()
@@ -53,10 +53,8 @@ export const asignarPenalizacionValidation = Joi.object({
  */
 export const finalizarPenalizacionValidation = Joi.object({
   Fecha_Fin: Joi.date()
-    .required()
     .messages({
       "date.base": "La fecha de fin debe ser una fecha válida.",
-      "any.required": "La fecha de fin es obligatoria.",
     }),
 })
   .unknown(false)

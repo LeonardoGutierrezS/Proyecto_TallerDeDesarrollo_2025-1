@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { createUser } from '@services/user.service.js';
 import { getCarreras } from '@services/carrera.service.js';
 import { getCargos } from '@services/cargo.service.js';
-import { showErrorAlert, showSuccessAlert } from '@helpers/sweetAlert.js';
+import { showErrorAlert, showSuccessAlert, showLoadingAlert, closeAlert } from '@helpers/sweetAlert.js';
 import { formatRut, validateRut, validateRutFormat } from '@helpers/rutFormatter.js';
 import '@styles/modal.css';
 
@@ -19,6 +19,7 @@ const CreateUserModal = ({ onClose, onSuccess }) => {
     const [carreras, setCarreras] = useState([]);
     const [cargos, setCargos] = useState([]);
     const [loading, setLoading] = useState(false);
+    const [errors, setErrors] = useState({});
 
     useEffect(() => {
         fetchData();
@@ -72,7 +73,7 @@ const CreateUserModal = ({ onClose, onSuccess }) => {
                 idCargo: '',
                 descripcionCargo: ''
             });
-        } else if (name === 'idCargo' && value !== '2') {
+        } else if (name === 'idCargo' && value !== '3') {
             // Limpiar descripción si cambia a un cargo diferente de "Otro"
             setFormData({
                 ...formData,
@@ -90,21 +91,65 @@ const CreateUserModal = ({ onClose, onSuccess }) => {
     const handleSubmit = async (e) => {
         e.preventDefault();
         setLoading(true);
+        setErrors({}); 
+
+        const newErrors = {};
+
+        // 1. Validar Nombre Completo
+        if (!formData.nombreCompleto) {
+            newErrors.nombreCompleto = 'El nombre completo es obligatorio';
+        } else if (formData.nombreCompleto.length < 15) {
+            newErrors.nombreCompleto = 'El nombre completo debe tener al menos 15 caracteres';
+        }
+
+        // 2. Validar Correo Electrónico
+        const emailRegex = /^[^\s@]+@[^\s@]+\.(cl|com)$/;
+        if (!formData.correo) {
+            newErrors.correo = 'El correo electrónico es obligatorio';
+        } else if (!emailRegex.test(formData.correo)) {
+            newErrors.correo = 'Formato inválido. Debe contener "@" y terminar en ".cl" o ".com"';
+        }
+
+        // 3. Validar RUT
+        if (!formData.rut) {
+            newErrors.rut = 'El RUT es obligatorio';
+        } else if (!validateRutFormat(formData.rut)) {
+            newErrors.rut = 'Formato de RUT inválido (ej: 12.345.678-9)';
+        } else if (!validateRut(formData.rut)) {
+            newErrors.rut = 'El RUT ingresado no es válido (dígito verificador incorrecto)';
+        }
+
+        // 4. Validar Tipo de Usuario
+        if (!formData.codTipoUsuario) {
+            newErrors.codTipoUsuario = 'Debe seleccionar un tipo de usuario';
+        }
+
+        // 5. Validaciones condicionales
+        if (formData.codTipoUsuario === '2') { // Alumno
+            if (!formData.idCarrera) {
+                newErrors.idCarrera = 'Debe seleccionar una carrera';
+            }
+        }
+
+        if (formData.codTipoUsuario === '3') { // Profesor
+            if (!formData.idCargo) {
+                newErrors.idCargo = 'Debe seleccionar un cargo';
+            } else if (formData.idCargo === '3' && !formData.descripcionCargo) { // Cargo "Otro"
+                newErrors.descripcionCargo = 'Debe especificar el cargo';
+            }
+        }
+
+        // Mostrar todos los errores acumulados
+        if (Object.keys(newErrors).length > 0) {
+            setErrors(newErrors);
+            setLoading(false);
+            return;
+        }
+
+        // Mostrar modal de carga
+        showLoadingAlert('Creando Usuario', 'Por favor espere mientras se registra el usuario y se envían las credenciales...');
 
         try {
-            // Validar RUT antes de enviar
-            if (!validateRutFormat(formData.rut)) {
-                showErrorAlert('Error', 'Formato de RUT inválido');
-                setLoading(false);
-                return;
-            }
-
-            if (!validateRut(formData.rut)) {
-                showErrorAlert('Error', 'El RUT ingresado no es válido (dígito verificador incorrecto)');
-                setLoading(false);
-                return;
-            }
-
             const userData = {
                 nombreCompleto: formData.nombreCompleto,
                 email: formData.correo,
@@ -116,17 +161,43 @@ const CreateUserModal = ({ onClose, onSuccess }) => {
             };
 
             const response = await createUser(userData);
+            
+            // closeAlert(); // Comentado para permitir que Swal reemplace el loading automáticamente
 
             if (response.status === 'Success') {
-                showSuccessAlert(
+                await showSuccessAlert(
                     '¡Éxito!', 
                     'Usuario creado correctamente. Se ha generado una contraseña provisional y se ha enviado al correo del usuario.'
                 );
                 onSuccess();
             } else {
-                showErrorAlert('Error', response.details?.message || response.message || 'Error al crear usuario');
+                // Manejar errores del servidor (pueden venir varios a la vez)
+                if (response.details && typeof response.details === 'object') {
+                    // Mapear el objeto de errores del servidor (ej: { rut: '...', email: '...' })
+                    const serverErrors = {};
+                    if (response.details.rut) serverErrors.rut = response.details.rut;
+                    if (response.details.email) serverErrors.correo = response.details.email;
+                    
+                    if (Object.keys(serverErrors).length > 0) {
+                        setErrors(serverErrors);
+                    } else {
+                        showErrorAlert('Error', response.message || 'Error al crear usuario');
+                    }
+                } else {
+                    // Fallback para mensajes de texto plano
+                    const serverMsg = typeof response.details === 'string' ? response.details : (response.message || '');
+                    
+                    if (serverMsg.toLowerCase().includes('rut')) {
+                        setErrors({ rut: serverMsg });
+                    } else if (serverMsg.toLowerCase().includes('correo') || serverMsg.toLowerCase().includes('email')) {
+                        setErrors({ correo: serverMsg });
+                    } else {
+                        showErrorAlert('Error', serverMsg || 'Error al crear usuario');
+                    }
+                }
             }
         } catch (error) {
+            // closeAlert(); // Comentado para permitir que Swal reemplace el loading
             console.error('Error:', error);
             showErrorAlert('Error', 'No se pudo crear el usuario');
         } finally {
@@ -137,7 +208,7 @@ const CreateUserModal = ({ onClose, onSuccess }) => {
     // Determinar qué campos mostrar
     const esAlumno = formData.codTipoUsuario === '2';
     const esProfesor = formData.codTipoUsuario === '3';
-    const esCargoOtro = formData.idCargo === '2'; // ID_Cargo = 2 es "Otro"
+    const esCargoOtro = formData.idCargo === '3'; // ID_Cargo = 3 es "Otro"
 
     return (
         <div className="modal-overlay" onClick={onClose}>
@@ -147,13 +218,14 @@ const CreateUserModal = ({ onClose, onSuccess }) => {
                     <button className="modal-close" onClick={onClose}>✕</button>
                 </div>
 
-                <form onSubmit={handleSubmit} className="modal-form" autoComplete="off">
+                <form onSubmit={handleSubmit} className="modal-form" autoComplete="off" noValidate>
                     <div className="form-group">
                         <label htmlFor="nombreCompleto">Nombre Completo *</label>
                         <input
                             type="text"
                             id="nombreCompleto"
                             name="nombreCompleto"
+                            className={errors.nombreCompleto ? 'input-error' : ''}
                             value={formData.nombreCompleto}
                             onChange={handleChange}
                             required
@@ -164,21 +236,24 @@ const CreateUserModal = ({ onClose, onSuccess }) => {
                             data-lpignore="true"
                             data-form-type="other"
                         />
+                        {errors.nombreCompleto && <span className="error-text">⚠ {errors.nombreCompleto}</span>}
                     </div>
 
                     <div className="form-group">
                         <label htmlFor="correo">Correo Electrónico *</label>
                         <input
-                            type="text"
+                            type="email"
                             id="correo"
                             name="correo"
+                            className={errors.correo ? 'input-error' : ''}
                             value={formData.correo}
                             onChange={handleChange}
                             required
-                            placeholder="ejemplo@gmail.cl"
+                            placeholder="ejemplo@gmail.com"
                             autoComplete="chrome-off"
                             data-lpignore="true"
                         />
+                        {errors.correo && <span className="error-text">⚠ {errors.correo}</span>}
                     </div>
 
                     <div className="form-group">
@@ -187,10 +262,13 @@ const CreateUserModal = ({ onClose, onSuccess }) => {
                             type="text"
                             id="rut"
                             name="rut"
+                            className={errors.rut ? 'input-error' : ''}
                             value={formData.rut}
                             onChange={handleChange}
                             required
+                            placeholder="12.345.678-9"
                         />
+                        {errors.rut && <span className="error-text">⚠ {errors.rut}</span>}
                     </div>
 
                     <div className="form-group">
@@ -198,6 +276,7 @@ const CreateUserModal = ({ onClose, onSuccess }) => {
                         <select
                             id="codTipoUsuario"
                             name="codTipoUsuario"
+                            className={errors.codTipoUsuario ? 'input-error' : ''}
                             value={formData.codTipoUsuario}
                             onChange={handleChange}
                             required
@@ -207,6 +286,7 @@ const CreateUserModal = ({ onClose, onSuccess }) => {
                             <option value="2">Alumno</option>
                             <option value="3">Profesor</option>
                         </select>
+                        {errors.codTipoUsuario && <span className="error-text">⚠ {errors.codTipoUsuario}</span>}
                     </div>
 
                     {esAlumno && (
@@ -215,6 +295,7 @@ const CreateUserModal = ({ onClose, onSuccess }) => {
                             <select
                                 id="idCarrera"
                                 name="idCarrera"
+                                className={errors.idCarrera ? 'input-error' : ''}
                                 value={formData.idCarrera}
                                 onChange={handleChange}
                                 required
@@ -226,6 +307,7 @@ const CreateUserModal = ({ onClose, onSuccess }) => {
                                     </option>
                                 ))}
                             </select>
+                            {errors.idCarrera && <span className="error-text">⚠ {errors.idCarrera}</span>}
                         </div>
                     )}
 
@@ -236,6 +318,7 @@ const CreateUserModal = ({ onClose, onSuccess }) => {
                                 <select
                                     id="idCargo"
                                     name="idCargo"
+                                    className={errors.idCargo ? 'input-error' : ''}
                                     value={formData.idCargo}
                                     onChange={handleChange}
                                     required
@@ -247,15 +330,17 @@ const CreateUserModal = ({ onClose, onSuccess }) => {
                                         </option>
                                     ))}
                                 </select>
+                                {errors.idCargo && <span className="error-text">⚠ {errors.idCargo}</span>}
                             </div>
 
                             {esCargoOtro && (
                                 <div className="form-group">
-                                    <label htmlFor="descripcionCargo">Descripción del Cargo</label>
+                                    <label htmlFor="descripcionCargo">Descripción del Cargo *</label>
                                     <input
                                         type="text"
                                         id="descripcionCargo"
                                         name="descripcionCargo"
+                                        className={errors.descripcionCargo ? 'input-error' : ''}
                                         value={formData.descripcionCargo}
                                         onChange={handleChange}
                                         maxLength={255}
@@ -263,6 +348,7 @@ const CreateUserModal = ({ onClose, onSuccess }) => {
                                         autoComplete="chrome-off"
                                         data-lpignore="true"
                                     />
+                                    {errors.descripcionCargo && <span className="error-text">⚠ {errors.descripcionCargo}</span>}
                                 </div>
                             )}
                         </>

@@ -28,10 +28,11 @@ body {
 
 .main-container h1 {
 	color: #003366;
-	font-size: 2em;
-	margin-bottom: 30px;
-	border-bottom: 3px solid #006edf;
-	padding-bottom: 10px;
+	font-size: 1.75em;
+	margin-top: 0;
+	margin-bottom: 20px;
+	border-bottom: 2px solid #006edf;
+	padding-bottom: 8px;
 }
 
 /* Responsive para el contenedor principal */
@@ -41,4 +42,9 @@ body {
 		width: 100%;
 		padding: 80px 20px 20px 20px;
 	}
+}
+
+/* Forzar prioridad de SweetAlert2 */
+.swal2-container {
+	z-index: 10001 !important;
 }

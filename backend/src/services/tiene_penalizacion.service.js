@@ -13,10 +13,12 @@ export async function asignarPenalizacionService(body) {
     const penalizacionRepository = AppDataSource.getRepository(Penalizaciones);
     const userRepository = AppDataSource.getRepository(User);
 
-    // Verificar que el usuario existe
-    const userFound = await userRepository.findOne({
-      where: { Rut: body.Rut },
-    });
+    // Normalizar el RUT de entrada para la búsqueda (quitar puntos y guiones)
+    const rutParaBusqueda = body.Rut.replace(/[-\.]/g, '').toUpperCase();
+
+    // Buscar al usuario comparando con el RUT de la base de datos (que también normalizamos para la comparación)
+    const users = await userRepository.find();
+    const userFound = users.find(u => u.Rut.replace(/[-\.]/g, '').toUpperCase() === rutParaBusqueda);
 
     if (!userFound) {
       return [null, "El usuario no existe"];
@@ -33,7 +35,7 @@ export async function asignarPenalizacionService(body) {
 
     // Crear la asignación de penalización
     const newTienePenalizacion = tienePenalizacionRepository.create({
-      Rut: body.Rut,
+      Rut: userFound.Rut,
       ID_Penalizaciones: body.ID_Penalizaciones,
       Fecha_Inicio: body.Fecha_Inicio || new Date(),
       Fecha_Fin: body.Fecha_Fin || null,
@@ -42,16 +44,9 @@ export async function asignarPenalizacionService(body) {
 
     const tienePenalizacionSaved = await tienePenalizacionRepository.save(newTienePenalizacion);
 
-    // Marcar al usuario como no vigente si la penalización está activa
-    if (!body.Fecha_Fin || new Date(body.Fecha_Fin) > new Date()) {
-      await userRepository.update(
-        { Rut: body.Rut },
-        { Vigente: false },
-      );
-    }
 
     const tienePenalizacionWithRelations = await tienePenalizacionRepository.findOne({
-      where: { ID_Tiene_Penalizacion: tienePenalizacionSaved.ID_Tiene_Penalizacion },
+      where: { ID: tienePenalizacionSaved.ID },
       relations: [
         "usuario",
         "usuario.cargo",
@@ -146,18 +141,18 @@ export async function finalizarPenalizacionService(id, fechaFin) {
     const userRepository = AppDataSource.getRepository(User);
 
     const penalizacionFound = await tienePenalizacionRepository.findOne({
-      where: { ID_Tiene_Penalizacion: id },
+      where: { ID: id },
       relations: ["usuario"],
     });
 
     if (!penalizacionFound) return [null, "Penalización no encontrada"];
 
-    if (penalizacionFound.Fecha_Fin) {
+    if (penalizacionFound.Fecha_Fin && new Date(penalizacionFound.Fecha_Fin) <= new Date()) {
       return [null, "La penalización ya fue finalizada"];
     }
 
     await tienePenalizacionRepository.update(
-      { ID_Tiene_Penalizacion: id },
+      { ID: id },
       { Fecha_Fin: fechaFin || new Date() },
     );
 
@@ -166,16 +161,9 @@ export async function finalizarPenalizacionService(id, fechaFin) {
       penalizacionFound.usuario.Rut,
     );
 
-    // Si no tiene más penalizaciones activas, marcarlo como vigente
-    if (penalizacionesActivas[0].length === 0) {
-      await userRepository.update(
-        { Rut: penalizacionFound.usuario.Rut },
-        { Vigente: true },
-      );
-    }
 
     const penalizacionUpdated = await tienePenalizacionRepository.findOne({
-      where: { ID_Tiene_Penalizacion: id },
+      where: { ID: id },
       relations: ["usuario", "penalizacion"],
     });
 

@@ -6,6 +6,7 @@ import Prestamo from "../entity/prestamo.entity.js";
 import Equipos from "../entity/equipos.entity.js";
 import User from "../entity/user.entity.js";
 import Devolucion from "../entity/devolucion.entity.js";
+import TienePenalizacion from "../entity/tiene_penalizacion.entity.js";
 import path from 'path';
 import { fileURLToPath } from 'url';
 
@@ -76,14 +77,17 @@ export async function generarReporteSolicitudesPDF(filtros = {}) {
     let queryBuilder = solicitudRepository
       .createQueryBuilder("solicitud")
       .leftJoinAndSelect("solicitud.usuario", "usuario")
+      .leftJoinAndSelect("usuario.tipoUsuario", "tipoUsuario")
+      .leftJoinAndSelect("usuario.cargo", "cargo")
       .leftJoinAndSelect("solicitud.equipo", "equipo")
       .leftJoinAndSelect("equipo.categoria", "categoria")
       .leftJoinAndSelect("solicitud.prestamo", "prestamo")
       .leftJoinAndSelect("prestamo.tieneEstados", "tieneEstados")
       .leftJoinAndSelect("tieneEstados.estadoPrestamo", "estadoPrestamo")
-      .orderBy("solicitud.Fecha_Sol", "DESC");
+      .leftJoinAndSelect("prestamo.autorizacion", "autorizacion")
+      .orderBy("solicitud.Rut", "ASC");
 
-    // Aplicar filtros
+    // Aplicar filtros de fecha
     if (filtros.fechaInicio) {
       queryBuilder.andWhere("solicitud.Fecha_Sol >= :fechaInicio", { 
         fechaInicio: filtros.fechaInicio 
@@ -96,52 +100,110 @@ export async function generarReporteSolicitudesPDF(filtros = {}) {
       });
     }
 
-    const solicitudes = await queryBuilder.getMany();
-
-    // Crear PDF
-    const doc = new PDFDocument({ size: "letter", margin: 40 });
-
-    // Encabezado
-    dibujarEncabezadoInstitucional(doc, "REPORTE DE SOLICITUDES");
-
-    // Filtros aplicados
-    if (filtros.fechaInicio || filtros.fechaFin) {
-      doc.fontSize(9).font("Helvetica-Bold").text("Filtros aplicados:", { underline: true });
-      if (filtros.fechaInicio) {
-        doc.font("Helvetica").text(`Desde: ${new Date(filtros.fechaInicio).toLocaleDateString("es-CL")}`);
-      }
-      if (filtros.fechaFin) {
-        doc.text(`Hasta: ${new Date(filtros.fechaFin).toLocaleDateString("es-CL")}`);
-      }
-      doc.moveDown(1);
+    // Filtro por tipo de usuario
+    if (filtros.tipoUsuario) {
+      queryBuilder.andWhere("tipoUsuario.Descripcion = :tipoUsuario", {
+        tipoUsuario: filtros.tipoUsuario
+      });
     }
 
-    // Resumen
-    doc.fontSize(11).font("Helvetica-Bold").text(`Total de Solicitudes: ${solicitudes.length}`);
-    doc.moveDown(1);
+    // Filtro por cargo
+    if (filtros.cargo) {
+      queryBuilder.andWhere("cargo.Nombre_Cargo = :cargo", {
+        cargo: filtros.cargo
+      });
+    }
 
-    // Tabla de solicitudes
+    const solicitudes = await queryBuilder.getMany();
+
+    // Crear PDF en landscape para que quepan las 7 columnas
+    const doc = new PDFDocument({ size: "letter", layout: "landscape", margin: 30 });
+
+    // Encabezado
+    dibujarEncabezadoInstitucional(doc, "REPORTE DE SOLICITUDES", true);
+
+    // Filtros aplicados
+    const filtrosTexto = [];
+    if (filtros.fechaInicio) filtrosTexto.push(`Desde: ${new Date(filtros.fechaInicio).toLocaleDateString("es-CL")}`);
+    if (filtros.fechaFin) filtrosTexto.push(`Hasta: ${new Date(filtros.fechaFin).toLocaleDateString("es-CL")}`);
+    if (filtros.tipoUsuario) filtrosTexto.push(`Tipo: ${filtros.tipoUsuario}`);
+    if (filtros.cargo) filtrosTexto.push(`Cargo: ${filtros.cargo}`);
+
+    if (filtrosTexto.length > 0) {
+      doc.fontSize(8).font("Helvetica-Bold").text("Filtros: ", { continued: true });
+      doc.font("Helvetica").text(filtrosTexto.join(" | "));
+      doc.moveDown(0.3);
+    }
+
+    doc.fontSize(9).font("Helvetica-Bold").text(`Total de Solicitudes: ${solicitudes.length}`);
+    doc.moveDown(0.5);
+
+    // Definir columnas de la tabla
+    const pageWidth = doc.page.width - 60; // margins
+    const cols = [
+      { label: "RUT", width: pageWidth * 0.10 },
+      { label: "Usuario", width: pageWidth * 0.15 },
+      { label: "ID Equipo", width: pageWidth * 0.09 },
+      { label: "Fecha Solicitud", width: pageWidth * 0.11 },
+      { label: "Motivo", width: pageWidth * 0.20 },
+      { label: "Resultado", width: pageWidth * 0.12 },
+      { label: "Motivo Rechazo", width: pageWidth * 0.23 },
+    ];
+
+    const startX = 30;
+    const rowHeight = 22;
+
+    // Función para dibujar encabezado de tabla
+    function drawTableHeader(y) {
+      doc.rect(startX, y, pageWidth, rowHeight).fill("#003366");
+      let x = startX;
+      cols.forEach(col => {
+        doc.fill("white").fontSize(7).font("Helvetica-Bold")
+          .text(col.label, x + 3, y + 6, { width: col.width - 6, align: "left" });
+        x += col.width;
+      });
+      return y + rowHeight;
+    }
+
+    let y = drawTableHeader(doc.y);
+
+    // Dibujar filas
     solicitudes.forEach((solicitud, index) => {
-      if (doc.y > 700) {
+      if (y > doc.page.height - 60) {
         doc.addPage();
+        y = 30;
+        y = drawTableHeader(y);
       }
 
-      const estado = obtenerEstadoSolicitud(solicitud);
-      const tipo = solicitud.Fecha_inicio_sol && solicitud.Fecha_termino_sol ? "Largo Plazo" : "Diaria";
+      const estadoDetallado = obtenerEstadoSolicitud(solicitud);
+      const resultado = estadoDetallado === "Rechazado" ? "Rechazado" 
+        : estadoDetallado === "Pendiente" ? "Pendiente" 
+        : "Aprobado";
+      const motivoRechazo = resultado === "Rechazado" 
+        ? (solicitud.prestamo?.autorizacion?.Obs_Aut || "Sin detalle")
+        : "-";
 
-      doc
-        .fontSize(9)
-        .font("Helvetica-Bold")
-        .text(`${index + 1}. Solicitud #${solicitud.ID_Solicitud}`, { continued: false })
-        .font("Helvetica")
-        .text(`Usuario: ${solicitud.usuario?.Nombre_Completo || ''}`)
-        .text(`RUT: ${solicitud.Rut}`)
-        .text(`Equipo: ${solicitud.ID_Num_Inv} - ${solicitud.equipo?.Modelo || "N/A"}`)
-        .text(`Tipo: ${tipo}`)
-        .text(`Estado: ${estado}`)
-        .text(`Fecha Solicitud: ${new Date(solicitud.Fecha_Sol).toLocaleString("es-CL")}`)
-        .text(`Motivo: ${solicitud.Motivo_Sol || "No especificado"}`)
-        .moveDown(0.5);
+      const bgColor = index % 2 === 0 ? "#f8f9fa" : "#ffffff";
+      doc.rect(startX, y, pageWidth, rowHeight).fill(bgColor);
+
+      const rowData = [
+        solicitud.Rut || "",
+        solicitud.usuario?.Nombre_Completo || "",
+        solicitud.ID_Num_Inv || "",
+        new Date(solicitud.Fecha_Sol).toLocaleDateString("es-CL"),
+        solicitud.Motivo_Sol || "No especificado",
+        resultado,
+        motivoRechazo,
+      ];
+
+      let x = startX;
+      rowData.forEach((text, i) => {
+        doc.fill("#333333").fontSize(7).font("Helvetica")
+          .text(String(text), x + 3, y + 5, { width: cols[i].width - 6, align: "left", lineBreak: false });
+        x += cols[i].width;
+      });
+
+      y += rowHeight;
     });
 
     return doc;
@@ -161,11 +223,14 @@ export async function generarReporteSolicitudesCSV(filtros = {}) {
     let queryBuilder = solicitudRepository
       .createQueryBuilder("solicitud")
       .leftJoinAndSelect("solicitud.usuario", "usuario")
+      .leftJoinAndSelect("usuario.tipoUsuario", "tipoUsuario")
+      .leftJoinAndSelect("usuario.cargo", "cargo")
       .leftJoinAndSelect("solicitud.equipo", "equipo")
       .leftJoinAndSelect("solicitud.prestamo", "prestamo")
       .leftJoinAndSelect("prestamo.tieneEstados", "tieneEstados")
       .leftJoinAndSelect("tieneEstados.estadoPrestamo", "estadoPrestamo")
-      .orderBy("solicitud.Fecha_Sol", "DESC");
+      .leftJoinAndSelect("prestamo.autorizacion", "autorizacion")
+      .orderBy("solicitud.Rut", "ASC");
 
     if (filtros.fechaInicio) {
       queryBuilder.andWhere("solicitud.Fecha_Sol >= :fechaInicio", { 
@@ -179,24 +244,39 @@ export async function generarReporteSolicitudesCSV(filtros = {}) {
       });
     }
 
+    if (filtros.tipoUsuario) {
+      queryBuilder.andWhere("tipoUsuario.Descripcion = :tipoUsuario", {
+        tipoUsuario: filtros.tipoUsuario
+      });
+    }
+
+    if (filtros.cargo) {
+      queryBuilder.andWhere("cargo.Nombre_Cargo = :cargo", {
+        cargo: filtros.cargo
+      });
+    }
+
     const solicitudes = await queryBuilder.getMany();
 
-    // Crear CSV
-    let csv = "ID Solicitud,Usuario,RUT,Equipo,Modelo,Tipo,Estado,Fecha Solicitud,Motivo\n";
+    // Crear CSV con las 7 columnas
+    let csv = "RUT,Usuario,ID Equipo,Fecha Solicitud,Motivo,Resultado,Motivo Rechazo\n";
     
     solicitudes.forEach(solicitud => {
-      const estado = obtenerEstadoSolicitud(solicitud);
-      const tipo = solicitud.Fecha_inicio_sol && solicitud.Fecha_termino_sol ? "Largo Plazo" : "Diaria";
+      const estadoDetallado = obtenerEstadoSolicitud(solicitud);
+      const resultado = estadoDetallado === "Rechazado" ? "Rechazado" 
+        : estadoDetallado === "Pendiente" ? "Pendiente" 
+        : "Aprobado";
+      const motivoRechazo = resultado === "Rechazado" 
+        ? (solicitud.prestamo?.autorizacion?.Obs_Aut || "Sin detalle")
+        : "";
       
-      csv += `${solicitud.ID_Solicitud},`;
-      csv += `"${solicitud.usuario?.Nombre_Completo || ''}",`;
       csv += `${solicitud.Rut},`;
+      csv += `"${solicitud.usuario?.Nombre_Completo || ''}",`;
       csv += `${solicitud.ID_Num_Inv},`;
-      csv += `"${solicitud.equipo?.Modelo || "N/A"}",`;
-      csv += `${tipo},`;
-      csv += `${estado},`;
-      csv += `"${new Date(solicitud.Fecha_Sol).toLocaleString("es-CL")}",`;
-      csv += `"${solicitud.Motivo_Sol || "No especificado"}"\n`;
+      csv += `"${new Date(solicitud.Fecha_Sol).toLocaleDateString("es-CL")}",`;
+      csv += `"${(solicitud.Motivo_Sol || "No especificado").replace(/"/g, '""')}",`;
+      csv += `${resultado},`;
+      csv += `"${(motivoRechazo).replace(/"/g, '""')}"\n`;
     });
 
     return csv;
@@ -219,10 +299,11 @@ export async function generarReportePrestamosPDF(filtros = {}) {
       .leftJoinAndSelect("equipo.categoria", "categoria")
       .leftJoinAndSelect("prestamo.solicitudes", "solicitud")
       .leftJoinAndSelect("solicitud.usuario", "usuario")
+      .leftJoinAndSelect("usuario.tipoUsuario", "tipoUsuario")
       .leftJoinAndSelect("prestamo.tieneEstados", "tieneEstados")
       .leftJoinAndSelect("tieneEstados.estadoPrestamo", "estadoPrestamo")
       .leftJoinAndSelect("prestamo.devolucion", "devolucion")
-      .orderBy("prestamo.Fecha_inicio_prestamo", "DESC");
+      .orderBy("prestamo.ID_Prestamo", "ASC");
 
     if (filtros.fechaInicio) {
       queryBuilder.andWhere("prestamo.Fecha_inicio_prestamo >= :fechaInicio", { 
@@ -236,35 +317,101 @@ export async function generarReportePrestamosPDF(filtros = {}) {
       });
     }
 
+    if (filtros.tipoUsuario) {
+      queryBuilder.andWhere("tipoUsuario.Descripcion = :tipoUsuario", {
+        tipoUsuario: filtros.tipoUsuario
+      });
+    }
+
+    if (filtros.rut) {
+      queryBuilder.andWhere("solicitud.Rut = :rut", { rut: filtros.rut });
+    }
+
     const prestamos = await queryBuilder.getMany();
 
-    const doc = new PDFDocument({ size: "letter", margin: 40 });
+    const doc = new PDFDocument({ size: "letter", layout: "landscape", margin: 30 });
 
     // Encabezado
-    dibujarEncabezadoInstitucional(doc, "REPORTE DE PRÉSTAMOS");
+    dibujarEncabezadoInstitucional(doc, "REPORTE DE PRÉSTAMOS", true);
 
-    doc.fontSize(11).font("Helvetica-Bold").text(`Total de Préstamos: ${prestamos.length}`);
-    doc.moveDown(1);
+    // Filtros aplicados
+    const filtrosTexto = [];
+    if (filtros.fechaInicio) filtrosTexto.push(`Desde: ${new Date(filtros.fechaInicio).toLocaleDateString("es-CL")}`);
+    if (filtros.fechaFin) filtrosTexto.push(`Hasta: ${new Date(filtros.fechaFin).toLocaleDateString("es-CL")}`);
+    if (filtros.tipoUsuario) filtrosTexto.push(`Tipo: ${filtros.tipoUsuario}`);
+    if (filtros.rut) filtrosTexto.push(`RUT: ${filtros.rut}`);
+
+    if (filtrosTexto.length > 0) {
+      doc.fontSize(8).font("Helvetica-Bold").text("Filtros: ", { continued: true });
+      doc.font("Helvetica").text(filtrosTexto.join(" | "));
+      doc.moveDown(0.3);
+    }
+
+    doc.fontSize(9).font("Helvetica-Bold").text(`Total de Préstamos: ${prestamos.length}`);
+    doc.moveDown(0.5);
+
+    // Definir columnas de la tabla
+    const pageWidth = doc.page.width - 60;
+    const cols = [
+      { label: "Cod", width: pageWidth * 0.06 },
+      { label: "RUT", width: pageWidth * 0.10 },
+      { label: "Nombre", width: pageWidth * 0.15 },
+      { label: "Equipo", width: pageWidth * 0.09 },
+      { label: "Fecha Inicio", width: pageWidth * 0.11 },
+      { label: "Fecha Fin", width: pageWidth * 0.11 },
+      { label: "Estado", width: pageWidth * 0.12 },
+      { label: "Comentario Recepción", width: pageWidth * 0.26 },
+    ];
+
+    const startX = 30;
+    const rowHeight = 22;
+
+    function drawTableHeader(y) {
+      doc.rect(startX, y, pageWidth, rowHeight).fill("#003366");
+      let x = startX;
+      cols.forEach(col => {
+        doc.fill("white").fontSize(7).font("Helvetica-Bold")
+          .text(col.label, x + 3, y + 6, { width: col.width - 6, align: "left" });
+        x += col.width;
+      });
+      return y + rowHeight;
+    }
+
+    let y = drawTableHeader(doc.y);
 
     prestamos.forEach((prestamo, index) => {
-      if (doc.y > 700) {
+      if (y > doc.page.height - 60) {
         doc.addPage();
+        y = 30;
+        y = drawTableHeader(y);
       }
 
       const estado = obtenerEstadoPrestamo(prestamo);
       const solicitud = prestamo.solicitudes && prestamo.solicitudes.length > 0 ? prestamo.solicitudes[0] : null;
+      const comentarioRecepcion = prestamo.devolucion?.Obs_Dev || "-";
 
-      doc
-        .fontSize(9)
-        .font("Helvetica-Bold")
-        .text(`${index + 1}. Préstamo #${prestamo.ID_Prestamo}`)
-        .font("Helvetica")
-        .text(`Usuario: ${solicitud?.usuario?.Nombre_Completo || ''}`)
-        .text(`Equipo: ${prestamo.ID_Num_Inv}`)
-        .text(`Estado: ${estado}`)
-        .text(`Fecha Inicio: ${new Date(prestamo.Fecha_inicio_prestamo).toLocaleString("es-CL")}`)
-        .text(`Fecha Fin: ${new Date(prestamo.Fecha_fin_prestamo).toLocaleString("es-CL")}`)
-        .moveDown(0.5);
+      const bgColor = index % 2 === 0 ? "#f8f9fa" : "#ffffff";
+      doc.rect(startX, y, pageWidth, rowHeight).fill(bgColor);
+
+      const rowData = [
+        String(prestamo.ID_Prestamo),
+        solicitud?.Rut || "",
+        solicitud?.usuario?.Nombre_Completo || "",
+        prestamo.ID_Num_Inv || "",
+        prestamo.Fecha_inicio_prestamo ? new Date(prestamo.Fecha_inicio_prestamo).toLocaleDateString("es-CL") : "-",
+        prestamo.Fecha_fin_prestamo ? new Date(prestamo.Fecha_fin_prestamo).toLocaleDateString("es-CL") : "-",
+        estado,
+        comentarioRecepcion,
+      ];
+
+      let x = startX;
+      rowData.forEach((text, i) => {
+        doc.fill("#333333").fontSize(7).font("Helvetica")
+          .text(String(text), x + 3, y + 5, { width: cols[i].width - 6, align: "left", lineBreak: false });
+        x += cols[i].width;
+      });
+
+      y += rowHeight;
     });
 
     return doc;
@@ -284,11 +431,14 @@ export async function generarReportePrestamosCSV(filtros = {}) {
     let queryBuilder = prestamoRepository
       .createQueryBuilder("prestamo")
       .leftJoinAndSelect("prestamo.equipos", "equipo")
+      .leftJoinAndSelect("equipo.categoria", "categoria")
       .leftJoinAndSelect("prestamo.solicitudes", "solicitud")
       .leftJoinAndSelect("solicitud.usuario", "usuario")
+      .leftJoinAndSelect("usuario.tipoUsuario", "tipoUsuario")
       .leftJoinAndSelect("prestamo.tieneEstados", "tieneEstados")
       .leftJoinAndSelect("tieneEstados.estadoPrestamo", "estadoPrestamo")
-      .orderBy("prestamo.Fecha_inicio_prestamo", "DESC");
+      .leftJoinAndSelect("prestamo.devolucion", "devolucion")
+      .orderBy("prestamo.ID_Prestamo", "ASC");
 
     if (filtros.fechaInicio) {
       queryBuilder.andWhere("prestamo.Fecha_inicio_prestamo >= :fechaInicio", { 
@@ -302,21 +452,33 @@ export async function generarReportePrestamosCSV(filtros = {}) {
       });
     }
 
+    if (filtros.tipoUsuario) {
+      queryBuilder.andWhere("tipoUsuario.Descripcion = :tipoUsuario", {
+        tipoUsuario: filtros.tipoUsuario
+      });
+    }
+
+    if (filtros.rut) {
+      queryBuilder.andWhere("solicitud.Rut = :rut", { rut: filtros.rut });
+    }
+
     const prestamos = await queryBuilder.getMany();
 
-    let csv = "ID Prestamo,Usuario,RUT,Equipo,Estado,Fecha Inicio,Fecha Fin\n";
+    let csv = "Cod Prestamo,RUT,Nombre,Equipo,Fecha Inicio,Fecha Fin,Estado,Comentario Recepcion\n";
     
     prestamos.forEach(prestamo => {
       const estado = obtenerEstadoPrestamo(prestamo);
       const solicitud = prestamo.solicitudes && prestamo.solicitudes.length > 0 ? prestamo.solicitudes[0] : null;
+      const comentarioRecepcion = prestamo.devolucion?.Obs_Dev || "";
       
       csv += `${prestamo.ID_Prestamo},`;
+      csv += `${solicitud?.Rut || ""},`;
       csv += `"${solicitud?.usuario?.Nombre_Completo || ''}",`;
-      csv += `${solicitud?.Rut || "N/A"},`;
       csv += `${prestamo.ID_Num_Inv},`;
+      csv += `"${prestamo.Fecha_inicio_prestamo ? new Date(prestamo.Fecha_inicio_prestamo).toLocaleDateString("es-CL") : ""}",`;
+      csv += `"${prestamo.Fecha_fin_prestamo ? new Date(prestamo.Fecha_fin_prestamo).toLocaleDateString("es-CL") : ""}",`;
       csv += `${estado},`;
-      csv += `"${new Date(prestamo.Fecha_inicio_prestamo).toLocaleString("es-CL")}",`;
-      csv += `"${new Date(prestamo.Fecha_fin_prestamo).toLocaleString("es-CL")}"\n`;
+      csv += `"${(comentarioRecepcion).replace(/"/g, '""')}"\n`;
     });
 
     return csv;
@@ -457,253 +619,268 @@ export async function generarReporteEquiposCSV() {
  */
 export async function generarReporteEstadisticasPDF(filtros = {}) {
   try {
-    const solicitudRepository = AppDataSource.getRepository(Solicitud);
-    const prestamoRepository = AppDataSource.getRepository(Prestamo);
-    const equipoRepository = AppDataSource.getRepository(Equipos);
-    const devolucionRepository = AppDataSource.getRepository(Devolucion);
-    const userRepository = AppDataSource.getRepository(User);
-
-    const mesesHistorial = filtros.meses || 6;
-
-    // 1. Obtención de datos exhaustiva
-    const solicitudes = await solicitudRepository
-      .createQueryBuilder("solicitud")
-      .leftJoinAndSelect("solicitud.prestamo", "prestamo")
-      .leftJoinAndSelect("prestamo.tieneEstados", "tieneEstados")
-      .leftJoinAndSelect("tieneEstados.estadoPrestamo", "estadoPrestamo")
-      .getMany();
-
-    const equipos = await equipoRepository
-      .createQueryBuilder("equipo")
-      .leftJoinAndSelect("equipo.categoria", "categoria")
-      .getMany();
-
-    const usuarios = await userRepository
-      .createQueryBuilder("user")
-      .leftJoinAndSelect("user.tipoUsuario", "tipoUsuario")
-      .getMany();
-
-    // Solicitudes por mes
-    const fechaCorte = new Date();
-    fechaCorte.setMonth(fechaCorte.getMonth() - mesesHistorial);
-    fechaCorte.setDate(1);
-
-    const solicitudesPorMes = await solicitudRepository
-      .createQueryBuilder("solicitud")
-      .select("DATE_TRUNC('month', solicitud.Fecha_Sol)", "mes")
-      .addSelect("COUNT(*)", "cantidad")
-      .where("solicitud.Fecha_Sol >= :fecha", { fecha: fechaCorte })
-      .groupBy("DATE_TRUNC('month', solicitud.Fecha_Sol)")
-      .orderBy("DATE_TRUNC('month', solicitud.Fecha_Sol)", "ASC")
-      .getRawMany();
-
-    // Solicitudes por carrera
-    const solicitudesPorCarreraRaw = await solicitudRepository
-      .createQueryBuilder("solicitud")
-      .leftJoin("solicitud.usuario", "usuario")
-      .leftJoin("usuario.carrera", "carrera")
-      .select("COALESCE(carrera.Nombre_Carrera, 'Personal/Docente')", "carrera")
-      .addSelect("COUNT(*)", "cantidad")
-      .groupBy("carrera.Nombre_Carrera")
-      .orderBy("COUNT(*)", "DESC")
-      .getRawMany();
-
-    // 2. Procesamiento de métricas
-    const totalSolicitudes = solicitudes.length;
-    const totalEquipos = equipos.length;
-    const equiposDisponibles = equipos.filter(eq => eq.Disponible).length;
-    
-    const estados = { pendientes: 0, listoParaEntregar: 0, entregados: 0, devueltos: 0, rechazados: 0 };
-    solicitudes.forEach(sol => {
-      const e = obtenerEstadoSolicitud(sol);
-      if (e === "Pendiente") estados.pendientes++;
-      else if (e === "Listo para Entregar") estados.listoParaEntregar++;
-      else if (e === "Listo para recepcionar") estados.entregados++;
-      else if (e === "Devuelto") estados.devueltos++;
-      else if (e === "Rechazado") estados.rechazados++;
-    });
-
-    const categorias = {};
-    equipos.forEach(eq => {
-      const cat = eq.categoria?.Descripcion || "Otro";
-      categorias[cat] = (categorias[cat] || 0) + 1;
-    });
-
+    const datos = await obtenerDatosGraficos(filtros);
     const doc = new PDFDocument({ size: "letter", margin: 40 });
 
-    // --- PÁGINA 1: RESUMEN EJECUTIVO ---
-    dibujarEncabezadoInstitucional(doc, "REPORTE ESTADÍSTICO DE GESTIÓN");
-    
-    doc.fontSize(16).font("Helvetica-Bold").fillColor("#1e293b").text("Resumen Ejecutivo", { underline: true });
-    doc.moveDown(1);
+    // --- CONFIGURACIÓN DE ESTILO ---
+    const primaryBlue = "#003366"; // UBB Blue
+    const accentBlue = "#3b82f6";
+    const accentOrange = "#f59e0b";
+    const accentTeal = "#10b981";
+    const accentPurple = "#8b5cf6";
+    const accentRed = "#e11d48";
+    const lightBg = "#f8fafc";
+    const textColor = "#1e293b";
+    const grayText = "#64748b";
 
-    // Grid de KPIs Básicos
+    // --- PÁGINA 1: DASHBOARD DE ESTADÍSTICAS ---
+    dibujarEncabezadoInstitucional(doc, "DASHBOARD ESTRATÉGICO DE GESTIÓN");
+
+    // FILTROS APLICADOS (Subtítulo informativo)
+    if (filtros.fechaInicio || filtros.fechaFin || filtros.carrera || filtros.categoria) {
+      doc.fontSize(9).fillColor(grayText).font("Helvetica-Oblique");
+      let filtroStr = "Filtros aplicados: ";
+      if (filtros.fechaInicio) filtroStr += `Desde ${filtros.fechaInicio} `;
+      if (filtros.fechaFin) filtroStr += `Hasta ${filtros.fechaFin} `;
+      if (filtros.carrera) filtroStr += `| Carrera: ${filtros.carrera} `;
+      if (filtros.categoria) filtroStr += `| Categoría: ${filtros.categoria} `;
+      doc.text(filtroStr, 40, doc.y).moveDown(1.5);
+    } else {
+      doc.moveDown(1);
+    }
+
+    // 1. GRID DE KPIs (5 TARJETAS)
     const startY = doc.y;
-    const boxWidth = 250;
-    const boxHeight = 60;
+    const cardW = 100;
+    const cardH = 70;
+    const gap = 8;
 
-    // Caja 1: Solicitudes
-    doc.rect(40, startY, boxWidth, boxHeight).fill("#eff6ff").stroke("#3b82f6");
-    doc.fillColor("#1e40af").fontSize(12).font("Helvetica-Bold").text("TOTAL SOLICITUDES", 50, startY + 15);
-    doc.fontSize(20).text(totalSolicitudes.toString(), 50, startY + 32);
+    const kpis = [
+      { label: "SOLICITUDES", val: Object.values(datos.solicitudesPorEstado).reduce((a,b)=>a+b, 0), color: accentBlue, bg: "#eff6ff" },
+      { label: "PRÉSTAMOS ACT", val: datos.solicitudesPorEstado.entregados || 0, color: accentTeal, bg: "#f0fdf4" },
+      { label: "INVENTARIO", val: Object.values(datos.equiposPorCategoria).reduce((a,b)=>a+b, 0), color: accentOrange, bg: "#fff7ed" },
+      { label: "USUARIOS REG", val: datos.totalUsuariosSistema || 0, color: accentPurple, bg: "#f5f3ff" },
+      { label: "SANCIONADOS", val: datos.totalSancionados || 0, color: accentRed, bg: "#fff1f2" }
+    ];
 
-    // Caja 2: Equipos
-    doc.rect(305, startY, boxWidth, boxHeight).fill("#fff7ed").stroke("#f97316");
-    doc.fillColor("#9a3412").fontSize(12).font("Helvetica-Bold").text("INVENTARIO TOTAL", 315, startY + 15);
-    doc.fontSize(20).text(totalEquipos.toString(), 315, startY + 32);
+    kpis.forEach((kpi, i) => {
+      const x = 40 + (i * (cardW + gap));
+      // Borde y Fondo de tarjeta
+      doc.roundedRect(x, startY, cardW, cardH, 8).fillAndStroke(kpi.bg, kpi.color);
+      // Título
+      doc.fillColor(kpi.color).fontSize(7).font("Helvetica-Bold").text(kpi.label, x + 5, startY + 12, { width: cardW - 10, align: "center" });
+      // Valor
+      doc.fontSize(18).text(kpi.val.toString(), x + 5, startY + 30, { width: cardW - 10, align: "center" });
+    });
 
-    doc.moveDown(4);
+    doc.y = startY + cardH + 25;
 
-    // Tabla de Estados
-    doc.fillColor("#1e293b").fontSize(14).font("Helvetica-Bold").text("Estado Actual de Solicitudes");
+    // 2. TENDENCIA MENSUAL (GRAFICO DE LINEAS ESTILIZADO)
+    doc.fillColor(textColor).fontSize(14).font("Helvetica-Bold").text("Tendencia de Solicitudes Mensuales");
+    doc.moveDown(0.5);
+
+    if (datos.solicitudesPorMes && datos.solicitudesPorMes.length > 0) {
+      const gX = 60, gY = doc.y + 10, gW = 480, gH = 120;
+      doc.rect(gX, gY, gW, gH).fillAndStroke("#ffffff", "#e2e8f0");
+      
+      const maxVal = Math.max(...datos.solicitudesPorMes.map(m => parseInt(m.cantidad)), 1);
+      const stepX = gW / (datos.solicitudesPorMes.length || 1);
+      
+      doc.strokeColor(accentBlue).lineWidth(2);
+      datos.solicitudesPorMes.forEach((p, i) => {
+        const x = gX + (i * stepX) + (stepX/2);
+        const y = gY + gH - (parseInt(p.cantidad) / maxVal) * (gH - 20) - 10;
+        if (i === 0) doc.moveTo(x, y); else doc.lineTo(x, y);
+        doc.circle(x, y, 2.5).fill(accentBlue);
+        // Label mes
+        const labelMes = new Date(p.mes).toLocaleDateString("es-CL", { month: "short" });
+        doc.fillColor(grayText).fontSize(7).font("Helvetica").text(labelMes, x - 10, gY + gH + 5);
+      });
+      doc.stroke();
+      doc.y = gY + gH + 30;
+    } else {
+        doc.fillColor(grayText).fontSize(10).text("No hay historial disponible para el rango seleccionado.").moveDown(2);
+    }
+
+    // 3. ESTADO DE SOLICITUDES (TABLA Y MINI BARRAS)
+    doc.fillColor(textColor).fontSize(14).font("Helvetica-Bold").text("Estado Actual de Solicitudes");
     doc.moveDown(0.5);
     
     const tableTop = doc.y;
-    const col1 = 60, col2 = 250, col3 = 350;
-    
-    doc.rect(40, tableTop, 520, 20).fill("#f1f5f9");
-    doc.fillColor("#475569").fontSize(10).font("Helvetica-Bold");
-    doc.text("ESTADO", col1, tableTop + 5);
-    doc.text("CANTIDAD", col2, tableTop + 5);
-    doc.text("PORCENTAJE", col3, tableTop + 5);
+    const cols = [40, 200, 300, 400];
+    doc.rect(40, tableTop, 520, 18).fill(primaryBlue);
+    doc.fillColor("#ffffff").fontSize(8).font("Helvetica-Bold");
+    doc.text("ESTADO", cols[0] + 10, tableTop + 5);
+    doc.text("CANTIDAD", cols[1], tableTop + 5);
+    doc.text("DISTRIBUCIÓN", cols[2], tableTop + 5);
 
-    let currentY = tableTop + 20;
-    const listaEstados = [
-      { n: "Pendientes", v: estados.pendientes, c: "#FFD93D" },
-      { n: "Listo para Entregar", v: estados.listoParaEntregar, c: "#36A2EB" },
-      { n: "Listo para recepcionar", v: estados.entregados, c: "#4BC0C0" },
-      { n: "Devueltos", v: estados.devueltos, c: "#9966FF" },
-      { n: "Rechazados", v: estados.rechazados, c: "#FF6384" }
+    let rowY = tableTop + 18;
+    const ests = [
+      { n: "Pendientes", v: datos.solicitudesPorEstado.pendientes, c: "#FFD93D" },
+      { n: "Listo para Entregar", v: datos.solicitudesPorEstado.listoParaEntregar, c: accentBlue },
+      { n: "Listo para recepcionar", v: datos.solicitudesPorEstado.entregados, c: accentTeal },
+      { n: "Devueltos", v: datos.solicitudesPorEstado.devueltos, c: accentPurple },
+      { n: "Rechazados", v: datos.solicitudesPorEstado.rechazados, c: accentRed }
     ];
 
-    listaEstados.forEach(item => {
-      const pct = ((item.v / (totalSolicitudes || 1)) * 100).toFixed(1) + "%";
-      doc.fillColor("#1e293b").font("Helvetica").fontSize(10);
-      doc.text(item.n, col1, currentY + 7);
-      doc.text(item.v.toString(), col2, currentY + 7);
-      doc.text(pct, col3, currentY + 7);
+    const totalSols = Object.values(datos.solicitudesPorEstado).reduce((a,b)=>a+b, 0) || 1;
+    ests.forEach(item => {
+      doc.fillColor(textColor).font("Helvetica").fontSize(9).text(item.n, cols[0] + 10, rowY + 6);
+      doc.text(item.v.toString(), cols[1], rowY + 6);
+      // Barra
+      const barW = (item.v / totalSols) * 150;
+      doc.rect(cols[2], rowY + 8, Math.max(barW, 1), 6).fill(item.c);
+      doc.fillColor(grayText).text(`${((item.v/totalSols)*100).toFixed(1)}%`, cols[2] + 160, rowY + 6);
       
-      // Mini barra indicadora
-      doc.rect(col3 + 80, currentY + 8, (item.v / (totalSolicitudes || 1)) * 100, 8).fill(item.c);
-      
-      doc.moveTo(40, currentY + 25).lineTo(560, currentY + 25).stroke("#e2e8f0");
-      currentY += 25;
+      doc.strokeColor("#e2e8f0").moveTo(40, rowY + 20).lineTo(560, rowY + 20).stroke();
+      rowY += 20;
     });
 
-    // --- PÁGINA 2: TENDENCIAS ---
+    // --- PÁGINA 2: DESGLOSE POR CARRERA E INVENTARIO ---
     doc.addPage();
-    dibujarEncabezadoInstitucional(doc, "ANÁLISIS DE TENDENCIAS");
+    dibujarEncabezadoInstitucional(doc, "DETALLE POR CARRERA E INVENTARIO");
+
+    // DISTRIBUCIÓN POR CARRERA (DIARIO VS LARGO PLAZO)
+    doc.fillColor(textColor).fontSize(13).font("Helvetica-Bold").text("Solicitudes por Carrera (Diario vs Largo Plazo)");
+    doc.moveDown(0.8);
+
+    const carData = Object.entries(datos.solicitudesPorCarrera || {});
+    let carY = doc.y;
     
-    doc.fontSize(14).font("Helvetica-Bold").text(`Historial de Solicitudes (Últimos ${mesesHistorial} meses)`);
-    doc.moveDown(1);
-
-    if (solicitudesPorMes.length > 0) {
-      const chartX = 60;
-      const chartY = 180;
-      const chartW = 480;
-      const chartH = 150;
-      const maxQty = Math.max(...solicitudesPorMes.map(m => parseInt(m.cantidad)), 1);
-
-      // Ejes
-      doc.strokeColor("#cbd5e1").lineWidth(1);
-      doc.moveTo(chartX, chartY).lineTo(chartX, chartY + chartH).lineTo(chartX + chartW, chartY + chartH).stroke();
-
-      // Línea de tendencia
-      doc.strokeColor("#3b82f6").lineWidth(2);
-      const stepX = chartW / (solicitudesPorMes.length || 1);
-      
-      solicitudesPorMes.forEach((m, i) => {
-        const x = chartX + (i * stepX) + (stepX / 2);
-        const y = chartY + chartH - (parseInt(m.cantidad) / maxQty) * chartH;
-        
-        if (i === 0) doc.moveTo(x, y); else doc.lineTo(x, y);
-        
-        // Punto
-        doc.circle(x, y, 3).fill("#3b82f6");
-        
-        // Etiqueta Mes
-        const date = new Date(m.mes);
-        const label = date.toLocaleDateString("es-ES", { month: "short" });
-        doc.fillColor("#64748b").fontSize(8).text(label, x - 10, chartY + chartH + 10);
-        // Valor sobre el punto
-        doc.fillColor("#1e293b").fontSize(8).font("Helvetica-Bold").text(m.cantidad.toString(), x - 5, y - 12);
-      });
-      doc.stroke();
+    if (carData.length > 0) {
+       carData.slice(0, 12).forEach(([carrera, tipos]) => {
+         const tDiario = tipos?.diario || 0;
+         const tLargo = tipos?.largoPlazo || 0;
+         const tTotal = tDiario + tLargo;
+         
+         const label = carrera.length > 40 ? carrera.substring(0, 37) + "..." : carrera;
+         doc.fillColor(textColor).fontSize(8).font("Helvetica-Bold").text(label, 40, carY);
+         
+         // Barras apiladas
+         const maxPageW = 300;
+         const maxValCar = Math.max(...carData.map(c => (c[1]?.diario || 0) + (c[1]?.largoPlazo || 0)), 1);
+         const scale = maxPageW / maxValCar;
+         
+         const wD = tDiario * scale;
+         const wL = tLargo * scale;
+         
+         doc.rect(200, carY - 2, wD, 10).fill(accentBlue);
+         doc.rect(200 + wD, carY - 2, wL, 10).fill(accentPurple);
+         doc.fillColor(grayText).fontSize(7).text(`${tTotal} total (${tDiario}D / ${tLargo}L)`, 200 + wD + wL + 5, carY);
+         
+         carY += 18;
+       });
+       // Leyenda
+       doc.rect(40, carY + 10, 8, 8).fill(accentBlue);
+       doc.fillColor(grayText).fontSize(7).text("Diario", 52, carY + 11);
+       doc.rect(100, carY + 10, 8, 8).fill(accentPurple);
+       doc.text("Largo Plazo", 112, carY + 11);
     }
 
-    // Distribución por Carrera (Barras Horizontales)
-    doc.moveDown(12);
-    doc.fillColor("#1e293b").fontSize(14).font("Helvetica-Bold").text("Distribución por Carrera / Programa");
+    // DISTRIBUCIÓN DE INVENTARIO
+    doc.y = carY + 40;
+    doc.fillColor(textColor).fontSize(13).font("Helvetica-Bold").text("Resumen de Inventario por Categoría");
     doc.moveDown(0.5);
 
-    const barStartX = 180;
-    const barMaxW = 350;
-    let barY = doc.y + 10;
+    const invTop = doc.y;
+    doc.rect(40, invTop, 520, 18).fillAndStroke(lightBg, "#e2e8f0");
+    doc.fillColor(primaryBlue).fontSize(8).font("Helvetica-Bold").text("CATEGORÍA", 50, invTop + 5);
+    doc.text("EQUIPOS", 450, invTop + 5);
 
-    solicitudesPorCarreraRaw.slice(0, 8).forEach(row => {
-      const label = row.carrera.length > 25 ? row.carrera.substring(0, 22) + "..." : row.carrera;
-      const val = parseInt(row.cantidad);
-      const width = (val / (totalSolicitudes || 1)) * barMaxW;
-
-      doc.fillColor("#475569").fontSize(9).font("Helvetica").text(label, 40, barY + 5, { width: 130 });
-      doc.rect(barStartX, barY, Math.max(width, 2), 15).fill("#60a5fa");
-      doc.fillColor("#1e293b").fontSize(9).font("Helvetica-Bold").text(val.toString(), barStartX + width + 5, barY + 5);
-      
-      barY += 25;
+    let iY = invTop + 18;
+    Object.entries(datos.equiposPorCategoria || {}).sort((a,b)=>b[1]-a[1]).forEach(([cat, val]) => {
+       doc.fillColor(textColor).font("Helvetica").fontSize(9).text(cat, 50, iY + 6);
+       doc.text(val.toString(), 450, iY + 6);
+       doc.strokeColor("#f1f5f9").moveTo(40, iY + 20).lineTo(560, iY + 20).stroke();
+       iY += 20;
     });
 
-    // --- PÁGINA 3: INVENTARIO Y CATEGORÍAS ---
+    // --- PÁGINA 3: ANÁLISIS DE USUARIOS (GRÁFICOS DE TORTA) ---
     doc.addPage();
-    dibujarEncabezadoInstitucional(doc, "ANÁLISIS DE INVENTARIO");
+    dibujarEncabezadoInstitucional(doc, "ANÁLISIS DE DISTRIBUCIÓN DE USUARIOS");
 
-    doc.fontSize(14).font("Helvetica-Bold").text("Distribución de Equipos por Categoría");
+    const uTotalAlumnos = Object.values(datos.usuariosPorTipo?.alumnos || {}).reduce((a,b)=>a+b, 0);
+    const uTotalProfesores = Object.values(datos.usuariosPorTipo?.profesores || {}).reduce((a,b)=>a+b, 0);
+    const uTotalGeneral = uTotalAlumnos + uTotalProfesores || 1;
+
+    // 1. DISTRIBUCIÓN GENERAL (Gráfico Circular)
+    doc.fillColor(textColor).fontSize(13).font("Helvetica-Bold").text("Distribución General: Alumnos vs Profesores", 40, doc.y);
     doc.moveDown(1);
+    
+    let pieY = doc.y + 60;
+    let pieX = 150;
+    const radius = 60;
 
-    const catItems = Object.entries(categorias).sort((a,b) => b[1] - a[1]);
-    let catY = doc.y;
-
-    catItems.forEach(([name, count], i) => {
-      const pct = ((count / (totalEquipos || 1)) * 100).toFixed(1);
-      
-      doc.fillColor("#f8fafc").rect(40, catY, 520, 30).fill();
-      doc.fillColor("#1e293b").font("Helvetica-Bold").fontSize(10).text(name, 55, catY + 10);
-      doc.font("Helvetica").text(`${count} unidades (${pct}%)`, 400, catY + 10);
-      
-      doc.strokeColor("#e2e8f0").moveTo(40, catY + 30).lineTo(560, catY + 30).stroke();
-      catY += 30;
-    });
-
-    // --- PÁGINA 4: USUARIOS ---
-    doc.addPage();
-    dibujarEncabezadoInstitucional(doc, "ANÁLISIS DE USUARIOS");
-
-    const userStats = {
-      alumnos: usuarios.filter(u => u.tipoUsuario?.Descripcion === "Alumno").length,
-      profesores: usuarios.filter(u => u.tipoUsuario?.Descripcion === "Profesor").length
-    };
-
-    doc.fontSize(14).font("Helvetica-Bold").text("Distribución de Usuarios (Solicitantes)");
-    doc.moveDown(1);
-
-    const userTypes = [
-      { n: "Alumnos", v: userStats.alumnos, c: "#3b82f6" },
-      { n: "Profesores", v: userStats.profesores, c: "#f59e0b" }
+    const dataGeneral = [
+      { label: "Alumnos", value: uTotalAlumnos, color: accentBlue },
+      { label: "Profesores", value: uTotalProfesores, color: accentOrange }
     ];
 
-    const totalUserStats = userStats.alumnos + userStats.profesores;
-    let userY = doc.y;
-
-    userTypes.forEach(type => {
-      const pct = ((type.v / (totalUserStats || 1)) * 100).toFixed(1) + "%";
-      
-      doc.fillColor("#f8fafc").rect(40, userY, 520, 40).fill();
-      doc.fillColor("#1e293b").font("Helvetica-Bold").fontSize(11).text(type.n, 60, userY + 15);
-      doc.font("Helvetica").text(`${type.v} registrados (${pct})`, 350, userY + 15);
-      
-      doc.rect(60, userY + 32, (type.v / (totalUserStats || 1)) * 480, 4).fill(type.c);
-      
-      userY += 50;
+    let currentAngle = -90;
+    dataGeneral.forEach(item => {
+      const sliceAngle = (item.value / uTotalGeneral) * 360;
+      if (sliceAngle > 1) {
+        doc.fillColor(item.color);
+        drawPieSlice(doc, pieX, pieY, radius, currentAngle, currentAngle + sliceAngle);
+        currentAngle += sliceAngle;
+      }
     });
+
+    // Leyenda General
+    let legY = pieY - 20;
+    dataGeneral.forEach(item => {
+      doc.rect(pieX + 100, legY, 10, 10).fill(item.color);
+      doc.fillColor(textColor).fontSize(9).font("Helvetica").text(`${item.label}: ${item.value} (${((item.value/uTotalGeneral)*100).toFixed(1)}%)`, pieX + 115, legY + 1);
+      legY += 20;
+    });
+
+    // 2. DISTRIBUCIÓN DETALLADA (Gráfico Circular)
+    doc.y = pieY + radius + 40;
+    doc.fillColor(textColor).fontSize(13).font("Helvetica-Bold").text("Distribución Detallada por Carrera / Cargo");
+    doc.moveDown(1);
+
+    const detailData = [];
+    Object.entries(datos.usuariosPorTipo?.alumnos || {}).forEach(([k, v]) => detailData.push({ label: `Alumno: ${k}`, value: v }));
+    Object.entries(datos.usuariosPorTipo?.profesores || {}).forEach(([k, v]) => detailData.push({ label: `Prof: ${k}`, value: v }));
+    
+    const topDetail = detailData.sort((a,b) => b.value - a.value).slice(0, 8);
+    const totalTop = topDetail.reduce((a,b) => a + b.value, 0) || 1;
+
+    pieY = doc.y + 60;
+    currentAngle = -90;
+    const palette = [accentBlue, accentOrange, accentTeal, accentPurple, accentRed, "#6366f1", "#ec4899", "#06b6d4"];
+
+    topDetail.forEach((item, i) => {
+      const color = palette[i % palette.length];
+      const sliceAngle = (item.value / totalTop) * 360;
+      if (sliceAngle > 1) {
+        doc.fillColor(color);
+        drawPieSlice(doc, pieX, pieY, radius, currentAngle, currentAngle + sliceAngle);
+        currentAngle += sliceAngle;
+      }
+    });
+
+    // Leyenda Detalle
+    legY = pieY - 50;
+    topDetail.forEach((item, i) => {
+      const color = palette[i % palette.length];
+      doc.rect(pieX + 100, legY, 8, 8).fill(color);
+      const labelShort = item.label.length > 30 ? item.label.substring(0, 27) + "..." : item.label;
+      doc.fillColor(textColor).fontSize(8).font("Helvetica").text(`${labelShort}: ${item.value}`, pieX + 112, legY + 1);
+      legY += 14;
+    });
+
+    doc.y = pieY + radius + 40;
+
+    // --- PIE DE PÁGINA ---
+    const range = doc.bufferedPageRange();
+    for (let i = range.start, end = range.start + range.count, item = 1; i < end; i++, item++) {
+        doc.switchToPage(i);
+        doc.fontSize(8).fillColor(grayText).text(
+            `Página ${item} de ${range.count} | SIREC UBB - Sistema de Gestión de Equipos`,
+            40, 750, { align: "center", width: 532 }
+        );
+    }
 
     return doc;
   } catch (error) {
@@ -800,8 +977,22 @@ export async function generarReporteUsuariosPDF(filtros = {}) {
         tipoUsuario: filtros.tipoUsuario 
       });
     }
+    if (filtros.carrera) {
+      queryBuilder.andWhere("carrera.Nombre_Carrera = :carrera", { 
+        carrera: filtros.carrera 
+      });
+    }
 
     const usuarios = await queryBuilder.getMany();
+
+    // Obtener RUTs con penalizaciones activas
+    const penRepo = AppDataSource.getRepository(TienePenalizacion);
+    const penActivas = await penRepo
+      .createQueryBuilder("tp")
+      .select("tp.Rut")
+      .where("tp.Fecha_Fin IS NULL OR tp.Fecha_Fin > :ahora", { ahora: new Date() })
+      .getMany();
+    const rutsSancionados = new Set(penActivas.map(p => p.Rut));
 
     // Crear PDF en LANDSCAPE
     const doc = new PDFDocument({ size: "letter", layout: "landscape", margin: 40 });
@@ -810,9 +1001,14 @@ export async function generarReporteUsuariosPDF(filtros = {}) {
     dibujarEncabezadoInstitucional(doc, "REPORTE DE USUARIOS", true);
 
     // Filtros aplicados
-    if (filtros.tipoUsuario) {
+    if (filtros.tipoUsuario || filtros.carrera) {
       doc.fontSize(9).font("Helvetica-Bold").text("Filtros aplicados:", { underline: true });
-      doc.font("Helvetica").text(`Tipo de Usuario: ${filtros.tipoUsuario}`);
+      if (filtros.tipoUsuario) {
+        doc.font("Helvetica").text(`Tipo de Usuario: ${filtros.tipoUsuario}`);
+      }
+      if (filtros.carrera) {
+        doc.font("Helvetica").text(`Carrera: ${filtros.carrera}`);
+      }
       doc.moveDown(0.5);
     }
 
@@ -826,10 +1022,10 @@ export async function generarReporteUsuariosPDF(filtros = {}) {
       .text(`Total de Usuarios: ${usuarios.length} | Alumnos: ${alumnosCount} | Profesores: ${profesoresCount} | Administradores: ${adminsCount}`)
       .moveDown(1);
 
-    // Configuración de la tabla
+    // Configuración de la tabla - 7 columnas
     const tableTop = doc.y;
-    const colWidths = [30, 190, 85, 205, 80, 122]; // Total: 712 para landscape letter
-    const colNames = ["#", "Nombre Completo", "RUT", "Email", "Tipo", "Carrera / Cargo"];
+    const colWidths = [28, 155, 85, 164, 70, 140, 70]; // Total: 712
+    const colNames = ["#", "Nombre Completo", "RUT", "Email", "Tipo", "Carrera / Cargo", "Sancionado"];
     const startX = 40;
     let currentY = tableTop;
 
@@ -858,27 +1054,26 @@ export async function generarReporteUsuariosPDF(filtros = {}) {
         ? usuario.cargo?.Desc_Cargo || "Sin cargo"
         : "-";
 
-      // Determinar altura necesaria (por si el texto se envuelve)
+      const sancionado = rutsSancionados.has(usuario.Rut) ? "Sí" : "No";
+
       const data = [
         (index + 1).toString(),
         usuario.Nombre_Completo || "N/A",
         usuario.Rut || "N/A",
         usuario.Correo || "N/A",
         usuario.tipoUsuario?.Descripcion || "N/A",
-        carreraOCargo
+        carreraOCargo,
+        sancionado
       ];
 
-      // Altura mínima de fila
       const rowHeight = 25;
 
-      // Verificar si hay espacio en la página (Landscape: 612 height)
       if (currentY + rowHeight > 550) {
         doc.addPage({ size: "letter", layout: "landscape", margin: 40 });
         const nextY = dibujarEncabezadoInstitucional(doc, "REPORTE DE USUARIOS", true);
         currentY = drawHeader(nextY);
       }
 
-      // Dibujar bordes de celda y texto
       doc.font("Helvetica").fontSize(8).fillColor("#334155");
       let x = startX;
       data.forEach((text, i) => {
@@ -920,11 +1115,25 @@ export async function generarReporteUsuariosCSV(filtros = {}) {
         tipoUsuario: filtros.tipoUsuario 
       });
     }
+    if (filtros.carrera) {
+      queryBuilder.andWhere("carrera.Nombre_Carrera = :carrera", { 
+        carrera: filtros.carrera 
+      });
+    }
 
     const usuarios = await queryBuilder.getMany();
 
+    // Obtener RUTs con penalizaciones activas
+    const penRepo = AppDataSource.getRepository(TienePenalizacion);
+    const penActivas = await penRepo
+      .createQueryBuilder("tp")
+      .select("tp.Rut")
+      .where("tp.Fecha_Fin IS NULL OR tp.Fecha_Fin > :ahora", { ahora: new Date() })
+      .getMany();
+    const rutsSancionados = new Set(penActivas.map(p => p.Rut));
+
     // Crear CSV
-    let csv = "\uFEFFRUT,Nombre Completo,Email,Tipo Usuario,Carrera/Cargo\n";
+    let csv = "\uFEFFRUT,Nombre Completo,Email,Tipo Usuario,Carrera/Cargo,Sancionado\n";
     
     usuarios.forEach(usuario => {
       const carreraOCargo = usuario.tipoUsuario?.Cod_TipoUsuario === 2 
@@ -932,12 +1141,14 @@ export async function generarReporteUsuariosCSV(filtros = {}) {
         : usuario.tipoUsuario?.Cod_TipoUsuario === 3 
         ? usuario.cargo?.Desc_Cargo || "Sin cargo"
         : "-";
+      const sancionado = rutsSancionados.has(usuario.Rut) ? "Sí" : "No";
       
       csv += `${usuario.Rut},`;
       csv += `"${usuario.Nombre_Completo}",`;
       csv += `${usuario.Correo},`;
       csv += `"${usuario.tipoUsuario?.Descripcion || "N/A"}",`;
-      csv += `"${carreraOCargo}"\n`;
+      csv += `"${carreraOCargo}",`;
+      csv += `${sancionado}\n`;
     });
 
     return csv;
@@ -957,14 +1168,39 @@ export async function obtenerDatosGraficos(filtros = {}) {
     const equiposRepository = AppDataSource.getRepository(Equipos);
     const userRepository = AppDataSource.getRepository(User);
 
-    // Solicitudes por estado
-    const solicitudes = await solicitudRepository
+    // 1. SOLICITUDES (y Préstamos asociados)
+    // Aplicar filtros globales de Fecha, Carrera y Categoría a las solicitudes
+    let solicitudQuery = solicitudRepository
       .createQueryBuilder("solicitud")
+      .leftJoinAndSelect("solicitud.usuario", "usuario")
+      .leftJoinAndSelect("usuario.tipoUsuario", "tipoUsuario")
+      .leftJoinAndSelect("usuario.carrera", "carrera")
+      .leftJoinAndSelect("usuario.cargo", "cargo")
+      .leftJoinAndSelect("solicitud.equipo", "equipo")
+      .leftJoinAndSelect("equipo.categoria", "categoria")
       .leftJoinAndSelect("solicitud.prestamo", "prestamo")
       .leftJoinAndSelect("prestamo.tieneEstados", "tieneEstados")
-      .leftJoinAndSelect("tieneEstados.estadoPrestamo", "estadoPrestamo")
-      .getMany();
+      .leftJoinAndSelect("tieneEstados.estadoPrestamo", "estadoPrestamo");
 
+    if (filtros.fechaInicio) {
+      solicitudQuery.andWhere("solicitud.Fecha_Sol >= :fechaInicio", { fechaInicio: filtros.fechaInicio });
+    }
+    if (filtros.fechaFin) {
+      // Ajustar fin del día para fechaFin
+      const fechaFinAjustada = new Date(filtros.fechaFin);
+      fechaFinAjustada.setHours(23, 59, 59, 999);
+      solicitudQuery.andWhere("solicitud.Fecha_Sol <= :fechaFin", { fechaFin: fechaFinAjustada });
+    }
+    if (filtros.carrera) {
+      solicitudQuery.andWhere("carrera.Nombre_Carrera = :carrera", { carrera: filtros.carrera });
+    }
+    if (filtros.categoria) {
+      solicitudQuery.andWhere("categoria.Descripcion = :categoria", { categoria: filtros.categoria });
+    }
+
+    const solicitudes = await solicitudQuery.getMany();
+
+    // Calcular métricas derivadas de solicitudes filtradas
     const solicitudesPorEstado = {
       pendientes: 0,
       listoParaEntregar: 0,
@@ -973,88 +1209,244 @@ export async function obtenerDatosGraficos(filtros = {}) {
       rechazados: 0
     };
 
-    solicitudes.forEach(sol => {
-      const estado = obtenerEstadoSolicitud(sol);
-      if (estado === "Pendiente") solicitudesPorEstado.pendientes++;
-      else if (estado === "Listo para Entregar") solicitudesPorEstado.listoParaEntregar++;
-      else if (estado === "Listo para recepcionar") solicitudesPorEstado.entregados++;
-      else if (estado === "Devuelto") solicitudesPorEstado.devueltos++;
-      else if (estado === "Rechazado") solicitudesPorEstado.rechazados++;
-    });
-
-    // Solicitudes por tipo
     const solicitudesPorTipo = {
       diarias: 0,
       largoPlazo: 0
     };
 
     solicitudes.forEach(sol => {
-      if (sol.Fecha_inicio_sol && sol.Fecha_termino_sol) {
+      // Estado
+      const estado = obtenerEstadoSolicitud(sol);
+      if (estado === "Pendiente") solicitudesPorEstado.pendientes++;
+      else if (estado === "Listo para Entregar") solicitudesPorEstado.listoParaEntregar++;
+      else if (estado === "Listo para recepcionar") solicitudesPorEstado.entregados++;
+      else if (estado === "Devuelto") solicitudesPorEstado.devueltos++;
+      else if (estado === "Rechazado") solicitudesPorEstado.rechazados++;
+
+      // Tipo (Largo Plazo exige fechas existentes y DISTINTAS)
+      const iniStr = sol.Fecha_inicio_sol ? new Date(sol.Fecha_inicio_sol).toISOString().split('T')[0] : null;
+      const finStr = sol.Fecha_termino_sol ? new Date(sol.Fecha_termino_sol).toISOString().split('T')[0] : null;
+      
+      if (iniStr && finStr && iniStr !== finStr) {
         solicitudesPorTipo.largoPlazo++;
       } else {
         solicitudesPorTipo.diarias++;
       }
     });
 
-    // Equipos por categoría
-    const equipos = await equiposRepository
+    // 2. EQUIPOS (Inventario)
+    // El inventario solo se filtra por Categoría (es una foto actual)
+    let equiposQuery = equiposRepository
       .createQueryBuilder("equipo")
-      .leftJoinAndSelect("equipo.categoria", "categoria")
-      .getMany();
+      .leftJoinAndSelect("equipo.categoria", "categoria");
+
+    if (filtros.categoria) {
+      equiposQuery.andWhere("categoria.Descripcion = :categoria", { categoria: filtros.categoria });
+    }
+
+    const equipos = await equiposQuery.getMany();
 
     const equiposPorCategoria = {};
     equipos.forEach(eq => {
-      const categoria = eq.categoria?.Descripcion || "Sin categoría";
-      equiposPorCategoria[categoria] = (equiposPorCategoria[categoria] || 0) + 1;
+      const cat = eq.categoria?.Descripcion || "Sin categoría";
+      equiposPorCategoria[cat] = (equiposPorCategoria[cat] || 0) + 1;
     });
 
-    // Usuarios por tipo
-    const usuarios = await userRepository
-      .createQueryBuilder("user")
-      .leftJoinAndSelect("user.tipoUsuario", "tipoUsuario")
-      .getMany();
+    // 3. DISTRIBUCIÓN DE USUARIOS CON SOLICITUDES
+    // Obtenemos usuarios únicos de las solicitudes filtradas
+    const usuariosUnicos = new Map();
+    solicitudes.forEach(sol => {
+      if (sol.usuario && sol.usuario.Rut) {
+        // Excluir administradores de la distribución
+        if (sol.usuario.tipoUsuario?.Descripcion !== "Administrador") {
+          usuariosUnicos.set(sol.usuario.Rut, sol.usuario);
+        }
+      }
+    });
 
     const usuariosPorTipo = {
-      alumnos: 0,
-      profesores: 0
+      alumnos: {},
+      profesores: {}
     };
 
-    usuarios.forEach(user => {
+    usuariosUnicos.forEach(user => {
       const tipo = user.tipoUsuario?.Descripcion;
-      if (tipo === "Alumno") usuariosPorTipo.alumnos++;
-      else if (tipo === "Profesor") usuariosPorTipo.profesores++;
+      if (tipo === "Alumno") {
+        const carrera = user.carrera?.Nombre_Carrera || "Sin carrera";
+        usuariosPorTipo.alumnos[carrera] = (usuariosPorTipo.alumnos[carrera] || 0) + 1;
+      } else if (tipo === "Profesor") {
+        const cargo = user.cargo?.Desc_Cargo || "Sin cargo";
+        usuariosPorTipo.profesores[cargo] = (usuariosPorTipo.profesores[cargo] || 0) + 1;
+      }
     });
 
-    // Solicitudes por mes (rango dinámico)
+    // 4. SOLICITUDES POR MES (Tendencia)
+    // Reutiliza los filtros de fecha (si existen, o usa el rango por defecto), carrera y categoría
     const meses = filtros.meses || 6;
     const d = new Date();
     d.setMonth(d.getMonth() - meses);
     d.setDate(1);
 
-    const solicitudesPorMes = await solicitudRepository
+    // Copiamos el query base de solicitudes para mantener filtros de carrera/categoría
+    // Pero necesitamos ajustar el filtro de fecha para el rango del gráfico
+    let tendenciaQuery = solicitudRepository
       .createQueryBuilder("solicitud")
       .select("DATE_TRUNC('month', solicitud.Fecha_Sol)", "mes")
       .addSelect("COUNT(*)", "cantidad")
-      .where("solicitud.Fecha_Sol >= :fecha", { fecha: d })
-      .groupBy("DATE_TRUNC('month', solicitud.Fecha_Sol)")
-      .orderBy("DATE_TRUNC('month', solicitud.Fecha_Sol)", "ASC")
-      .getRawMany();
-
-    // Solicitudes por carrera
-    const solicitudesPorCarreraRaw = await solicitudRepository
-      .createQueryBuilder("solicitud")
       .leftJoin("solicitud.usuario", "usuario")
       .leftJoin("usuario.carrera", "carrera")
-      .select("carrera.Nombre_Carrera", "carrera")
-      .addSelect("COUNT(*)", "cantidad")
-      .groupBy("carrera.Nombre_Carrera")
-      .getRawMany();
+      .leftJoin("solicitud.equipo", "equipo")
+      .leftJoin("equipo.categoria", "categoria")
+      .where("solicitud.Fecha_Sol >= :fechaMinima", { fechaMinima: d });
 
+    // Aplicar otros filtros si existen (carrera, categoría, fechaFin)
+    if (filtros.fechaFin) {
+       const fechaFinAjustada = new Date(filtros.fechaFin);
+       fechaFinAjustada.setHours(23, 59, 59, 999);
+       tendenciaQuery.andWhere("solicitud.Fecha_Sol <= :fechaFin", { fechaFin: fechaFinAjustada });
+    }
+    // Nota: Si hay fechaInicio, podría entrar en conflicto con 'meses', 
+    // pero priorizamos el filtro explícito si el usuario lo pone, o el rango de meses si no.
+    // Para simplificar, si hay fechaInicio, la usamos EN LUGAR de 'meses' si es mayor que fechaMinima
+    if (filtros.fechaInicio) {
+        tendenciaQuery.andWhere("solicitud.Fecha_Sol >= :fechaInicio", { fechaInicio: filtros.fechaInicio });
+    }
+
+    if (filtros.carrera) {
+      tendenciaQuery.andWhere("carrera.Nombre_Carrera = :carrera", { carrera: filtros.carrera });
+    }
+    if (filtros.categoria) {
+      tendenciaQuery.andWhere("categoria.Descripcion = :categoria", { categoria: filtros.categoria });
+    }
+
+    tendenciaQuery
+      .groupBy("DATE_TRUNC('month', solicitud.Fecha_Sol)")
+      .orderBy("DATE_TRUNC('month', solicitud.Fecha_Sol)", "ASC");
+
+    const solicitudesPorMes = await tendenciaQuery.getRawMany();
+
+    // 5. SOLICITUDES POR CARRERA/CARGO (Desglosado por tipo)
     const solicitudesPorCarrera = {};
-    solicitudesPorCarreraRaw.forEach(row => {
-      const nombre = row.carrera || "Personal/Docente";
-      solicitudesPorCarrera[nombre] = parseInt(row.cantidad);
+    solicitudes.forEach(sol => {
+      const tipoU = sol.usuario?.tipoUsuario?.Descripcion;
+      let label = "Personal/Docente";
+      
+      if (tipoU === "Alumno") {
+        label = sol.usuario?.carrera?.Nombre_Carrera || "Sin carrera";
+      } else if (tipoU === "Profesor") {
+        label = sol.usuario?.cargo?.Desc_Cargo || "Profesor (Sin cargo)";
+      }
+
+      if (!solicitudesPorCarrera[label]) {
+        solicitudesPorCarrera[label] = { diario: 0, largoPlazo: 0 };
+      }
+
+      // Lógica SIREC: comparar solo YYYY-MM-DD para determinar si es el mismo día
+      const iniStr = sol.Fecha_inicio_sol ? new Date(sol.Fecha_inicio_sol).toISOString().split('T')[0] : null;
+      const finStr = sol.Fecha_termino_sol ? new Date(sol.Fecha_termino_sol).toISOString().split('T')[0] : null;
+
+      const esLargoPlazo = iniStr && finStr && iniStr !== finStr;
+
+      if (esLargoPlazo) {
+        solicitudesPorCarrera[label].largoPlazo++;
+      } else {
+        solicitudesPorCarrera[label].diario++;
+      }
     });
+
+    // 6. PRÉSTAMOS POR CATEGORÍA DE EQUIPO Y TIPO DE USUARIO (Agrupado)
+    let equipoTipoQuery = solicitudRepository
+      .createQueryBuilder("solicitud")
+      .leftJoin("solicitud.usuario", "usuario")
+      .leftJoin("usuario.tipoUsuario", "tipoUsuario")
+      .leftJoin("solicitud.equipo", "equipo")
+      .leftJoin("equipo.categoria", "categoria")
+      .leftJoin("solicitud.prestamo", "prestamo")
+      .select("categoria.Descripcion", "categoria")
+      .addSelect("tipoUsuario.Descripcion", "tipoUsuario")
+      .addSelect("COUNT(*)", "cantidad")
+      .where("prestamo.ID_Prestamo IS NOT NULL")
+      .groupBy("categoria.Descripcion")
+      .addGroupBy("tipoUsuario.Descripcion");
+
+    // Aplicar filtros (incluyendo rango de meses)
+    equipoTipoQuery.andWhere("solicitud.Fecha_Sol >= :fechaMinimaEq", { fechaMinimaEq: d });
+    if (filtros.fechaInicio) equipoTipoQuery.andWhere("solicitud.Fecha_Sol >= :fechaInicio", { fechaInicio: filtros.fechaInicio });
+    if (filtros.fechaFin) {
+        const f = new Date(filtros.fechaFin); f.setHours(23,59,59,999);
+        equipoTipoQuery.andWhere("solicitud.Fecha_Sol <= :fechaFin", { fechaFin: f });
+    }
+    if (filtros.carrera) {
+        equipoTipoQuery.leftJoin("usuario.carrera", "carrera")
+        .andWhere("carrera.Nombre_Carrera = :carrera", { carrera: filtros.carrera });
+    }
+    if (filtros.categoria) equipoTipoQuery.andWhere("categoria.Descripcion = :categoria", { categoria: filtros.categoria });
+
+    const equipoTipoRaw = await equipoTipoQuery.getRawMany();
+    
+    // Estructurar: { "Notebook": { "Alumno": 5, "Profesor": 2 }, ... }
+    const prestamosPorEquipoTipo = {};
+    equipoTipoRaw.forEach(row => {
+        const cat = row.categoria || "Sin categoría";
+        const tipo = row.tipoUsuario || "Otro";
+        if (!prestamosPorEquipoTipo[cat]) prestamosPorEquipoTipo[cat] = {};
+        prestamosPorEquipoTipo[cat][tipo] = parseInt(row.cantidad);
+    });
+
+    // 7. [NUEVO] TENDENCIA POR CATEGORÍA (Multiserie)
+    let tendenciaCatQuery = solicitudRepository
+      .createQueryBuilder("solicitud")
+      .leftJoin("solicitud.equipo", "equipo")
+      .leftJoin("equipo.categoria", "categoria")
+      .select("DATE_TRUNC('month', solicitud.Fecha_Sol)", "mes")
+      .addSelect("categoria.Descripcion", "categoria")
+      .addSelect("COUNT(*)", "cantidad")
+      .where("solicitud.Fecha_Sol >= :fechaMinima", { fechaMinima: d }) // Reusamos 'd' (meses atrás)
+      .groupBy("DATE_TRUNC('month', solicitud.Fecha_Sol)")
+      .addGroupBy("categoria.Descripcion")
+      .orderBy("DATE_TRUNC('month', solicitud.Fecha_Sol)", "ASC");
+
+    // Aplicar filtros
+    if (filtros.fechaFin) {
+        const f = new Date(filtros.fechaFin); f.setHours(23,59,59,999);
+        tendenciaCatQuery.andWhere("solicitud.Fecha_Sol <= :fechaFin", { fechaFin: f });
+    }
+    // Si hay filtros específicos, los aplicamos también
+    if (filtros.carrera) {
+        tendenciaCatQuery.leftJoin("solicitud.usuario", "usuario").leftJoin("usuario.carrera", "carrera")
+        .andWhere("carrera.Nombre_Carrera = :carrera", { carrera: filtros.carrera });
+    }
+    if (filtros.categoria) tendenciaCatQuery.andWhere("categoria.Descripcion = :categoria", { categoria: filtros.categoria });
+
+    const tendenciaCatRaw = await tendenciaCatQuery.getRawMany();
+    
+    // Estructurar: { "Enero": { "Notebook": 5, "Proyector": 2 }, ... }
+    const tendenciaPorCategoria = {};
+    tendenciaCatRaw.forEach(row => {
+        const mes = new Date(row.mes).toLocaleDateString('es-CL', { month: 'short', year: 'numeric' });
+        const cat = row.categoria || "Otros";
+        if (!tendenciaPorCategoria[mes]) tendenciaPorCategoria[mes] = {};
+        tendenciaPorCategoria[mes][cat] = parseInt(row.cantidad);
+    });
+
+
+
+    // 8. TOTAL USUARIOS SANCIONADOS (Métrica General)
+    const activeSanctions = await AppDataSource.getRepository(TienePenalizacion)
+      .createQueryBuilder("tp")
+      .select("COUNT(DISTINCT tp.Rut)", "count")
+      .where("tp.Fecha_Inicio <= CURRENT_TIMESTAMP")
+      .andWhere("(tp.Fecha_Fin IS NULL OR tp.Fecha_Fin >= CURRENT_TIMESTAMP)")
+      .getRawOne();
+
+    const totalSancionados = parseInt(activeSanctions?.count || 0);
+
+    // 9. TOTAL USUARIOS EN EL SISTEMA (Alumnos + Profesores)
+    const totalUsersSystemCount = await userRepository
+      .createQueryBuilder("user")
+      .leftJoin("user.tipoUsuario", "tipo")
+      .where("tipo.Descripcion IN (:...tipos)", { tipos: ["Alumno", "Profesor"] })
+      .getCount();
 
     return {
       solicitudesPorEstado,
@@ -1062,7 +1454,12 @@ export async function obtenerDatosGraficos(filtros = {}) {
       equiposPorCategoria,
       usuariosPorTipo,
       solicitudesPorMes,
-      solicitudesPorCarrera
+      solicitudesPorCarrera,
+      // Nuevos datos cruzados
+      prestamosPorEquipoTipo,         // Grouped Bar (Equipos vs Alumnos/Profesores)
+      tendenciaPorCategoria,        // Multi-line
+      totalSancionados,             // KPI
+      totalUsuariosSistema: totalUsersSystemCount // KPI Arreglado
     };
   } catch (error) {
     console.error("Error al obtener datos para gráficos:", error);

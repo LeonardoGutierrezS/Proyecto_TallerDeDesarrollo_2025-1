@@ -6,10 +6,10 @@
 
 .solicitudes-header h1 {
     color: #003366;
-    font-size: 2em;
+    font-size: 1.75em;
     margin: 0;
-    padding-bottom: 15px;
-    border-bottom: 3px solid #006edf;
+    padding-bottom: 8px;
+    border-bottom: 2px solid #006edf;
 }
 
 /* Section Header */
@@ -241,6 +241,55 @@
 .tipo-largo {
     background: linear-gradient(135deg, #FF9800 0%, #F57C00 100%);
     color: white;
+}
+
+/* Badges de Estado */
+.estado-badge {
+    display: inline-block;
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 0.85em;
+    font-weight: 600;
+    text-align: center;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.estado-badge.pendiente {
+    background-color: #fff3e0;
+    color: #ef6c00;
+    border: 1px solid #ffe0b2;
+}
+
+.estado-badge.aprobado,
+.estado-badge.listo-para-entregar {
+    background-color: #e8f5e9;
+    color: #2e7d32;
+    border: 1px solid #c8e6c9;
+}
+
+.estado-badge.rechazado {
+    background-color: #ffebee;
+    color: #c62828;
+    border: 1px solid #ffcdd2;
+}
+
+.estado-badge.entregado,
+.estado-badge.listo-para-recepcionar {
+    background-color: #e3f2fd;
+    color: #1565c0;
+    border: 1px solid #bbdefb;
+}
+
+.estado-badge.devuelto {
+    background-color: #f3e5f5;
+    color: #7b1fa2;
+    border: 1px solid #e1bee7;
+}
+
+.estado-badge.procesando {
+    background-color: #eceff1;
+    color: #546e7a;
+    border: 1px solid #cfd8dc;
 }
 
 /* Selector de tipo de solicitud */

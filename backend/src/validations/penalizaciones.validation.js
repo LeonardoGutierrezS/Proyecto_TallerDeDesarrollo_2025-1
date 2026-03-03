@@ -16,6 +16,16 @@ export const penalizacionValidation = Joi.object({
       "string.min": "La descripción debe tener al menos 3 caracteres.",
       "string.max": "La descripción debe tener como máximo 500 caracteres.",
     }),
+  Dias_Sancion: Joi.number()
+    .integer()
+    .min(0)
+    .required()
+    .messages({
+      "number.base": "Los días de sanción deben ser un número.",
+      "number.integer": "Los días de sanción deben ser un número entero.",
+      "number.min": "Los días de sanción no pueden ser negativos.",
+      "any.required": "Los días de sanción son obligatorios.",
+    }),
 })
   .unknown(false)
   .messages({
@@ -34,6 +44,14 @@ export const updatePenalizacionValidation = Joi.object({
       "string.base": "La descripción debe ser de tipo texto.",
       "string.min": "La descripción debe tener al menos 3 caracteres.",
       "string.max": "La descripción debe tener como máximo 500 caracteres.",
+    }),
+  Dias_Sancion: Joi.number()
+    .integer()
+    .min(0)
+    .messages({
+      "number.base": "Los días de sanción deben ser un número.",
+      "number.integer": "Los días de sanción deben ser un número entero.",
+      "number.min": "Los días de sanción no pueden ser negativos.",
     }),
 })
   .unknown(false)

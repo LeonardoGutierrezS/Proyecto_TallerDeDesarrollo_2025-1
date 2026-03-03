@@ -37,6 +37,11 @@ const DevolucionSchema = new EntitySchema({
       type: "text",
       nullable: true,
     },
+    Estado_Equipo_Devolucion: {
+      type: "varchar",
+      length: 100,
+      nullable: true,
+    },
   },
   relations: {
     usuario: {

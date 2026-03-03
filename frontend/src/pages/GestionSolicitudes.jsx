@@ -1,7 +1,8 @@
 import '@styles/styles.css';
 import '@styles/gestion-solicitudes.css';
 import { useState, useEffect } from 'react';
-import { getSolicitudes, descargarPDFAutorizacion, entregarPrestamo, devolverPrestamo } from '@services/solicitud.service';
+import { useLocation } from 'react-router-dom';
+import { getSolicitudes, visualizarPDFAutorizacion, entregarPrestamo, devolverPrestamo } from '@services/solicitud.service';
 import { aprobarSolicitud, rechazarSolicitud } from '@services/autorizacion.service';
 import { registrarDevolucion } from '@services/devolucion.service';
 import { showErrorAlert, showSuccessAlert, showConfirmAlert } from '@helpers/sweetAlert';
@@ -10,7 +11,10 @@ import Search from '@components/Search';
 import Swal from 'sweetalert2';
 import PrestamoDetalleModal from '@components/prestamos/PrestamoDetalleModal';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faFilePdf } from '@fortawesome/free-solid-svg-icons';
+import { faUpload, faEye, faFileAlt, faCheckCircle, faExternalLinkAlt } from '@fortawesome/free-solid-svg-icons';
+import * as documentoService from '@services/documento.service';
+import ActaPrestamoPrePrint from '@components/prestamos/ActaPrestamoPrePrint';
+import SubirActaModal from '@components/prestamos/SubirActaModal';
 
 const GestionSolicitudes = () => {
     const { user } = useAuth();
@@ -21,15 +25,32 @@ const GestionSolicitudes = () => {
     const [tipoFiltro, setTipoFiltro] = useState('diaria'); // 'diaria' o 'largo_plazo'
     const [selectedSolicitud, setSelectedSolicitud] = useState(null);
     const [showModal, setShowModal] = useState(false);
+    const [actaData, setActaData] = useState(null);
+    const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
+    const [solicitudToUpload, setSolicitudToUpload] = useState(null);
+    const location = useLocation();
 
     // Verificar si el usuario es director de escuela o administrador
     const esDirectorEscuela = user?.esDirectorEscuela || false;
     const isAdmin = user?.tipoUsuario === 'Administrador';
 
-    // Determinar tipo de solicitud basado en fechas
+    // Determinar texto del director según carrera
+    const getDirectorText = (solicitud) => {
+        const carrera = solicitud.usuario?.carrera?.Nombre_Carrera || '';
+        if (carrera.includes('Civil')) return 'Requiere aprobación del Director/a de Escuela ICI';
+        if (carrera.includes('Ejecución')) return 'Requiere aprobación del Director/a de Escuela IECI';
+        return 'Requiere aprobación del Director'; // Fallback
+    };
+
+    // Determinar tipo de solicitud basado en fechas (ignora la hora)
     const getTipoSolicitud = (solicitud) => {
-        // Si tiene fechas de inicio y término, es largo plazo
-        if (solicitud.Fecha_inicio_sol && solicitud.Fecha_termino_sol) {
+        if (!solicitud.Fecha_inicio_sol || !solicitud.Fecha_termino_sol) return 'diaria';
+        
+        const start = new Date(solicitud.Fecha_inicio_sol).setHours(0,0,0,0);
+        const end = new Date(solicitud.Fecha_termino_sol).setHours(0,0,0,0);
+        
+        // Si las fechas son diferentes (diferente día), es largo plazo
+        if (start !== end) {
             return 'largo_plazo';
         }
         return 'diaria';
@@ -108,6 +129,20 @@ const GestionSolicitudes = () => {
         fetchSolicitudes();
     }, []);
 
+    // Efecto para abrir modal si hay un ID en la URL
+    useEffect(() => {
+        if (!loading && solicitudes.length > 0) {
+            const queryParams = new URLSearchParams(location.search);
+            const idSolicitud = queryParams.get('id');
+            if (idSolicitud) {
+                const solicitud = solicitudes.find(s => s.ID_Solicitud === parseInt(idSolicitud));
+                if (solicitud) {
+                    handleVerDetalle(solicitud);
+                }
+            }
+        }
+    }, [location.search, solicitudes, loading]);
+
     // Filtrar solicitudes por estado
     const filterByEstado = (estado) => {
         return solicitudes.filter(s => getEstadoSolicitud(s) === estado);
@@ -120,9 +155,8 @@ const GestionSolicitudes = () => {
         return solicitudesList.filter(solicitud => {
             const searchLower = searchText.toLowerCase();
             return (
-                solicitud.usuario?.Nombre?.toLowerCase().includes(searchLower) ||
-                solicitud.usuario?.Apellido?.toLowerCase().includes(searchLower) ||
-                solicitud.usuario?.Email?.toLowerCase().includes(searchLower) ||
+                solicitud.usuario?.Nombre_Completo?.toLowerCase().includes(searchLower) ||
+                solicitud.usuario?.Correo?.toLowerCase().includes(searchLower) ||
                 solicitud.ID_Num_Inv?.toLowerCase().includes(searchLower) ||
                 solicitud.equipo?.categoria?.Descripcion?.toLowerCase().includes(searchLower) ||
                 solicitud.Motivo_Sol?.toLowerCase().includes(searchLower)
@@ -149,24 +183,50 @@ const GestionSolicitudes = () => {
             case 'rechazados':
                 filtered = filterByEstado('Rechazado');
                 break;
+            case 'historial':
+                // Para historial, mostramos todo lo que NO sea Pendiente
+                filtered = solicitudes.filter(s => getEstadoSolicitud(s) !== 'Pendiente');
+                break;
             default:
                 filtered = solicitudes;
         }
 
-        // Filtrar por tipo de solicitud según el rol
+        // Filtrar por tipo de solicitud y carrera según el rol
         if (esDirectorEscuela) {
-            // Director solo ve solicitudes a largo plazo en pendientes
+            // Director solo ve solicitudes a largo plazo
             filtered = filtered.filter(s => getTipoSolicitud(s) === 'largo_plazo');
+            // Filtrar por carrera del director (si está definida)
+            if (user?.idCarrera) {
+                filtered = filtered.filter(s => s.usuario?.ID_Carrera === user.idCarrera);
+            }
         } else if (isAdmin) {
             // Admin: en pendientes filtra por tipo selector, en otras pestañas ve todas
             if (activeTab === 'pendientes') {
                 filtered = filtered.filter(s => getTipoSolicitud(s) === tipoFiltro);
             }
-            // En las demás pestañas (listo-entregar, entregados, devueltos, rechazados)
-            // el admin ve TODAS las solicitudes sin filtrar por tipo
         }
 
         return filterBySearch(filtered);
+    };
+
+    // Helper para obtener badge de estado
+    const getStatusBadgeInfo = (estado) => {
+        switch (estado) {
+            case 'Pendiente':
+                return { clase: 'pendiente', texto: 'Pendiente' };
+            case 'Listo para Entregar':
+                return { clase: 'aprobado', texto: 'Aprobado' };
+            case 'Listo para recepcionar':
+                return { clase: 'entregado', texto: 'Entregado' };
+            case 'Entregado': // Agregamos este caso por si acaso viene del backend así
+                return { clase: 'entregado', texto: 'Entregado' };
+            case 'Devuelto':
+                return { clase: 'devuelto', texto: 'Devuelto' };
+            case 'Rechazado':
+                return { clase: 'rechazado', texto: 'Rechazado' };
+            default:
+                return { clase: 'procesando', texto: estado };
+        }
     };
 
     const filteredSolicitudes = getFilteredSolicitudes();
@@ -216,12 +276,14 @@ const GestionSolicitudes = () => {
                 return fecha;
             }
         };
+    
+    // Helper para obtener badge de estado
 
-        const result = await Swal.fire({
+    const result = await Swal.fire({
             title: 'Aprobar Solicitud',
             html: `
                 <div style="text-align: left;">
-                    <p><strong>Usuario:</strong> ${solicitud.usuario?.Nombre || ''} ${solicitud.usuario?.Apellido || ''}</p>
+                    <p><strong>Usuario:</strong> ${solicitud.usuario?.Nombre_Completo || 'N/A'}</p>
                     <p><strong>RUT:</strong> ${solicitud.Rut || ''}</p>
                     <p><strong>Equipo:</strong> ${solicitud.ID_Num_Inv}</p>
                     <p><strong>Motivo:</strong> ${solicitud.Motivo_Sol}</p>
@@ -229,10 +291,10 @@ const GestionSolicitudes = () => {
                     <div style="margin-top: 20px; padding: 15px; background-color: #f8f9fa; border-radius: 8px; border-left: 4px solid #4a90e2;">
                         <p style="margin: 5px 0;"><strong>📅 Período del Préstamo:</strong></p>
                         <p style="margin: 5px 0; padding-left: 10px;">
-                            <strong>Desde:</strong> ${formatFechaDisplay(solicitud.Fecha_inicio_sol)}
+                            <strong>Desde:</strong> ${formatFechaDisplay(solicitud.Fecha_inicio_sol || solicitud.Fecha_Sol)}
                         </p>
                         <p style="margin: 5px 0; padding-left: 10px;">
-                            <strong>Hasta:</strong> ${formatFechaDisplay(solicitud.Fecha_termino_sol)}
+                            <strong>Hasta:</strong> ${formatFechaDisplay(solicitud.Fecha_termino_sol || solicitud.Fecha_Sol)}
                         </p>
                     </div>
 
@@ -312,7 +374,7 @@ const GestionSolicitudes = () => {
             title: 'Rechazar Solicitud',
             html: `
                 <div style="text-align: left;">
-                    <p><strong>Usuario:</strong> ${solicitud.usuario.Nombre} ${solicitud.usuario.Apellido}</p>
+                    <p><strong>Usuario:</strong> ${solicitud.usuario?.Nombre_Completo || 'N/A'}</p>
                     <p><strong>Equipo:</strong> ${solicitud.ID_Num_Inv}</p>
                     <p><strong>Motivo:</strong> ${solicitud.Motivo_Sol}</p>
                 </div>
@@ -426,6 +488,12 @@ const GestionSolicitudes = () => {
                 'Sí, entregar'
             );
             if (!confirmed) return;
+        }
+
+        // VALIDACIÓN: Verificar si tiene el acta subida (solo si es admin y es pestaña listo para entregar)
+        if (!esDiaria && !solicitud.prestamo?.Documento_Suscrito) {
+            showErrorAlert('Documento Requerido', 'Debe subir el acta firmada antes de proceder con la entrega del equipo.');
+            return;
         }
 
         // Mostrar loading
@@ -548,6 +616,74 @@ const GestionSolicitudes = () => {
         }
     };
 
+    // Handler para generar (imprimir) acta
+    const handleGenerarActa = async (solicitud) => {
+        try {
+            const response = await documentoService.getInfoActa(solicitud.ID_Solicitud);
+            if (response.status === 'Success') {
+                setActaData(response.data);
+                // Ya no disparamos window.print() automáticamente
+            }
+        } catch (error) {
+            console.error('Error al obtener info del acta:', error);
+            showErrorAlert('Error', 'No se pudo obtener la información para generar el acta');
+        }
+    };
+
+    // Handler para subir acta firmada (Nuevo con modal interactivo)
+    const handleSubirActa = (solicitud) => {
+        setSolicitudToUpload(solicitud);
+        setIsUploadModalOpen(true);
+    };
+
+    const handleConfirmUploadActa = async (file) => {
+        try {
+            const response = await documentoService.subirActaFirmada(solicitudToUpload.prestamo.ID_Prestamo, file);
+            if (response.status === 'Success') {
+                showSuccessAlert('¡Éxito!', 'Acta subida correctamente. Ahora puede proceder con la entrega.');
+                fetchSolicitudes();
+            }
+        } catch (error) {
+            console.error('Error al subir acta:', error);
+            showErrorAlert('Error', typeof error === 'string' ? error : 'No se pudo subir el archivo');
+            throw error;
+        }
+    };
+
+    // Handler para visualizar PDF de autorización
+    const handleVisualizarPDF = async (solicitud) => {
+        try {
+            const url = await visualizarPDFAutorizacion(solicitud.ID_Solicitud);
+            const win = window.open(url, '_blank');
+            if (!win) {
+                const link = document.createElement('a');
+                link.href = url;
+                link.target = '_blank';
+                link.click();
+            }
+        } catch (error) {
+            console.error('Error al visualizar PDF:', error);
+            showErrorAlert('Error', 'No se pudo visualizar el PDF de autorización');
+        }
+    };
+
+    // Handler para visualizar acta ya subida
+    const handleVisualizarActaSuscrita = async (solicitud) => {
+        try {
+            const url = await documentoService.visualizarActaFirmada(solicitud.prestamo.ID_Prestamo);
+            const win = window.open(url, '_blank');
+            if (!win) {
+                const link = document.createElement('a');
+                link.href = url;
+                link.target = '_blank';
+                link.click();
+            }
+        } catch (error) {
+            console.error('Error al visualizar acta:', error);
+            showErrorAlert('Error', 'No se pudo visualizar el documento suscrito.');
+        }
+    };
+
     // Renderizar contenido de la pestaña activa
     const renderTabContent = () => {
         return (
@@ -559,6 +695,7 @@ const GestionSolicitudes = () => {
                         {activeTab === 'entregados' && '📦 Listo para recepcionar'}
                         {activeTab === 'devueltos' && '🔙 Equipos Devueltos'}
                         {activeTab === 'rechazados' && '❌ Solicitudes Rechazadas'}
+                        {activeTab === 'historial' && '📋 Historial Completo'}
                         <span className="count-badge">({filteredSolicitudes.length})</span>
                     </h2>
                     
@@ -596,12 +733,14 @@ const GestionSolicitudes = () => {
                                 <th>Categoría</th>
                                 <th>Fecha Solicitud</th>
                                 {(tipoFiltro === 'largo_plazo' || esDirectorEscuela) && <th>Período Solicitado</th>}
-                                <th>Motivo</th>
-                                {activeTab === 'listo-entregar' && <th>Documento</th>}
+                                {activeTab !== 'historial' && <th>Motivo</th>}
+                                {activeTab === 'listo-entregar' && <th>Documentación</th>}
                                 {activeTab === 'rechazados' && <th>Motivo Rechazo</th>}
-                                {activeTab === 'entregados' && <th>Documento</th>}
+                                {activeTab === 'entregados' && <th>Documentación</th>}
                                 {activeTab === 'devueltos' && <th>Fecha Devolución</th>}
-                                <th>Acciones</th>
+                                {activeTab === 'historial' && <th>Estado</th>} {/* Nueva columna para historial */}
+                                {activeTab !== 'historial' && <th style={{width: '120px'}}>Acciones</th>}
+                                {activeTab === 'historial' && <th style={{width: '80px'}}>Ver</th>}
                             </tr>
                         </thead>
                         <tbody>
@@ -623,7 +762,7 @@ const GestionSolicitudes = () => {
                                                 {getTipoSolicitud(solicitud) === 'diaria' ? '📅 Diaria' : '📆 Largo Plazo'}
                                             </span>
                                         </td>
-                                        <td>{solicitud.usuario?.Nombre_Completo || `${solicitud.usuario?.Nombre || ''} ${solicitud.usuario?.Apellido || ''}`.trim() || 'N/A'}</td>
+                                        <td>{solicitud.usuario?.Nombre_Completo || 'N/A'}</td>
                                         <td>{solicitud.ID_Num_Inv}</td>
                                         <td>{solicitud.equipo?.categoria?.Descripcion || 'N/A'}</td>
                                         <td>{formatFecha(solicitud.Fecha_Sol)}</td>
@@ -637,7 +776,7 @@ const GestionSolicitudes = () => {
                                                 ) : '-'}
                                             </td>
                                         )}
-                                        <td className="motivo-cell">{solicitud.Motivo_Sol || '-'}</td>
+                                        {activeTab !== 'historial' && <td className="motivo-cell">{solicitud.Motivo_Sol || '-'}</td>}
                                         
                                         {activeTab === 'rechazados' && (
                                             <td className="motivo-cell">
@@ -647,26 +786,91 @@ const GestionSolicitudes = () => {
                                         
                                         {activeTab === 'listo-entregar' && (
                                             <td style={{ textAlign: 'center' }}>
-                                                {getTipoSolicitud(solicitud) === 'largo_plazo' ? (
-                                                    <button 
-                                                        className="btn-download"
-                                                        title="Descargar PDF de autorización"
-                                                        onClick={() => handleDescargarPDF(solicitud)}
-                                                    >
-                                                        <FontAwesomeIcon icon={faFilePdf} />
-                                                    </button>
-                                                ) : '-'}
+                                                <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
+                                                    {getTipoSolicitud(solicitud) === 'largo_plazo' && (
+                                                        <>
+                                                            <button 
+                                                                className="btn-download"
+                                                                title="Ver Autorización del Director"
+                                                                onClick={() => handleVisualizarPDF(solicitud)}
+                                                                style={{ color: '#003366' }}
+                                                            >
+                                                                <FontAwesomeIcon icon={faCheckCircle} />
+                                                            </button>
+                                                            
+                                                            <button 
+                                                                className="btn-download"
+                                                                title="Visualizar Borrador del Acta"
+                                                                onClick={() => handleGenerarActa(solicitud)}
+                                                                style={{ color: '#0d47a1' }}
+                                                            >
+                                                                <FontAwesomeIcon icon={faFileAlt} />
+                                                            </button>
+
+                                                            <div style={{ display: 'flex', gap: '4px' }}>
+                                                                <button 
+                                                                    className="btn-download"
+                                                                    title={solicitud.prestamo?.Documento_Suscrito ? "Actualizar Acta Firmada" : "Subir Acta Firmada"}
+                                                                    style={{ color: '#ff9800' }}
+                                                                    onClick={() => handleSubirActa(solicitud)}
+                                                                >
+                                                                    <FontAwesomeIcon icon={faUpload} />
+                                                                </button>
+                                                                {solicitud.prestamo?.Documento_Suscrito && (
+                                                                    <button 
+                                                                        className="btn-download"
+                                                                        style={{ color: '#2e7d32' }}
+                                                                        title="Ver Archivo Cargado"
+                                                                        onClick={() => handleVisualizarActaSuscrita(solicitud)}
+                                                                    >
+                                                                        <FontAwesomeIcon icon={faEye} />
+                                                                    </button>
+                                                                )}
+                                                            </div>
+                                                        </>
+                                                    )}
+                                                </div>
                                             </td>
                                         )}
                                         
                                         {activeTab === 'entregados' && (
-                                            <td>{solicitud.prestamo?.Tipo_documento || '-'}</td>
+                                            <td style={{ textAlign: 'center' }}>
+                                                <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
+                                                    <span style={{fontSize: '12px', color: '#666', marginRight: '5px'}}>
+                                                        {solicitud.prestamo?.Tipo_documento || 'Acta'}
+                                                    </span>
+                                                    {solicitud.prestamo?.Documento_Suscrito && (
+                                                        <button 
+                                                            className="btn-download"
+                                                            style={{ color: '#2e7d32' }}
+                                                            title="Ver Acta Firmada"
+                                                            onClick={() => handleVisualizarActaSuscrita(solicitud)}
+                                                        >
+                                                            <FontAwesomeIcon icon={faEye} />
+                                                        </button>
+                                                    )}
+                                                </div>
+                                            </td>
                                         )}
                                         
                                         {activeTab === 'devueltos' && (
                                             <td>{formatFecha(solicitud.prestamo?.devolucion?.Fecha_Dev)}</td>
                                         )}
                                         
+                                        {activeTab === 'historial' && (
+                                            <td style={{ textAlign: 'center' }}>
+                                                {(() => {
+                                                    const estado = getEstadoSolicitud(solicitud);
+                                                    const { clase, texto } = getStatusBadgeInfo(estado);
+                                                    return (
+                                                        <span className={`estado-badge ${clase}`}>
+                                                            {texto}
+                                                        </span>
+                                                    );
+                                                })()}
+                                            </td>
+                                        )}
+
                                         <td>
                                             <div className="actions-buttons">
                                                 {/* Botón Ver Detalles - Siempre visible */}
@@ -701,23 +905,27 @@ const GestionSolicitudes = () => {
                                                             </>
                                                         ) : (
                                                             <span className="info-badge" style={{fontSize: '12px', color: '#666'}}>
-                                                                {isAdmin ? '⏳ Requiere aprobación del Director' : '👁️ Solo lectura'}
+                                                                {isAdmin ? `⏳ ${getDirectorText(solicitud)}` : '👁️ Solo lectura'}
                                                             </span>
                                                         )}
                                                     </>
                                                 )}
                                                 
-                                                {/* LISTO PARA ENTREGAR: Entregar (solo Admin) */}
+                                                {/* LISTO PARA ENTREGAR: Acciones de acta y Entrega (solo Admin) */}
                                                 {activeTab === 'listo-entregar' && (
                                                     <>
                                                         {isAdmin && (
-                                                            <button 
-                                                                className="btn-deliver"
-                                                                title="Marcar como entregado"
-                                                                onClick={() => handleEntregar(solicitud)}
-                                                            >
-                                                                📦
-                                                            </button>
+                                                            <>
+                                                                <button 
+                                                                    className={`btn-deliver ${getTipoSolicitud(solicitud) === 'largo_plazo' && !solicitud.prestamo?.Documento_Suscrito ? 'disabled' : ''}`}
+                                                                    title={getTipoSolicitud(solicitud) === 'largo_plazo' && !solicitud.prestamo?.Documento_Suscrito ? "Debe subir el acta antes de entregar" : "Marcar como entregado"}
+                                                                    onClick={() => handleEntregar(solicitud)}
+                                                                    disabled={getTipoSolicitud(solicitud) === 'largo_plazo' && !solicitud.prestamo?.Documento_Suscrito}
+                                                                    style={getTipoSolicitud(solicitud) === 'largo_plazo' && !solicitud.prestamo?.Documento_Suscrito ? { opacity: 0.4, cursor: 'not-allowed' } : {}}
+                                                                >
+                                                                    📦
+                                                                </button>
+                                                            </>
                                                         )}
                                                     </>
                                                 )}
@@ -738,6 +946,30 @@ const GestionSolicitudes = () => {
                                                     <span className="info-badge" style={{fontSize: '12px', color: '#666'}}>
                                                         ✓ Finalizado
                                                     </span>
+                                                )}
+
+                                                {/* HISTORIAL: Solo ver detalles/PDF */}
+                                                {activeTab === 'historial' && (
+                                                    <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
+                                                        <button 
+                                                            className="btn-download"
+                                                            title="Ver Detalle"
+                                                            onClick={() => handleVerDetalle(solicitud)}
+                                                            style={{ color: '#003366' }}
+                                                        >
+                                                            <FontAwesomeIcon icon={faEye} />
+                                                        </button>
+                                                        {getEstadoSolicitud(solicitud) !== 'Rechazado' && getEstadoSolicitud(solicitud) !== 'Pendiente' && (
+                                                            <button 
+                                                                className="btn-download"
+                                                                title="Ver Autorización"
+                                                                onClick={() => handleVisualizarPDF(solicitud)}
+                                                                style={{ color: '#2e7d32' }}
+                                                            >
+                                                                <FontAwesomeIcon icon={faCheckCircle} />
+                                                            </button>
+                                                        )}
+                                                    </div>
                                                 )}
                                             </div>
                                         </td>
@@ -764,6 +996,35 @@ const GestionSolicitudes = () => {
                 )}
             </div>
 
+            {/* Componente para visualización de actas */}
+            {/* Modales de Documentación */}
+            
+            {/* 1. Modal para Acta Borrador */}
+            {actaData && (
+                <div className="modal-overlay">
+                    <div className="modal-content-wrapper">
+                        <div className="modal-view-body">
+                            <ActaPrestamoPrePrint 
+                                data={actaData} 
+                                adminName={user.nombreCompleto}
+                                onClose={() => setActaData(null)} 
+                            />
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* 3. Modal para Subir Acta Firmada (Interactivo) */}
+            <SubirActaModal 
+                isOpen={isUploadModalOpen}
+                onClose={() => {
+                    setIsUploadModalOpen(false);
+                    setSolicitudToUpload(null);
+                }}
+                onUpload={handleConfirmUploadActa}
+                solicitud={solicitudToUpload || {}}
+            />
+
             <div className="tabs-container">
                 <button 
                     className={`tab-button ${activeTab === 'pendientes' ? 'active' : ''}`}
@@ -771,30 +1032,44 @@ const GestionSolicitudes = () => {
                 >
                     ⏳ Pendientes
                 </button>
-                <button 
-                    className={`tab-button ${activeTab === 'listo-entregar' ? 'active' : ''}`}
-                    onClick={() => setActiveTab('listo-entregar')}
-                >
-                    ✅ Listo para Entregar
-                </button>
-                <button 
-                    className={`tab-button ${activeTab === 'entregados' ? 'active' : ''}`}
-                    onClick={() => setActiveTab('entregados')}
-                >
-                    📦 Listo para recepcionar
-                </button>
-                <button 
-                    className={`tab-button ${activeTab === 'devueltos' ? 'active' : ''}`}
-                    onClick={() => setActiveTab('devueltos')}
-                >
-                    🔙 Devueltos
-                </button>
-                <button 
-                    className={`tab-button ${activeTab === 'rechazados' ? 'active' : ''}`}
-                    onClick={() => setActiveTab('rechazados')}
-                >
-                    ❌ Rechazados
-                </button>
+
+                {!esDirectorEscuela && (
+                    <>
+                        <button 
+                            className={`tab-button ${activeTab === 'listo-entregar' ? 'active' : ''}`}
+                            onClick={() => setActiveTab('listo-entregar')}
+                        >
+                            ✅ Listo para Entregar
+                        </button>
+                        <button 
+                            className={`tab-button ${activeTab === 'entregados' ? 'active' : ''}`}
+                            onClick={() => setActiveTab('entregados')}
+                        >
+                            📦 Listo para recepcionar
+                        </button>
+                        <button 
+                            className={`tab-button ${activeTab === 'devueltos' ? 'active' : ''}`}
+                            onClick={() => setActiveTab('devueltos')}
+                        >
+                            🔙 Devueltos
+                        </button>
+                        <button 
+                            className={`tab-button ${activeTab === 'rechazados' ? 'active' : ''}`}
+                            onClick={() => setActiveTab('rechazados')}
+                        >
+                            ❌ Rechazados
+                        </button>
+                    </>
+                )}
+
+                {esDirectorEscuela && (
+                    <button 
+                        className={`tab-button ${activeTab === 'historial' ? 'active' : ''}`}
+                        onClick={() => setActiveTab('historial')}
+                    >
+                        📋 Historial Completo
+                    </button>
+                )}
             </div>
 
             <div className="tab-content">

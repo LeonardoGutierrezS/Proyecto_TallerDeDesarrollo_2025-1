@@ -1,5 +1,7 @@
 import '@styles/modal.css';
 import '@styles/prestamo-detalle.css';
+import { visualizarActaFirmada } from '@services/documento.service';
+import Swal from 'sweetalert2';
 
 const PrestamoDetalleModal = ({ show, onClose, prestamo }) => {
     if (!show || !prestamo) return null;
@@ -39,6 +41,22 @@ const PrestamoDetalleModal = ({ show, onClose, prestamo }) => {
         }
     };
 
+    const handleVerDocumento = async () => {
+        try {
+            const url = await visualizarActaFirmada(prestamo.prestamo.ID_Prestamo);
+            const win = window.open(url, '_blank');
+            if (!win) {
+                const link = document.createElement('a');
+                link.href = url;
+                link.target = '_blank';
+                link.click();
+            }
+        } catch (error) {
+            console.error('Error al visualizar acta:', error);
+            Swal.fire('Error', 'No se pudo visualizar el documento.', 'error');
+        }
+    };
+
     // Obtener datos del usuario
     const usuario = prestamo.usuario || {};
 
@@ -71,14 +89,16 @@ const PrestamoDetalleModal = ({ show, onClose, prestamo }) => {
                                 <span className="info-label">Tipo de Usuario:</span>
                                 <span className="info-value">{usuario.tipoUsuario?.Descripcion || usuario.tipoUsuario?.Tipo_Usuario || 'N/A'}</span>
                             </div>
-                            <div className="info-item">
-                                <span className="info-label">Carrera:</span>
-                                <span className="info-value">{usuario.carrera?.Nombre_Carrera || usuario.carrera?.Carrera || 'N/A'}</span>
-                            </div>
+                            {usuario.tipoUsuario?.Descripcion !== 'Profesor' && (
+                                <div className="info-item">
+                                    <span className="info-label">Carrera:</span>
+                                    <span className="info-value">{usuario.carrera?.Nombre_Carrera || usuario.carrera?.Carrera || 'N/A'}</span>
+                                </div>
+                            )}
                             {usuario.cargo && (
                                 <div className="info-item">
                                     <span className="info-label">Cargo:</span>
-                                    <span className="info-value">{usuario.cargo.Nombre_Cargo || usuario.cargo.Cargo}</span>
+                                    <span className="info-value">{usuario.cargo.Desc_Cargo || usuario.cargo.Nombre_Cargo || 'N/A'}</span>
                                 </div>
                             )}
                         </div>
@@ -133,7 +153,7 @@ const PrestamoDetalleModal = ({ show, onClose, prestamo }) => {
                         )}
                     </div>
 
-                    {/* Información de Solicitud */}
+                    {/* Información de Solicitud y Documentación */}
                     <div className="info-section">
                         <h3>📋 Información de la Solicitud</h3>
                         <div className="info-grid">
@@ -153,6 +173,33 @@ const PrestamoDetalleModal = ({ show, onClose, prestamo }) => {
                                 <div className="info-item" style={{ gridColumn: '1 / -1' }}>
                                     <span className="info-label">Motivo de la Solicitud:</span>
                                     <span className="info-value">{prestamo.Motivo_Sol}</span>
+                                </div>
+                            )}
+                            
+                            {/* DOCUMENTACIÓN ADJUNTA */}
+                            {prestamo.prestamo?.Documento_Suscrito && (
+                                <div className="info-item" style={{ gridColumn: '1 / -1', marginTop: '10px' }}>
+                                    <span className="info-label">Documentación Adjunta:</span>
+                                    <button 
+                                        className="btn-ver-doc" 
+                                        onClick={handleVerDocumento}
+                                        style={{
+                                            display: 'inline-flex',
+                                            alignItems: 'center',
+                                            gap: '8px',
+                                            marginTop: '8px',
+                                            padding: '8px 16px',
+                                            backgroundColor: '#e3f2fd',
+                                            color: '#1976d2',
+                                            border: '1px solid #90caf9',
+                                            borderRadius: '6px',
+                                            cursor: 'pointer',
+                                            fontSize: '0.9em',
+                                            fontWeight: '600'
+                                        }}
+                                    >
+                                        📄 Ver Acta de Prestamo Firmada
+                                    </button>
                                 </div>
                             )}
                         </div>

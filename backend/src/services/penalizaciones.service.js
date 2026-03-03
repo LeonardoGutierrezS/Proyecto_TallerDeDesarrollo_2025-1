@@ -11,6 +11,7 @@ export async function createPenalizacionService(body) {
 
     const newPenalizacion = penalizacionRepository.create({
       Descripcion: body.Descripcion,
+      Dias_Sancion: body.Dias_Sancion,
     });
 
     const penalizacionSaved = await penalizacionRepository.save(newPenalizacion);
@@ -73,7 +74,10 @@ export async function updatePenalizacionService(id, body) {
 
     await penalizacionRepository.update(
       { ID_Penalizaciones: id },
-      { Descripcion: body.Descripcion },
+      { 
+        Descripcion: body.Descripcion,
+        Dias_Sancion: body.Dias_Sancion
+      },
     );
 
     const penalizacionUpdated = await penalizacionRepository.findOne({

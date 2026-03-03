@@ -25,8 +25,7 @@ const ResetPassword = () => {
         minLength: false,
         hasUpperCase: false,
         hasLowerCase: false,
-        hasNumber: false,
-        validChars: false
+        hasNumber: false
     });
 
     useEffect(() => {
@@ -59,8 +58,7 @@ const ResetPassword = () => {
             minLength: password.length >= 8 && password.length <= 26,
             hasUpperCase: /[A-Z]/.test(password),
             hasLowerCase: /[a-z]/.test(password),
-            hasNumber: /[0-9]/.test(password),
-            validChars: /^[a-zA-Z0-9]*$/.test(password)
+            hasNumber: /[0-9]/.test(password)
         });
     };
 
@@ -71,7 +69,7 @@ const ResetPassword = () => {
         if (!/[A-Z]/.test(password)) return 'Debe contener al menos una letra mayúscula';
         if (!/[a-z]/.test(password)) return 'Debe contener al menos una letra minúscula';
         if (!/[0-9]/.test(password)) return 'Debe contener al menos un número';
-        if (!/^[a-zA-Z0-9]+$/.test(password)) return 'Solo puede contener letras y números';
+        if (!/^[a-zA-Z0-9\W_]*$/.test(password)) return 'La contraseña contiene caracteres no válidos';
         return '';
     };
 
@@ -210,9 +208,6 @@ const ResetPassword = () => {
                             </div>
                             <div style={{ color: passwordRequirements.hasNumber ? '#28a745' : '#666' }}>
                                 {passwordRequirements.hasNumber ? '✓' : '○'} Al menos un número
-                            </div>
-                            <div style={{ color: passwordRequirements.validChars ? '#28a745' : '#666' }}>
-                                {passwordRequirements.validChars ? '✓' : '○'} Solo letras y números
                             </div>
                         </div>
                     </div>

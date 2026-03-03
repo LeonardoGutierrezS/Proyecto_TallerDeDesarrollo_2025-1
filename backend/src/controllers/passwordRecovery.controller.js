@@ -104,7 +104,7 @@ export async function resetPassword(req, res) {
       );
     }
 
-    // Validar que contenga letras y números
+    // Validar composición básica de la contraseña
     const hasUpperCase = /[A-Z]/.test(newPassword);
     const hasLowerCase = /[a-z]/.test(newPassword);
     const hasNumber = /[0-9]/.test(newPassword);
@@ -125,12 +125,12 @@ export async function resetPassword(req, res) {
       );
     }
 
-    // Validar que solo contenga caracteres alfanuméricos
-    if (!/^[a-zA-Z0-9]+$/.test(newPassword)) {
+    // Validar que no contenga caracteres inválidos si es necesario
+    if (!/^[a-zA-Z0-9\W_]*$/.test(newPassword)) {
       return handleErrorClient(
         res,
         400,
-        "La contraseña solo puede contener letras y números"
+        "La contraseña contiene caracteres no válidos"
       );
     }
 

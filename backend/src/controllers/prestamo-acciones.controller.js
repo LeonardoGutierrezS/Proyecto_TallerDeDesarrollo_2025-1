@@ -15,12 +15,12 @@ import {
 export async function entregarPrestamoController(req, res) {
   try {
     const { idPrestamo } = req.params;
-    const { rut } = req;
+    const { nombreCompleto } = req.user;
     const { tipoDocumento } = req.body;
 
     const [prestamo, error] = await entregarPrestamoService(
       parseInt(idPrestamo),
-      rut,
+      nombreCompleto,
       tipoDocumento
     );
 

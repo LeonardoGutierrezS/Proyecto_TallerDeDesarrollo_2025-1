@@ -155,6 +155,11 @@ const Login = () => {
                 <p className="register-link">
                     ¿No tienes cuenta? <a href="/register">Regístrate aquí</a>
                 </p>
+
+                <div className="login-support">
+                    <p>¿Problemas con tu cuenta? Contacta a soporte:</p>
+                    <a href="mailto:labespecialidades.face@ubiobio.cl">labespecialidades.face@ubiobio.cl</a>
+                </div>
             </div>
 
             <div className="login-footer">

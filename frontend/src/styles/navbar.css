@@ -48,13 +48,16 @@
 .sidebar-nav {
 	flex: 1;
 	overflow-y: auto;
-	padding: 20px 0;
+	padding: 20px 0 0 0; /* Removed bottom padding inside scroll */
+    display: flex;
+    flex-direction: column;
 }
 
 .sidebar-nav ul {
 	list-style: none;
 	padding: 0;
 	margin: 0;
+    flex: 1; /* Pushes footer down */
 }
 
 .sidebar-nav li {
@@ -209,4 +212,25 @@
 
 .sidebar-nav::-webkit-scrollbar-thumb:hover {
 	background: rgba(255, 255, 255, 0.5);
+}
+
+.sidebar-footer-logo {
+    margin-top: auto;
+    padding: 20px;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: rgba(0, 0, 0, 0.1);
+}
+
+.sidebar-footer-logo img {
+    max-width: 180px;
+    height: auto;
+    opacity: 0.9;
+    transition: opacity 0.3s ease;
+}
+
+.sidebar-footer-logo img:hover {
+    opacity: 1;
 }

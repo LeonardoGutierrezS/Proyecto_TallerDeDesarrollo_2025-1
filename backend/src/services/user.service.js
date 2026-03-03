@@ -72,12 +72,14 @@ export async function updateUserService(query, body) {
 
     if (!userFound) return [null, "Usuario no encontrado"];
 
-    const existingUser = await userRepository.findOne({
-      where: [{ Rut: body.rut }, { Correo: body.email }],
-    });
+    const existingRut = await userRepository.findOne({ where: { Rut: body.rut } });
+    if (existingRut && existingRut.Rut !== userFound.Rut) {
+      return [null, "El RUT ingresado ya está registrado para otro usuario"];
+    }
 
-    if (existingUser && existingUser.Rut !== userFound.Rut) {
-      return [null, "Ya existe un usuario con el mismo rut o email"];
+    const existingEmail = await userRepository.findOne({ where: { Correo: body.email } });
+    if (existingEmail && existingEmail.Rut !== userFound.Rut) {
+      return [null, "El correo electrónico ingresado ya está registrado para otro usuario"];
     }
 
     if (body.password) {
@@ -161,7 +163,7 @@ export async function updateUserService(query, body) {
           
           // Crear nuevo registro en posee_cargo
           const nuevoPoseeCargo = PoseeCargoSchema.create({
-            Rut: userFound.Rut,
+            Rut_profesor: userFound.Rut,
             ID_Cargo: body.idCargo,
             Fecha_Inicio: new Date(),
             Fecha_Fin: null,
@@ -373,13 +375,18 @@ export async function createUserByAdminService(data) {
     const CargoSchema = AppDataSource.getRepository("Cargo");
     const CarreraSchema = AppDataSource.getRepository("Carrera");
 
-    // Verificar si el usuario ya existe
-    const existingUser = await userRepository.findOne({
-      where: [{ Rut: data.rut }, { Correo: data.email }],
-    });
+    // Verificar si el RUT o el correo ya existen (en paralelo)
+    const [existingRut, existingEmail] = await Promise.all([
+      userRepository.findOne({ where: { Rut: data.rut } }),
+      userRepository.findOne({ where: { Correo: data.email } })
+    ]);
 
-    if (existingUser) {
-      return [null, "Ya existe un usuario con el mismo RUT o correo"];
+    const errors = {};
+    if (existingRut) errors.rut = "El RUT ingresado ya está registrado";
+    if (existingEmail) errors.email = "El correo electrónico ingresado ya está registrado";
+
+    if (Object.keys(errors).length > 0) {
+      return [null, errors];
     }
 
     // Validar que el tipo de usuario exista
@@ -400,7 +407,7 @@ export async function createUserByAdminService(data) {
       if (!carrera) return [null, "Carrera no encontrada"];
     }
 
-    // Generar contraseña provisional automática (8 caracteres: letras y números)
+    // Generar contraseña provisional automática (8 caracteres: letras, números y símbolos opcionales)
     const generatePassword = () => {
       const chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789";
       let password = "";
@@ -435,6 +442,19 @@ export async function createUserByAdminService(data) {
     });
 
     await userRepository.save(newUser);
+
+    // Si es profesor (tipo 3) y tiene cargo, crear registro en posee_cargo
+    if (data.codTipoUsuario === 3 && data.idCargo) {
+      const PoseeCargoRepository = AppDataSource.getRepository("PoseeCargo");
+      const nuevoPoseeCargo = PoseeCargoRepository.create({
+        Rut_profesor: newUser.Rut,
+        ID_Cargo: data.idCargo,
+        Fecha_Inicio: new Date(),
+        Fecha_Fin: null,
+        Descripcion_Cargo: data.descripcionCargo || null
+      });
+      await PoseeCargoRepository.save(nuevoPoseeCargo);
+    }
 
     const userCreated = await userRepository.findOne({
       where: { Rut: newUser.Rut },

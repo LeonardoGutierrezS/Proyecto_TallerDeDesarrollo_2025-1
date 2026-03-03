@@ -10,14 +10,19 @@ const TienePenalizacionSchema = new EntitySchema({
   name: "TienePenalizacion",
   tableName: "tiene_penalizacion",
   columns: {
+    ID: {
+      type: "int",
+      primary: true,
+      generated: true,
+    },
     Rut: {
       type: "varchar",
       length: 12,
-      primary: true,
+      nullable: false,
     },
     ID_Penalizaciones: {
       type: "int",
-      primary: true,
+      nullable: false,
     },
     Fecha_Inicio: {
       type: "timestamp with time zone",
@@ -47,6 +52,7 @@ const TienePenalizacionSchema = new EntitySchema({
       target: "Penalizaciones",
       joinColumn: {
         name: "ID_Penalizaciones",
+        referencedColumnName: "ID_Penalizaciones",
       },
       nullable: false,
     },
@@ -55,7 +61,7 @@ const TienePenalizacionSchema = new EntitySchema({
     {
       name: "IDX_TIENE_PENALIZACION",
       columns: ["Rut", "ID_Penalizaciones"],
-      unique: true,
+      unique: false,
     },
   ],
 });

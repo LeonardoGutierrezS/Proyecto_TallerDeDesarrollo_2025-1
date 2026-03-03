@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { updateUser } from '@services/user.service.js';
 import { getCarreras } from '@services/carrera.service.js';
 import { getCargos } from '@services/cargo.service.js';
-import { showErrorAlert, showSuccessAlert } from '@helpers/sweetAlert.js';
+import { showErrorAlert, showSuccessAlert, showLoadingAlert, closeAlert } from '@helpers/sweetAlert.js';
 import '@styles/modal.css';
 
 const EditUserModal = ({ user, onClose, onSuccess }) => {
@@ -57,7 +57,7 @@ const EditUserModal = ({ user, onClose, onSuccess }) => {
                 idCargo: '',
                 descripcionCargo: ''
             });
-        } else if (name === 'idCargo' && value !== '2') {
+        } else if (name === 'idCargo' && value !== '3') {
             // Limpiar descripción si cambia a un cargo diferente de "Otro"
             setFormData({
                 ...formData,
@@ -76,6 +76,9 @@ const EditUserModal = ({ user, onClose, onSuccess }) => {
         e.preventDefault();
         setLoading(true);
 
+        // Mostrar modal de carga
+        showLoadingAlert('Actualizando Usuario', 'Por favor espere mientras se guardan los cambios...');
+
         try {
             const userData = {
                 nombreCompleto: formData.nombreCompleto,
@@ -89,6 +92,8 @@ const EditUserModal = ({ user, onClose, onSuccess }) => {
 
             const response = await updateUser(userData, user.Rut);
 
+            closeAlert(); // Cerrar el loading
+
             if (response && !response.error) {
                 showSuccessAlert('¡Éxito!', 'Usuario actualizado correctamente');
                 onSuccess();
@@ -96,6 +101,7 @@ const EditUserModal = ({ user, onClose, onSuccess }) => {
                 showErrorAlert('Error', response.details?.message || response.message || 'Error al actualizar usuario');
             }
         } catch (error) {
+            closeAlert(); // Cerrar el loading
             console.error('Error:', error);
             showErrorAlert('Error', 'No se pudo actualizar el usuario');
         } finally {
@@ -106,7 +112,7 @@ const EditUserModal = ({ user, onClose, onSuccess }) => {
     // Determinar qué campos mostrar
     const esAlumno = formData.codTipoUsuario === 2 || formData.codTipoUsuario === '2';
     const esProfesor = formData.codTipoUsuario === 3 || formData.codTipoUsuario === '3';
-    const esCargoOtro = formData.idCargo === 2 || formData.idCargo === '2';
+    const esCargoOtro = formData.idCargo === 3 || formData.idCargo === '3';
 
     return (
         <div className="modal-overlay" onClick={onClose}>

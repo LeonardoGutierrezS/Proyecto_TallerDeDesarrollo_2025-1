@@ -4,6 +4,7 @@ import Prestamo from "../entity/prestamo.entity.js";
 import Equipos from "../entity/equipos.entity.js";
 import TieneEstado from "../entity/tiene_estado.entity.js";
 import User from "../entity/user.entity.js";
+import EstadoSchema from "../entity/estado.entity.js";
 import { AppDataSource } from "../config/configDb.js";
 
 /**
@@ -63,10 +64,17 @@ export async function registrarDevolucionService(body) {
 
     await tieneEstadoRepository.save(newEstado);
 
-    // Marcar el equipo como disponible
+    // Obtener estado Disponible
+    const estadoRepository = AppDataSource.getRepository(EstadoSchema);
+    const estadoDisponible = await estadoRepository.findOne({ where: { Descripcion: "Disponible" } });
+
+    // Marcar el equipo como disponible y actualizar estado
     await equipoRepository.update(
       { ID_Num_Inv: prestamoFound.ID_Num_Inv },
-      { Disponible: true },
+      { 
+        Disponible: true,
+        estado: estadoDisponible
+      },
     );
 
     const devolucionWithRelations = await devolucionRepository.findOne({

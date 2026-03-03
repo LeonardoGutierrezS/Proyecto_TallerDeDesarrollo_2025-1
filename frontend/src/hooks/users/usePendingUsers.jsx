@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { getPendingUsers, approveUser, rejectUser } from '@services/user.service.js';
-import { showErrorAlert, showSuccessAlert } from '@helpers/sweetAlert.js';
+import { showErrorAlert, showSuccessAlert, showLoadingAlert, closeAlert } from '@helpers/sweetAlert.js';
 import Swal from 'sweetalert2';
 
 const usePendingUsers = () => {
@@ -25,19 +25,11 @@ const usePendingUsers = () => {
     const handleApprove = async (rut) => {
         try {
             // Mostrar mensaje de carga
-            Swal.fire({
-                title: 'Procesando...',
-                html: 'Aprobando usuario y enviando correo de confirmación',
-                allowOutsideClick: false,
-                allowEscapeKey: false,
-                didOpen: () => {
-                    Swal.showLoading();
-                }
-            });
+            showLoadingAlert('Procesando...', 'Aprobando usuario y enviando correo de confirmación');
 
             const response = await approveUser(rut);
             
-            Swal.close(); // Cerrar el loading
+            closeAlert(); // Cerrar el loading
             
             if (response.status === 'Success') {
                 showSuccessAlert('¡Aprobado!', 'Usuario aprobado correctamente. Se ha enviado un correo de confirmación.');
@@ -46,7 +38,7 @@ const usePendingUsers = () => {
                 showErrorAlert('Error', response.details?.message || 'Error al aprobar usuario');
             }
         } catch (error) {
-            Swal.close(); // Cerrar el loading en caso de error
+            closeAlert(); // Cerrar el loading en caso de error
             console.error('Error al aprobar usuario:', error);
             showErrorAlert('Error', 'No se pudo aprobar el usuario');
         }
@@ -86,12 +78,24 @@ const usePendingUsers = () => {
 
             // Si se ingresó un motivo, proceder con el rechazo
             if (motivo) {
-                const response = await rejectUser(rut, motivo.trim());
-                if (response.status === 'Success') {
+                // Mostrar loading mientras se procesa el rechazo
+                showLoadingAlert('Procesando...', 'Rechazando usuario y enviando notificación...');
+                
+                try {
+                    const response = await rejectUser(rut, motivo.trim());
+                    
+                    closeAlert();
+
+                    if (response.status === 'Success') {
                     showSuccessAlert('Rechazado', 'Usuario rechazado correctamente. Se ha enviado un correo con el motivo.');
                     fetchPendingUsers(); // Recargar lista
                 } else {
                     showErrorAlert('Error', response.details?.message || 'Error al rechazar usuario');
+                }
+                } catch (error) {
+                    closeAlert(); 
+                    console.error('Error al rechazar usuario (interno):', error);
+                    showErrorAlert('Error', 'Error al procesar el rechazo');
                 }
             }
         } catch (error) {

@@ -18,11 +18,13 @@ import { handleErrorServer } from "../handlers/responseHandlers.js";
  */
 export async function descargarReporteSolicitudesPDF(req, res) {
   try {
-    const { fechaInicio, fechaFin } = req.query;
+    const { fechaInicio, fechaFin, tipoUsuario, cargo } = req.query;
     
     const filtros = {};
     if (fechaInicio) filtros.fechaInicio = fechaInicio;
     if (fechaFin) filtros.fechaFin = fechaFin;
+    if (tipoUsuario) filtros.tipoUsuario = tipoUsuario;
+    if (cargo) filtros.cargo = cargo;
 
     const doc = await generarReporteSolicitudesPDF(filtros);
 
@@ -45,11 +47,13 @@ export async function descargarReporteSolicitudesPDF(req, res) {
  */
 export async function descargarReporteSolicitudesCSV(req, res) {
   try {
-    const { fechaInicio, fechaFin } = req.query;
+    const { fechaInicio, fechaFin, tipoUsuario, cargo } = req.query;
     
     const filtros = {};
     if (fechaInicio) filtros.fechaInicio = fechaInicio;
     if (fechaFin) filtros.fechaFin = fechaFin;
+    if (tipoUsuario) filtros.tipoUsuario = tipoUsuario;
+    if (cargo) filtros.cargo = cargo;
 
     const csv = await generarReporteSolicitudesCSV(filtros);
 
@@ -71,11 +75,13 @@ export async function descargarReporteSolicitudesCSV(req, res) {
  */
 export async function descargarReportePrestamosPDF(req, res) {
   try {
-    const { fechaInicio, fechaFin } = req.query;
+    const { fechaInicio, fechaFin, tipoUsuario, rut } = req.query;
     
     const filtros = {};
     if (fechaInicio) filtros.fechaInicio = fechaInicio;
     if (fechaFin) filtros.fechaFin = fechaFin;
+    if (tipoUsuario) filtros.tipoUsuario = tipoUsuario;
+    if (rut) filtros.rut = rut;
 
     const doc = await generarReportePrestamosPDF(filtros);
 
@@ -98,11 +104,13 @@ export async function descargarReportePrestamosPDF(req, res) {
  */
 export async function descargarReportePrestamosCSV(req, res) {
   try {
-    const { fechaInicio, fechaFin } = req.query;
+    const { fechaInicio, fechaFin, tipoUsuario, rut } = req.query;
     
     const filtros = {};
     if (fechaInicio) filtros.fechaInicio = fechaInicio;
     if (fechaFin) filtros.fechaFin = fechaFin;
+    if (tipoUsuario) filtros.tipoUsuario = tipoUsuario;
+    if (rut) filtros.rut = rut;
 
     const csv = await generarReportePrestamosCSV(filtros);
 
@@ -165,8 +173,15 @@ export async function descargarReporteEquiposCSV(req, res) {
  */
 export async function descargarReporteEstadisticasPDF(req, res) {
   try {
-    const { meses } = req.query;
-    const doc = await generarReporteEstadisticasPDF({ meses: meses ? parseInt(meses) : 6 });
+    const { meses, fechaInicio, fechaFin, carrera, categoria } = req.query;
+    const filtros = {
+      meses: meses ? parseInt(meses) : 6,
+      fechaInicio,
+      fechaFin,
+      carrera,
+      categoria
+    };
+    const doc = await generarReporteEstadisticasPDF(filtros);
 
     res.setHeader("Content-Type", "application/pdf");
     res.setHeader(
@@ -187,10 +202,11 @@ export async function descargarReporteEstadisticasPDF(req, res) {
  */
 export async function descargarReporteUsuariosPDF(req, res) {
   try {
-    const { tipoUsuario } = req.query;
+    const { tipoUsuario, carrera } = req.query;
     
     const filtros = {};
     if (tipoUsuario) filtros.tipoUsuario = tipoUsuario;
+    if (carrera) filtros.carrera = carrera;
 
     const doc = await generarReporteUsuariosPDF(filtros);
 
@@ -213,10 +229,11 @@ export async function descargarReporteUsuariosPDF(req, res) {
  */
 export async function descargarReporteUsuariosCSV(req, res) {
   try {
-    const { tipoUsuario } = req.query;
+    const { tipoUsuario, carrera } = req.query;
     
     const filtros = {};
     if (tipoUsuario) filtros.tipoUsuario = tipoUsuario;
+    if (carrera) filtros.carrera = carrera;
 
     const csv = await generarReporteUsuariosCSV(filtros);
 
@@ -238,8 +255,14 @@ export async function descargarReporteUsuariosCSV(req, res) {
  */
 export async function obtenerDatosGraficosController(req, res) {
   try {
-    const { meses } = req.query;
-    const datos = await obtenerDatosGraficos({ meses: meses ? parseInt(meses) : 6 });
+    const { meses, fechaInicio, fechaFin, carrera, categoria } = req.query;
+    const datos = await obtenerDatosGraficos({ 
+      meses: meses ? parseInt(meses) : 6,
+      fechaInicio,
+      fechaFin,
+      carrera,
+      categoria
+    });
     res.status(200).json({
       status: "Success",
       data: datos

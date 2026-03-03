@@ -23,6 +23,7 @@ import {
 
 } from "./config/initialSetup.js";
 import { passportJwtSetup } from "./auth/passport.auth.js";
+import { startCronJobs } from "./services/tareasProgramadas.service.js";
 
 async function setupServer() {
   try {
@@ -99,6 +100,7 @@ async function setupAPI() {
     await createUsers();
     await createEquipos();
     await createPenalizaciones();
+    startCronJobs();
   } catch (error) {
     console.log("Error en index.js -> setupAPI(), el error es: ", error);
   }

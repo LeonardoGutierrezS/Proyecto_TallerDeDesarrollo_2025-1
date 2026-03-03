@@ -413,7 +413,8 @@ async function createEstados() {
 
     await Promise.all([
       estadoRepository.save(estadoRepository.create({ Descripcion: "Disponible" })),
-      estadoRepository.save(estadoRepository.create({ Descripcion: "Ocupado" })),
+      estadoRepository.save(estadoRepository.create({ Descripcion: "Solicitado" })),
+      estadoRepository.save(estadoRepository.create({ Descripcion: "En Préstamo" })),
       estadoRepository.save(estadoRepository.create({ Descripcion: "En Reparación" })),
       estadoRepository.save(estadoRepository.create({ Descripcion: "Dado de Baja" })),
     ]);
@@ -474,7 +475,7 @@ async function createEquipos() {
     const impresora = await categoriaRepository.findOne({ where: { Descripcion: "Impresora" } });
 
     const disponible = await estadoRepository.findOne({ where: { Descripcion: "Disponible" } });
-    const ocupado = await estadoRepository.findOne({ where: { Descripcion: "Ocupado" } });
+    const enPrestamo = await estadoRepository.findOne({ where: { Descripcion: "En Préstamo" } });
 
     if (!hp || !notebook || !disponible) {
       console.error("Error: No se encontraron las entidades necesarias para crear equipos");
@@ -486,7 +487,7 @@ async function createEquipos() {
     const notebook1 = await equipoRepository.save(
       equipoRepository.create({
         ID_Num_Inv: "NB-2024-001",
-        Modelo: "HP Pavilion 15",
+        Modelo: "Pavilion 15",
         Numero_Serie: "5CD1234ABC",
         Comentarios: "Notebook para préstamo a estudiantes",
         Disponible: true,
@@ -499,7 +500,7 @@ async function createEquipos() {
     const notebook2 = await equipoRepository.save(
       equipoRepository.create({
         ID_Num_Inv: "NB-2024-002",
-        Modelo: "Dell Latitude 5420",
+        Modelo: "Latitude 5420",
         Numero_Serie: "DELL5420XYZ",
         Comentarios: "Notebook para profesores",
         Disponible: true,
@@ -512,13 +513,13 @@ async function createEquipos() {
     const notebook3 = await equipoRepository.save(
       equipoRepository.create({
         ID_Num_Inv: "NB-2024-003",
-        Modelo: "Lenovo ThinkPad E14",
+        Modelo: "ThinkPad E14",
         Numero_Serie: "LEN14GEN3",
         Comentarios: null,
-        Disponible: false,
+        Disponible: true,
         marca: lenovo,
         categoria: notebook,
-        estado: ocupado,
+        estado: disponible,
       }),
     );
 
@@ -543,7 +544,7 @@ async function createEquipos() {
       equipoRepository.save(
         equipoRepository.create({
           ID_Num_Inv: "DT-2024-001",
-          Modelo: "Asus Desktop D500",
+          Modelo: "Desktop D500",
           Numero_Serie: "ASUS500DT",
           Comentarios: "Desktop para laboratorio",
           Disponible: true,
@@ -555,7 +556,7 @@ async function createEquipos() {
       equipoRepository.save(
         equipoRepository.create({
           ID_Num_Inv: "PY-2024-001",
-          Modelo: "Epson PowerLite",
+          Modelo: "PowerLite",
           Numero_Serie: "EPSPWLT2024",
           Comentarios: "Proyector sala 401",
           Disponible: true,
@@ -567,7 +568,7 @@ async function createEquipos() {
       equipoRepository.save(
         equipoRepository.create({
           ID_Num_Inv: "IP-2024-001",
-          Modelo: "Epson L3250",
+          Modelo: "L3250",
           Numero_Serie: "EPSL3250ABC",
           Comentarios: "Impresora oficina",
           Disponible: true,
@@ -599,31 +600,37 @@ async function createPenalizaciones() {
       penalizacionesRepository.save(
         penalizacionesRepository.create({
           Descripcion: "Retraso en devolución de equipo (menor a 7 días)",
+          Dias_Sancion: 3,
         }),
       ),
       penalizacionesRepository.save(
         penalizacionesRepository.create({
           Descripcion: "Retraso en devolución de equipo (mayor a 7 días)",
+          Dias_Sancion: 7,
         }),
       ),
       penalizacionesRepository.save(
         penalizacionesRepository.create({
           Descripcion: "Daño leve al equipo prestado",
+          Dias_Sancion: 5,
         }),
       ),
       penalizacionesRepository.save(
         penalizacionesRepository.create({
           Descripcion: "Daño grave al equipo prestado",
+          Dias_Sancion: 14,
         }),
       ),
       penalizacionesRepository.save(
         penalizacionesRepository.create({
           Descripcion: "Pérdida de equipo",
+          Dias_Sancion: 30,
         }),
       ),
       penalizacionesRepository.save(
         penalizacionesRepository.create({
           Descripcion: "Uso indebido del equipo",
+          Dias_Sancion: 10,
         }),
       ),
     ]);

@@ -13,6 +13,8 @@ const EditEquipoModal = ({ show, onClose, onSuccess, equipo }) => {
     const [loading, setLoading] = useState(true);
     const [isNotebook, setIsNotebook] = useState(false);
 
+    const [isOnLoan, setIsOnLoan] = useState(false);
+
     // Observar cambios en la categoría seleccionada
     const selectedCategoria = watch('ID_Categoria');
 
@@ -32,6 +34,8 @@ const EditEquipoModal = ({ show, onClose, onSuccess, equipo }) => {
             setValue('ID_Marca', equipo.ID_Marca || equipo.marca?.ID_Marca);
             setValue('ID_Categoria', equipo.ID_Categoria || equipo.categoria?.ID_Categoria);
             setValue('ID_Estado', equipo.ID_Estado || equipo.estado?.Cod_Estado);
+
+            setIsOnLoan(equipo.estado?.Descripcion === "En Préstamo");
 
             // Cargar especificaciones si existen
             if (equipo.especificaciones && Array.isArray(equipo.especificaciones)) {
@@ -91,7 +95,7 @@ const EditEquipoModal = ({ show, onClose, onSuccess, equipo }) => {
             };
 
             // Si es Notebook, agregar especificaciones
-            if (isNotebook) {
+            if (isNotebook && !isOnLoan) {
                 equipoData.especificaciones = {
                     Procesador: data.Procesador?.trim() || null,
                     RAM: data.RAM?.trim() || null,
@@ -130,6 +134,12 @@ const EditEquipoModal = ({ show, onClose, onSuccess, equipo }) => {
                     <button className="modal-close" onClick={handleClose}>&times;</button>
                 </div>
 
+                {isOnLoan && (
+                    <div className="alert-warning" style={{ marginBottom: '15px', padding: '10px', backgroundColor: '#fff3cd', border: '1px solid #ffeeba', borderRadius: '4px', color: '#856404' }}>
+                        ⚠️ Este equipo se encuentra <strong>En Préstamo</strong>. La edición de sus características principales está deshabilitada.
+                    </div>
+                )}
+
                 {loading ? (
                     <div className="loading-message">
                         <p>Cargando catálogos...</p>
@@ -143,8 +153,9 @@ const EditEquipoModal = ({ show, onClose, onSuccess, equipo }) => {
                                 id="Modelo"
                                 placeholder="Ej: HP Pavilion 15"
                                 autoComplete="off"
+                                disabled={isOnLoan}
                                 {...register('Modelo', {
-                                    required: 'El modelo es obligatorio',
+                                    required: isOnLoan ? false : 'El modelo es obligatorio',
                                     minLength: { value: 2, message: 'Debe tener al menos 2 caracteres' },
                                     maxLength: { value: 100, message: 'Debe tener máximo 100 caracteres' }
                                 })}
@@ -159,8 +170,9 @@ const EditEquipoModal = ({ show, onClose, onSuccess, equipo }) => {
                                 id="Numero_Serie"
                                 placeholder="Ej: 5CD1234ABC"
                                 autoComplete="off"
+                                disabled={isOnLoan}
                                 {...register('Numero_Serie', {
-                                    required: 'El número de serie es obligatorio',
+                                    required: isOnLoan ? false : 'El número de serie es obligatorio',
                                     minLength: { value: 5, message: 'Debe tener al menos 5 caracteres' },
                                     maxLength: { value: 100, message: 'Debe tener máximo 100 caracteres' }
                                 })}
@@ -171,7 +183,7 @@ const EditEquipoModal = ({ show, onClose, onSuccess, equipo }) => {
                         <div className="form-row">
                             <div className="form-group">
                                 <label htmlFor="ID_Marca">🏢 Marca *</label>
-                                <select id="ID_Marca" {...register('ID_Marca', { required: 'La marca es obligatoria' })}>
+                                <select id="ID_Marca" disabled={isOnLoan} {...register('ID_Marca', { required: isOnLoan ? false : 'La marca es obligatoria' })}>
                                     <option value="">Seleccione marca</option>
                                     {marcas.map((marca) => (
                                         <option key={marca.ID_Marca} value={marca.ID_Marca}>{marca.Descripcion}</option>
@@ -182,7 +194,7 @@ const EditEquipoModal = ({ show, onClose, onSuccess, equipo }) => {
 
                             <div className="form-group">
                                 <label htmlFor="ID_Categoria">📁 Categoría *</label>
-                                <select id="ID_Categoria" {...register('ID_Categoria', { required: 'La categoría es obligatoria' })}>
+                                <select id="ID_Categoria" disabled={isOnLoan} {...register('ID_Categoria', { required: isOnLoan ? false : 'La categoría es obligatoria' })}>
                                     <option value="">Seleccione categoría</option>
                                     {categorias.map((categoria) => (
                                         <option key={categoria.ID_Categoria} value={categoria.ID_Categoria}>{categoria.Descripcion}</option>
@@ -234,6 +246,7 @@ const EditEquipoModal = ({ show, onClose, onSuccess, equipo }) => {
                                             type="text"
                                             id="Procesador"
                                             placeholder="Ej: Intel Core i5"
+                                            disabled={isOnLoan}
                                             {...register('Procesador', { maxLength: { value: 200, message: 'Máximo 200 caracteres' } })}
                                         />
                                     </div>
@@ -243,6 +256,7 @@ const EditEquipoModal = ({ show, onClose, onSuccess, equipo }) => {
                                             type="text"
                                             id="RAM"
                                             placeholder="Ej: 8GB DDR4"
+                                            disabled={isOnLoan}
                                             {...register('RAM', { maxLength: { value: 100, message: 'Máximo 100 caracteres' } })}
                                         />
                                     </div>
@@ -253,6 +267,7 @@ const EditEquipoModal = ({ show, onClose, onSuccess, equipo }) => {
                                         type="text"
                                         id="Almacenamiento"
                                         placeholder="Ej: 256GB SSD"
+                                        disabled={isOnLoan}
                                         {...register('Almacenamiento', { maxLength: { value: 100, message: 'Máximo 100 caracteres' } })}
                                     />
                                 </div>

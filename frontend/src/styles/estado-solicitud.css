@@ -6,10 +6,10 @@
 
 .solicitudes-header h1 {
     color: #003366;
-    font-size: 2em;
+    font-size: 1.75em;
     margin: 0;
-    padding-bottom: 15px;
-    border-bottom: 3px solid #006edf;
+    padding-bottom: 8px;
+    border-bottom: 2px solid #006edf;
 }
 
 /* Section Header */

@@ -157,15 +157,33 @@ export async function getEquiposPorCategoriaService(categoriaId) {
   }
 }
 
+import EstadoSchema from "../entity/estado.entity.js";
+
+// ... existing imports
+
 export async function updateEquipoService(id, body) {
   try {
     const equipoRepository = AppDataSource.getRepository(Equipos);
+    const estadoRepository = AppDataSource.getRepository(EstadoSchema);
 
     const equipoFound = await equipoRepository.findOne({
       where: { ID_Num_Inv: id },
+      relations: ["estado"],
     });
 
     if (!equipoFound) return [null, "Equipo no encontrado"];
+
+    // Restricción: Si está en préstamo, no permitir cambios de identificación
+    if (equipoFound.estado.Descripcion === "En Préstamo") {
+      if (
+        (body.Modelo && body.Modelo !== equipoFound.Modelo) ||
+        (body.Numero_Serie && body.Numero_Serie !== equipoFound.Numero_Serie) ||
+        (body.ID_Marca && String(body.ID_Marca) !== String(equipoFound.ID_Marca)) ||
+        (body.ID_Categoria && String(body.ID_Categoria) !== String(equipoFound.ID_Categoria))
+      ) {
+        return [null, "No se puede editar información crítica de un equipo mientras está en préstamo."];
+      }
+    }
 
     if (body.Numero_Serie && body.Numero_Serie !== equipoFound.Numero_Serie) {
       const existingEquipo = await equipoRepository.findOne({
@@ -177,11 +195,26 @@ export async function updateEquipoService(id, body) {
       }
     }
 
+    // Lógica para cambio de estado y disponibilidad
+    let nuevaDisponibilidad = body.Disponible !== undefined ? body.Disponible : equipoFound.Disponible;
+
+    if (body.ID_Estado) {
+      const newState = await estadoRepository.findOne({ where: { Cod_Estado: body.ID_Estado } });
+      
+      if (newState) {
+         if (newState.Descripcion === "Dado de Baja" || newState.Descripcion === "En Reparación") {
+             nuevaDisponibilidad = false;
+         } else if (newState.Descripcion === "Disponible") {
+             nuevaDisponibilidad = true;
+         }
+      }
+    }
+
     const dataEquipoUpdate = {
       Modelo: body.Modelo || equipoFound.Modelo,
       Numero_Serie: body.Numero_Serie || equipoFound.Numero_Serie,
       Comentarios: body.Comentarios !== undefined ? body.Comentarios : equipoFound.Comentarios,
-      Disponible: body.Disponible !== undefined ? body.Disponible : equipoFound.Disponible,
+      Disponible: nuevaDisponibilidad,
     };
 
     if (body.ID_Marca) {
@@ -199,8 +232,11 @@ export async function updateEquipoService(id, body) {
       ...dataEquipoUpdate,
     });
 
-    // Actualizar especificaciones si vienen en el body
-    if (body.especificaciones) {
+    // Actualizar especificaciones si vienen en el body (Solo si no está en préstamo o si se permite)
+    // Asumimos que también se bloquean si está en préstamo, pero el frontend debería bloquearlo.
+    // Si el usuario intenta forzarlo, podríamos bloquearlo aquí también, pero por ahora confiaremos 
+    // en que no envíe 'especificaciones' si está bloqueado, o podemos agregar la validación.
+    if (equipoFound.estado.Descripcion !== "En Préstamo" && body.especificaciones) {
       const especificacionesRepository = AppDataSource.getRepository(EspecificacionesHW);
       const specs = body.especificaciones;
 

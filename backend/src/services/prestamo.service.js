@@ -3,6 +3,7 @@ import Prestamo from "../entity/prestamo.entity.js";
 import Equipos from "../entity/equipos.entity.js";
 import User from "../entity/user.entity.js";
 import { AppDataSource } from "../config/configDb.js";
+import EstadoSchema from "../entity/estado.entity.js";
 
 export async function createPrestamoService(body) {
   try {
@@ -292,10 +293,17 @@ export async function finalizarPrestamoService(id, body) {
       ...dataFinalizacion,
     });
 
-    // Marcar el equipo como disponible nuevamente
+    // Obtener estado Disponible
+    const estadoRepository = AppDataSource.getRepository(EstadoSchema);
+    const estadoDisponible = await estadoRepository.findOne({ where: { Descripcion: "Disponible" } });
+
+    // Marcar el equipo como disponible nuevamente y actualizar estado
     await equipoRepository.update(
       { ID_Num_Inv: prestamoFound.ID_Num_Inv },
-      { Disponible: true },
+      { 
+        Disponible: true,
+        estado: estadoDisponible
+      },
     );
 
     const prestamoFinalizado = await prestamoRepository.findOne({
@@ -334,9 +342,13 @@ export async function deletePrestamoService(id) {
 
     // Si el préstamo no estaba finalizado, liberar el equipo
     if (!prestamoFound.Fecha_devolucion) {
+      const estadoDisponible = await AppDataSource.getRepository(EstadoSchema).findOne({ where: { Descripcion: "Disponible" } });
       await equipoRepository.update(
         { ID_Num_Inv: prestamoFound.ID_Num_Inv },
-        { Disponible: true },
+        { 
+          Disponible: true,
+          estado: estadoDisponible 
+        },
       );
     }
 

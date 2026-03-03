@@ -1,5 +1,8 @@
 import { useState, useEffect } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
 import { updateUser } from '@services/user.service.js';
+import { getMisPrestamos } from '@services/prestamo.service';
+import { getActivasPorUsuario } from '@services/penalizacion.service.js';
 import { showErrorAlert, showSuccessAlert } from '@helpers/sweetAlert.js';
 import '@styles/perfil.css';
 
@@ -11,6 +14,10 @@ const Perfil = () => {
         newPassword: '',
         confirmPassword: ''
     });
+    const [solicitudes, setSolicitudes] = useState([]);
+    const [sanciones, setSanciones] = useState([]);
+    const [loadingSolicitudes, setLoadingSolicitudes] = useState(true);
+    const navigate = useNavigate();
 
     const esDirectorEscuela = user?.esDirectorEscuela || false;
     const userRole = esDirectorEscuela ? 'Director de Escuela' : user?.tipoUsuario;
@@ -19,6 +26,36 @@ const Perfil = () => {
         const { name, value } = e.target;
         setPasswords(prev => ({ ...prev, [name]: value }));
     };
+
+    useEffect(() => {
+        const fetchSolicitudes = async () => {
+            try {
+                setLoadingSolicitudes(true);
+                const response = await getMisPrestamos();
+                if (response.status === 'Success' && response.data) {
+                    setSolicitudes(response.data.slice(0, 5)); // Solo las 5 más recientes
+                }
+            } catch (error) {
+                console.error('Error al cargar solicitudes en perfil:', error);
+            } finally {
+                setLoadingSolicitudes(false);
+            }
+        };
+
+        const fetchSanciones = async () => {
+            if (user?.rut) {
+                const [data] = await getActivasPorUsuario(user.rut);
+                if (data) setSanciones(data);
+            }
+        };
+
+        if (user?.rut) {
+            fetchSanciones();
+            if (userRole !== 'Administrador' && userRole !== 'Director de Escuela') {
+                fetchSolicitudes();
+            }
+        }
+    }, [user?.rut]);
 
     const handleSubmitPassword = async (e) => {
         e.preventDefault();
@@ -61,9 +98,36 @@ const Perfil = () => {
                 <p>Gestiona tu información personal y seguridad</p>
             </header>
 
+            {sanciones.length > 0 && (
+                <div className="sancion-banner" style={{
+                    backgroundColor: '#f8d7da', 
+                    color: '#721c24', 
+                    padding: '20px', 
+                    borderRadius: '8px', 
+                    marginBottom: '25px',
+                    borderLeft: '5px solid #dc3545',
+                    boxShadow: '0 2px 10px rgba(0,0,0,0.1)'
+                }}>
+                    <h3 style={{marginTop: 0, display: 'flex', alignItems: 'center', gap: '10px'}}>
+                        ⚠️ Cuenta Sancionada
+                    </h3>
+                    <p>Actualmente tienes <strong>{sanciones.length} sanción(es) activa(s)</strong>. No podrás realizar nuevas solicitudes hasta que expiren.</p>
+                    <ul style={{marginTop: '10px', paddingLeft: '20px'}}>
+                        {sanciones.map(s => (
+                            <li key={s.ID} style={{marginBottom: '5px'}}>
+                                <strong>{s.penalizacion?.Descripcion}</strong> 
+                                <br/>
+                                <small>Vigente hasta: {new Date(s.Fecha_Fin).toLocaleDateString('es-CL')}</small>
+                            </li>
+                        ))}
+                    </ul>
+                </div>
+            )}
+
             <div className="perfil-grid">
                 {/* Card de Información Personal */}
                 <section className="perfil-card info-card">
+                    {/* ... (contenido existente omitido para brevedad en el chunk, pero se mantiene todo) */}
                     <div className="card-header">
                         <span className="icon">👤</span>
                         <h2>Información Personal</h2>
@@ -82,7 +146,7 @@ const Perfil = () => {
                                 </div>
                                 <div className="info-item">
                                     <label>Correo Electrónico</label>
-                                    <p>{user.correo}</p>
+                                    <p>{user.email}</p>
                                 </div>
                             </div>
                         </div>
@@ -179,6 +243,77 @@ const Perfil = () => {
                         </form>
                     </div>
                 </section>
+
+                {/* Card de Soporte */}
+                <section className="perfil-card soporte-card">
+                    <div className="card-header">
+                        <span className="icon">📧</span>
+                        <h2>Ayuda y Soporte</h2>
+                    </div>
+                    <div className="card-body">
+                        <p className="section-desc">¿Tienes alguna duda o problema técnico con el sistema?</p>
+                        <div className="soporte-contacto">
+                            <label>Correo de Contacto</label>
+                            <a href="mailto:labespecialidades.face@ubiobio.cl" className="soporte-link">
+                                labespecialidades.face@ubiobio.cl
+                            </a>
+                        </div>
+                    </div>
+                </section>
+
+                {/* Card de Mis Solicitudes Recientes (Solo para Alumnos y Profesores) */}
+                {userRole !== 'Administrador' && userRole !== 'Director de Escuela' && (
+                    <section className="perfil-card solicitudes-card">
+                        <div className="card-header">
+                            <span className="icon">📋</span>
+                            <h2>Mis Solicitudes Recientes</h2>
+                            <Link to="/estado-solicitud" className="btn-view-all">Ver todas</Link>
+                        </div>
+                        <div className="card-body">
+                            {loadingSolicitudes ? (
+                                <p>Cargando solicitudes...</p>
+                            ) : solicitudes.length === 0 ? (
+                                <div className="no-solicitudes">
+                                    <p>No has realizado solicitudes recientemente.</p>
+                                    <Link to="/generar-solicitud" className="btn-primary-small">Generar nueva solicitud</Link>
+                                </div>
+                            ) : (
+                                <div className="perfil-solicitudes-list">
+                                    {solicitudes.map((sol) => {
+                                        const isLargoPlazo = sol.Fecha_inicio_sol && sol.Fecha_termino_sol;
+                                        const hasPrestamo = !!sol.ID_Prestamo;
+                                        let estado = "Pendiente";
+                                        let badgeClass = "badge-pendiente";
+
+                                        if (hasPrestamo && sol.prestamo?.tieneEstados?.length > 0) {
+                                            const lastEstado = [...sol.prestamo.tieneEstados].sort(
+                                                (a, b) => new Date(b.Fecha_Estado) - new Date(a.Fecha_Estado)
+                                            )[0];
+                                            estado = lastEstado.estadoPrestamo?.Descripcion || "Procesando";
+                                            
+                                            const cod = lastEstado.Cod_Estado;
+                                            if (cod === 2) badgeClass = "badge-aprobado";
+                                            if (cod === 3) badgeClass = "badge-entregado";
+                                            if (cod === 4) badgeClass = "badge-devuelto";
+                                            if (cod === 5) badgeClass = "badge-rechazado";
+                                        }
+
+                                        return (
+                                            <div key={sol.ID_Solicitud} className="perfil-solicitud-item">
+                                                <div className="item-info">
+                                                    <span className="item-date">{new Date(sol.Fecha_Sol).toLocaleDateString()}</span>
+                                                    <span className="item-equipo">{sol.equipo?.categoria?.Descripcion} - {sol.ID_Num_Inv}</span>
+                                                    {isLargoPlazo && <span className="item-tipo">📆 Largo Plazo</span>}
+                                                </div>
+                                                <span className={`item-status ${badgeClass}`}>{estado}</span>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            )}
+                        </div>
+                    </section>
+                )}
             </div>
         </div>
     );

@@ -64,7 +64,7 @@ const validateNombreCompleto = (nombre) => {
 		if (!/[A-Z]/.test(password)) return 'Debe contener al menos una letra mayúscula';
 		if (!/[a-z]/.test(password)) return 'Debe contener al menos una letra minúscula';
 		if (!/[0-9]/.test(password)) return 'Debe contener al menos un número';
-		if (!/^[a-zA-Z0-9\W_]+$/.test(password)) return 'La contraseña contiene caracteres no válidos';
+		if (!/^[a-zA-Z0-9\W_]*$/.test(password)) return 'La contraseña contiene caracteres no válidos';
 		return '';
 	};
 
@@ -356,8 +356,8 @@ const validateNombreCompleto = (nombre) => {
 							<div style={{ color: /[0-9]/.test(formData.password) ? '#28a745' : '#666' }}>
 								{/[0-9]/.test(formData.password) ? '✓' : '○'} Al menos un número
 							</div>
-							<div style={{ color: /^[a-zA-Z0-9\W_]*$/.test(formData.password) && formData.password.length > 0 ? '#28a745' : '#666' }}>
-								{(/^[a-zA-Z0-9\W_]*$/.test(formData.password) && formData.password.length > 0) ? '✓' : '○'} Caracteres válidos (letras, números, símbolos)
+							<div style={{ color: (formData.password.length > 0) ? '#28a745' : '#666' }}>
+								{(formData.password.length > 0) ? '✓' : '○'} Caracteres válidos (letras, números, símbolos)
 							</div>
 						</div>
 					</div>

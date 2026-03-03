@@ -25,6 +25,6 @@ router.use(isAdmin);
 router
   .post("/", asignarPenalizacionController)
   .get("/", getTienePenalizacionesController)
-  .patch("/:rut/:idPenalizacion/finalizar", finalizarPenalizacionController);
+  .patch("/:id/finalizar", finalizarPenalizacionController);
 
 export default router;

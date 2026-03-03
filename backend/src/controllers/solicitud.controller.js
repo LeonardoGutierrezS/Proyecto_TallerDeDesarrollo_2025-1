@@ -86,10 +86,16 @@ export async function getSolicitudesPorUsuarioController(req, res) {
 export async function getMisSolicitudesController(req, res) {
   try {
     const rut = req.user.rut; // Obtener RUT del usuario autenticado
+    console.log("[DEBUG] getMisSolicitudesController - RUT del usuario:", rut);
 
     const [solicitudes, errorSolicitudes] = await getSolicitudesPorUsuarioService(rut);
 
-    if (errorSolicitudes) return handleErrorClient(res, 404, errorSolicitudes);
+    if (errorSolicitudes) {
+      console.log("[DEBUG] getMisSolicitudesController - Error en service:", errorSolicitudes);
+      return handleErrorClient(res, 404, errorSolicitudes);
+    }
+
+    console.log("[DEBUG] getMisSolicitudesController - Cantidad encontrada:", solicitudes?.length || 0);
 
     solicitudes.length === 0
       ? handleSuccess(res, 204)
@@ -158,8 +164,9 @@ export async function deleteSolicitudController(req, res) {
 export async function descargarPDFAutorizacionController(req, res) {
   try {
     const { idSolicitud } = req.params;
+    const adminName = req.user?.nombreCompleto;
 
-    const doc = await generarPDFAutorizacion(parseInt(idSolicitud));
+    const doc = await generarPDFAutorizacion(parseInt(idSolicitud), adminName);
 
     // Configurar headers para descarga de PDF
     res.setHeader("Content-Type", "application/pdf");

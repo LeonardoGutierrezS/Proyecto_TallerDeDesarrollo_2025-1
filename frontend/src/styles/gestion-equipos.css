@@ -6,10 +6,10 @@
 
 .equipos-header h1 {
   color: #003366;
-  font-size: 2em;
+  font-size: 1.75em;
   margin: 0;
-  padding-bottom: 15px;
-  border-bottom: 3px solid #006edf;
+  padding-bottom: 8px;
+  border-bottom: 2px solid #006edf;
 }
 
 /* Section Header */
@@ -99,28 +99,32 @@
     transform: translateY(0);
 }
 
-/* Filtros */
-.filters-section {
-    margin-bottom: 20px;
+/* Equipos Section (Contenedor Principal como en Usuarios) */
+.equipos-section {
+    background: white;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
-.filters-row {
+/* Filtros */
+.filters-container {
     display: flex;
     gap: 15px;
+    margin-bottom: 20px;
     flex-wrap: wrap;
+    align-items: center;
 }
 
-.filter-select {
+.filter-input, .filter-select {
     padding: 10px 15px;
     border: 1px solid #ddd;
     border-radius: 5px;
     font-size: 0.95em;
     transition: all 0.3s ease;
-    flex: 1;
-    min-width: 200px;
 }
 
-.filter-select:focus {
+.filter-input:focus, .filter-select:focus {
     outline: none;
     border-color: #006edf;
     box-shadow: 0 0 0 3px rgba(0, 110, 223, 0.1);
@@ -128,15 +132,16 @@
 
 /* Tabla de equipos */
 .equipos-table-container {
-    background: white;
-    border-radius: 8px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    overflow: hidden;
+    /* Ya no necesita fondo ni sombra si está dentro de .equipos-section */
+    background: transparent;
+    box-shadow: none;
+    overflow-x: auto;
 }
 
 .equipos-table {
     width: 100%;
     border-collapse: collapse;
+    margin-top: 10px;
 }
 
 .equipos-table thead {
@@ -530,3 +535,40 @@
         padding: 3px 10px;
     }
 }
+
+/* Estilos de Paginación */
+.pagination-controls {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-top: 20px;
+    gap: 15px;
+}
+
+.pagination-btn {
+    padding: 8px 16px;
+    border: 1px solid #006edf;
+    background-color: white;
+    color: #006edf;
+    border-radius: 5px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+.pagination-btn:hover:not(:disabled) {
+    background-color: #006edf;
+    color: white;
+}
+
+.pagination-btn:disabled {
+    border-color: #ccc;
+    color: #ccc;
+    cursor: not-allowed;
+}
+
+.pagination-info {
+    font-weight: 500;
+    color: #666;
+}
+

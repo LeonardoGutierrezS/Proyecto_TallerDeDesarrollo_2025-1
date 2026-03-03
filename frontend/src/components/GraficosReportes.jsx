@@ -9,14 +9,17 @@ import {
   Title,
   Tooltip,
   Legend,
+  Filler
 } from "chart.js";
 import { Pie, Bar, Line } from "react-chartjs-2";
+import ChartDataLabels from 'chartjs-plugin-datalabels';
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faClipboardList,
   faBoxOpen,
   faLaptop,
   faUsers,
+  faBan,
 } from "@fortawesome/free-solid-svg-icons";
 import "@styles/DashboardStats.css";
 
@@ -31,6 +34,8 @@ ChartJS.register(
   Title,
   Tooltip,
   Legend,
+  Filler,
+  ChartDataLabels
 );
 
 const GraficosReportes = ({ datosGraficos, mesesHistorial, setMesesHistorial }) => {
@@ -47,8 +52,12 @@ const GraficosReportes = ({ datosGraficos, mesesHistorial, setMesesHistorial }) 
   // Excluir administradores de la cuenta de usuarios registrados para reportes
   const totalSolicitudes = Object.values(datosGraficos.solicitudesPorEstado || {}).reduce((a, b) => a + b, 0);
   const totalEquipos = Object.values(datosGraficos.equiposPorCategoria || {}).reduce((a, b) => a + b, 0);
-  const totalUsuarios = (datosGraficos.usuariosPorTipo?.alumnos || 0) + (datosGraficos.usuariosPorTipo?.profesores || 0);
+  
+  // Arreglado: Usar el conteo total del sistema
+  const totalUsuarios = datosGraficos.totalUsuariosSistema || 0;
+  
   const prestamosActivos = datosGraficos.solicitudesPorEstado?.entregados || 0;
+  const totalSancionados = datosGraficos.totalSancionados || 0;
 
   // Paleta de colores premium
   const colors = [
@@ -120,42 +129,88 @@ const GraficosReportes = ({ datosGraficos, mesesHistorial, setMesesHistorial }) 
     ],
   };
 
-  // Solicitudes por Carrera (Bar - Nuevo)
-  const carreraLabels = Object.keys(datosGraficos.solicitudesPorCarrera || {});
-  const carreraValues = Object.values(datosGraficos.solicitudesPorCarrera || {});
+  // Solicitudes por Carrera/Cargo (Grouped Bar - Reformulado con Wrapping)
+  const wrapLabel = (label, maxChars = 15) => {
+    const words = label.split(' ');
+    const lines = [];
+    let currentLine = '';
+    words.forEach(word => {
+      if ((currentLine + word).length > maxChars) {
+        lines.push(currentLine.trim());
+        currentLine = word + ' ';
+      } else {
+        currentLine += word + ' ';
+      }
+    });
+    lines.push(currentLine.trim());
+    return lines;
+  };
+
+  const rawCarreraLabels = Object.keys(datosGraficos.solicitudesPorCarrera || {});
+  const wrappedCarreraLabels = rawCarreraLabels.map(label => wrapLabel(label, 18));
+
   const solicitudesPorCarreraData = {
-    labels: carreraLabels,
+    labels: wrappedCarreraLabels,
     datasets: [
       {
-        label: "Solicitudes por Carrera",
-        data: carreraValues,
+        label: "Diario",
+        data: rawCarreraLabels.map(label => datosGraficos.solicitudesPorCarrera[label]?.diario || 0),
         backgroundColor: "rgba(59, 130, 246, 0.7)",
         borderColor: "rgba(59, 130, 246, 1)",
+        borderWidth: 1,
+        borderRadius: 4,
+      },
+      {
+        label: "Largo Plazo",
+        data: rawCarreraLabels.map(label => datosGraficos.solicitudesPorCarrera[label]?.largoPlazo || 0),
+        backgroundColor: "rgba(16, 185, 129, 0.7)",
+        borderColor: "rgba(16, 185, 129, 1)",
         borderWidth: 1,
         borderRadius: 4,
       }
     ]
   };
 
-  // Distribución de Usuarios (Pie) - Excluyendo Administradores
+  // Distribución de Usuarios (Pie) - Por Carrera y Cargo (Con solicitudes)
+  const alumnosDist = datosGraficos.usuariosPorTipo?.alumnos || {};
+  const profesoresDist = datosGraficos.usuariosPorTipo?.profesores || {};
+  
+  const labelAlumnos = Object.keys(alumnosDist).map(c => `Alumno: ${c}`);
+  const dataAlumnos = Object.values(alumnosDist);
+  
+  const labelProfesores = Object.keys(profesoresDist).map(c => `Prof: ${c}`);
+  const dataProfesores = Object.values(profesoresDist);
+
+  const usuariosLabels = [...labelAlumnos, ...labelProfesores];
+  const usuariosData = [...dataAlumnos, ...dataProfesores];
+
   const usuariosPorTipoData = {
-    labels: [
-      `Alumnos (${datosGraficos.usuariosPorTipo.alumnos || 0})`, 
-      `Profesores (${datosGraficos.usuariosPorTipo.profesores || 0})`
-    ],
+    labels: usuariosLabels,
     datasets: [
       {
-        data: [
-          datosGraficos.usuariosPorTipo.alumnos || 0,
-          datosGraficos.usuariosPorTipo.profesores || 0
-        ],
+        data: usuariosData,
+        backgroundColor: colors,
+        borderWidth: 1,
+      },
+    ],
+  };
+
+  // Distribución General de Usuarios (Alumno vs Profesor únicamente)
+  const totalAlumnos = Object.values(datosGraficos.usuariosPorTipo?.alumnos || {}).reduce((a, b) => a + b, 0);
+  const totalProfesores = Object.values(datosGraficos.usuariosPorTipo?.profesores || {}).reduce((a, b) => a + b, 0);
+
+  const usuariosGeneralData = {
+    labels: ['Alumnos', 'Profesores'],
+    datasets: [
+      {
+        data: [totalAlumnos, totalProfesores],
         backgroundColor: [colors[0], colors[2]],
         borderWidth: 1,
       },
     ],
   };
 
-  // Tendencia de Solicitudes (Line)
+  // Tendencia de Solicitudes (Line) - GENERAL
   const solicitudesPorMesData = {
     labels: (datosGraficos.solicitudesPorMes || []).map((item) => {
       const fecha = new Date(item.mes);
@@ -163,7 +218,7 @@ const GraficosReportes = ({ datosGraficos, mesesHistorial, setMesesHistorial }) 
     }),
     datasets: [
       {
-        label: "Solicitudes Mensuales",
+        label: "Total Solicitudes Mensuales",
         data: (datosGraficos.solicitudesPorMes || []).map((item) => parseInt(item.cantidad)),
         fill: true,
         backgroundColor: "rgba(59, 130, 246, 0.1)",
@@ -175,6 +230,82 @@ const GraficosReportes = ({ datosGraficos, mesesHistorial, setMesesHistorial }) 
         pointHoverRadius: 6,
       },
     ],
+  };
+
+  // [NUEVO] TENDENCIA MULTISERIE (Por Categoría)
+  const tendenciaKeys = Object.keys(datosGraficos.tendenciaPorCategoria || {});
+  const tendenciaMultiSerieData = {
+    labels: tendenciaKeys, // Meses
+    datasets: categoriasLabels.map((cat, index) => {
+      return {
+        label: cat,
+        data: tendenciaKeys.map(mes => 
+          (datosGraficos.tendenciaPorCategoria && datosGraficos.tendenciaPorCategoria[mes] && datosGraficos.tendenciaPorCategoria[mes][cat]) || 0
+        ),
+        borderColor: colors[index % colors.length],
+        fill: false,
+        tension: 0.3
+      };
+    })
+  };
+
+
+
+  // Préstamos por Equipo y Tipo de Usuario (Grouped Bar)
+  const equipoTipoLabels = Object.keys(datosGraficos.prestamosPorEquipoTipo || {});
+  const prestamosPorEquipoData = {
+    labels: equipoTipoLabels,
+    datasets: [
+      {
+        label: "Alumnos",
+        data: equipoTipoLabels.map(cat => datosGraficos.prestamosPorEquipoTipo[cat]?.Alumno || 0),
+        backgroundColor: "rgba(59, 130, 246, 0.7)",
+        borderColor: "rgba(59, 130, 246, 1)",
+        borderWidth: 1,
+        borderRadius: 4,
+      },
+      {
+        label: "Profesores",
+        data: equipoTipoLabels.map(cat => datosGraficos.prestamosPorEquipoTipo[cat]?.Profesor || 0),
+        backgroundColor: "rgba(255, 159, 64, 0.7)",
+        borderColor: "rgba(255, 159, 64, 1)",
+        borderWidth: 1,
+        borderRadius: 4,
+      }
+    ]
+  };
+
+  const groupedBarOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    indexAxis: 'x', // Forzar vertical
+    plugins: { 
+      legend: { position: 'top' },
+      datalabels: { display: false }
+    },
+    scales: {
+      x: { 
+        type: 'category',
+        grid: { display: false },
+        ticks: {
+          maxRotation: 0,
+          minRotation: 0,
+          font: { size: 11, weight: '500' },
+          autoSkip: false
+        }
+      },
+      y: { 
+        beginAtZero: true, 
+        ticks: { 
+          stepSize: 1, 
+          precision: 0,
+          callback: (value) => Number.isInteger(value) ? value : null
+        }
+      }
+    },
+    layout: {
+      padding: { bottom: 20, top: 10 }
+    }
   };
 
   const pieOptions = {
@@ -189,20 +320,60 @@ const GraficosReportes = ({ datosGraficos, mesesHistorial, setMesesHistorial }) 
           font: { family: "'Inter', sans-serif", size: 11 },
         },
       },
+      tooltip: {
+        callbacks: {
+          label: (ctx) => ` ${ctx.label}: ${ctx.raw}`
+        }
+      },
+      datalabels: {
+        color: '#fff',
+        font: {
+          weight: 'bold',
+          size: 11
+        },
+        formatter: (value, ctx) => {
+          const sum = ctx.dataset.data.reduce((a, b) => a + b, 0);
+          const percentage = ((value * 100) / sum).toFixed(1) + "%";
+          return `${value}\n(${percentage})`;
+        },
+        textAlign: 'center',
+        textShadowColor: 'rgba(0,0,0,0.5)',
+        textShadowBlur: 3,
+        display: (ctx) => {
+          const value = ctx.dataset.data[ctx.dataIndex];
+          const sum = ctx.dataset.data.reduce((a, b) => a + b, 0);
+          return (value / sum) > 0.04; 
+        }
+      }
     },
-    layout: { padding: 5 },
+    layout: { padding: 15 },
   };
 
   const barOptions = {
     responsive: true,
     maintainAspectRatio: false,
-    indexAxis: 'y', // Barras horizontales para que se lean mejor las carreras
-    plugins: { legend: { display: false } },
+    indexAxis: 'y', // Barras horizontales
+    plugins: { 
+      legend: { display: false },
+      datalabels: { display: false }
+    },
     scales: {
-      x: { beginAtZero: true, grid: { color: "#f1f5f9" } },
+      x: { 
+        beginAtZero: true, 
+        grid: { color: "#f1f5f9" },
+        ticks: { stepSize: 1, precision: 0 }
+      },
       y: { grid: { display: false } },
     },
   };
+  
+
+
+  // Calcular máximo para el eje Y del gráfico de tendencia
+  const allLineData = tendenciaMultiSerieData.datasets.length 
+    ? tendenciaMultiSerieData.datasets.flatMap(ds => ds.data)
+    : solicitudesPorMesData.datasets.flatMap(ds => ds.data);
+  const maxLineValue = Math.max(...allLineData, 0);
 
   const lineOptions = {
     responsive: true,
@@ -210,12 +381,24 @@ const GraficosReportes = ({ datosGraficos, mesesHistorial, setMesesHistorial }) 
     plugins: {
       legend: { position: "top", align: "end" },
       tooltip: { mode: "index", intersect: false },
+      datalabels: { display: false }
     },
     scales: {
-      y: { beginAtZero: true, grid: { color: "#f1f5f9" } },
+      y: { 
+        beginAtZero: true, 
+        suggestedMax: maxLineValue + 1,
+        grid: { color: "#f1f5f9" },
+        ticks: { 
+          stepSize: 1, 
+          precision: 0,
+          callback: (value) => Number.isInteger(value) ? value : null
+        }
+      },
       x: { grid: { display: false } },
     },
   };
+  
+
 
   return (
     <div className="graficos-container">
@@ -260,27 +443,30 @@ const GraficosReportes = ({ datosGraficos, mesesHistorial, setMesesHistorial }) 
             <p className="kpi-value">{totalUsuarios}</p>
           </div>
         </div>
+
+        <div className="kpi-card">
+          <div className="kpi-icon-wrapper" style={{ backgroundColor: "#fff1f2", color: "#e11d48" }}>
+            <FontAwesomeIcon icon={faBan} />
+          </div>
+          <div className="kpi-content">
+            <h4>Sancionados</h4>
+            <p className="kpi-value">{totalSancionados}</p>
+          </div>
+        </div>
       </div>
 
       {/* Charts Grid */}
       <div className="charts-grid">
         <div className="grafico-card grafico-wide">
           <div className="card-header-flex" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <h4>Tendencia de Solicitudes</h4>
+            <h4>Tendencia General vs Categorías</h4>
             <div className="trend-selector" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <label style={{ fontSize: '12px', fontWeight: '600', color: '#64748b' }}>Periodo:</label>
               <select 
                 value={mesesHistorial} 
                 onChange={(e) => setMesesHistorial(parseInt(e.target.value))}
-                style={{ 
-                  padding: '4px 8px', 
-                  borderRadius: '6px', 
-                  border: '1px solid #e2e8f0',
-                  fontSize: '12px',
-                  backgroundColor: '#f8fafc',
-                  cursor: 'pointer'
-                }}
+                style={{ padding: '4px 8px', borderRadius: '6px', border: '1px solid #e2e8f0' }}
               >
+                <option value={1}>1 mes</option>
                 <option value={3}>3 meses</option>
                 <option value={6}>6 meses</option>
                 <option value={12}>12 meses</option>
@@ -288,9 +474,34 @@ const GraficosReportes = ({ datosGraficos, mesesHistorial, setMesesHistorial }) 
             </div>
           </div>
           <div className="chart-wrapper">
-            <Line data={solicitudesPorMesData} options={lineOptions} />
+            {/* Si tenemos datos de tendencia multiserie, asumimos preferencia por mostrar detalle */}
+             <Line data={tendenciaMultiSerieData.datasets.length ? tendenciaMultiSerieData : solicitudesPorMesData} options={lineOptions} />
           </div>
         </div>
+        
+        {/* Préstamos por Equipo: Alumnos vs Profesores */}
+        <div className="grafico-card grafico-wide">
+            <div className="card-header-flex" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h4>Préstamos por Equipo: Alumnos vs Profesores</h4>
+              <div className="trend-selector" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <select 
+                  value={mesesHistorial} 
+                  onChange={(e) => setMesesHistorial(parseInt(e.target.value))}
+                  style={{ padding: '4px 8px', borderRadius: '6px', border: '1px solid #e2e8f0' }}
+                >
+                  <option value={1}>1 mes</option>
+                  <option value={3}>3 meses</option>
+                  <option value={6}>6 meses</option>
+                  <option value={12}>12 meses</option>
+                </select>
+              </div>
+            </div>
+            <div className="chart-wrapper" style={{ height: '350px' }}>
+                <Bar data={prestamosPorEquipoData} options={groupedBarOptions} />
+            </div>
+        </div>
+
+
 
         <div className="grafico-card">
           <h4>Estado de Solicitudes</h4>
@@ -314,16 +525,23 @@ const GraficosReportes = ({ datosGraficos, mesesHistorial, setMesesHistorial }) 
         </div>
 
         <div className="grafico-card">
-          <h4>Distribución de Usuarios</h4>
+          <h4>Distribución General de Usuarios</h4>
+          <div className="chart-wrapper">
+             <Pie data={usuariosGeneralData} options={pieOptions} />
+          </div>
+        </div>
+
+        <div className="grafico-card">
+          <h4>Distribución Usuarios (Detalle Carrera/Cargo)</h4>
           <div className="chart-wrapper">
             <Pie data={usuariosPorTipoData} options={pieOptions} />
           </div>
         </div>
 
         <div className="grafico-card grafico-wide">
-          <h4>Solicitudes por Carrera</h4>
-          <div className="chart-wrapper" style={{ height: "300px" }}>
-            <Bar data={solicitudesPorCarreraData} options={barOptions} />
+          <h4>Solicitudes por Carrera/Cargo: Diario vs Largo Plazo</h4>
+          <div className="chart-wrapper" style={{ height: '400px' }}>
+            <Bar data={solicitudesPorCarreraData} options={groupedBarOptions} />
           </div>
         </div>
       </div>

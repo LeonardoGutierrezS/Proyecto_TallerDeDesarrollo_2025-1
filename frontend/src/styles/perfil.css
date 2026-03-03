@@ -1,23 +1,26 @@
 .perfil-container {
-    padding: 30px;
-    max-width: 1000px;
+    padding: 40px;
+    max-width: 100%;
 }
 
 .perfil-header {
-    margin-bottom: 40px;
-    border-bottom: 2px solid #eef2f6;
-    padding-bottom: 20px;
+    margin-bottom: 24px;
+    border-bottom: none;
+    padding-bottom: 0;
 }
 
-.perfil-header h1 {
+.perfil-container .perfil-header h1 {
     color: #003366;
-    font-size: 2.2rem;
-    margin-bottom: 8px;
+    font-size: 1.75rem;
+    margin-top: 0;
+    margin-bottom: 6px;
+    border-bottom: 2px solid #006edf;
+    padding-bottom: 8px;
 }
 
 .perfil-header p {
     color: #64748b;
-    font-size: 1.1rem;
+    font-size: 1rem;
 }
 
 .perfil-grid {
@@ -204,6 +207,127 @@
 
 .btn-update:hover:not(:disabled) {
     background: #004080;
+}
+
+/* Estilos para solicitudes en perfil */
+.btn-view-all {
+    margin-left: auto;
+    font-size: 0.85rem;
+    color: #3b82f6;
+    text-decoration: none;
+    font-weight: 600;
+}
+
+.btn-view-all:hover {
+    text-decoration: underline;
+}
+
+.no-solicitudes {
+    text-align: center;
+    padding: 20px 0;
+}
+
+.no-solicitudes p {
+    color: #64748b;
+    margin-bottom: 15px;
+}
+
+.btn-primary-small {
+    display: inline-block;
+    background: #003366;
+    color: white;
+    padding: 8px 16px;
+    border-radius: 6px;
+    text-decoration: none;
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
+.perfil-solicitudes-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.perfil-solicitud-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 15px;
+    background: #f8fafc;
+    border-radius: 10px;
+    border: 1px solid #eef2f6;
+}
+
+.item-info {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.item-date {
+    font-size: 0.75rem;
+    color: #94a3b8;
+}
+
+.item-equipo {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: #1e293b;
+}
+
+.item-tipo {
+    font-size: 0.75rem;
+    color: #0c4a6e;
+    background: #e0f2fe;
+    padding: 1px 6px;
+    border-radius: 4px;
+    width: fit-content;
+}
+
+.item-status {
+    font-size: 0.8rem;
+    font-weight: 600;
+    padding: 4px 10px;
+    border-radius: 20px;
+}
+
+.badge-pendiente { background: #fef3c7; color: #92400e; }
+.badge-aprobado { background: #dcfce7; color: #166534; }
+.badge-entregado { background: #dbeafe; color: #1e40af; }
+.badge-devuelto { background: #f1f5f9; color: #475569; }
+.badge-rechazado { background: #fee2e2; color: #991b1b; }
+
+.soporte-contacto {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    background: #f0fdf4;
+    padding: 15px;
+    border-radius: 12px;
+    border: 1px solid #dcfce7;
+}
+
+.soporte-contacto label {
+    font-size: 0.8rem;
+    color: #166534;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.soporte-link {
+    color: #15803d;
+    font-size: 1.1rem;
+    font-weight: 600;
+    text-decoration: none;
+    transition: all 0.2s ease;
+    word-break: break-all;
+}
+
+.soporte-link:hover {
+    color: #166534;
+    text-decoration: underline;
 }
 
 @media (max-width: 768px) {

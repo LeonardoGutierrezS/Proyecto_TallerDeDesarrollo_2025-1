@@ -9,8 +9,8 @@
     display: flex;
     justify-content: center;
     align-items: center;
-    z-index: 2000;
-    animation: fadeIn 0.3s ease;
+    z-index: 1000;
+    /* animation: fadeIn 0.3s ease; */
 }
 
 @keyframes fadeIn {
@@ -30,7 +30,10 @@
     max-height: 90vh;
     overflow-y: auto;
     box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
-    animation: slideUp 0.3s ease;
+    /* animation: slideUp 0.3s ease; */
+    will-change: transform, opacity;
+    backface-visibility: hidden;
+    transform: translateZ(0);
 }
 
 /* Modal pequeño para catálogos simples (marca, categoría, estado) */
@@ -185,9 +188,33 @@
 .form-group select:focus,
 .form-group textarea:focus {
     outline: none;
-    border-color: #006edf;
-    box-shadow: 0 0 0 4px rgba(0, 110, 223, 0.15);
     background-color: #fff;
+}
+
+.input-error {
+    border-color: #ef4444 !important;
+    background-color: #fffcfc !important;
+}
+
+.input-error:focus {
+    box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.15) !important;
+}
+
+.error-text {
+    color: #ef4444;
+    font-size: 0.82em;
+    margin-top: 5px;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    animation: shake 0.4s ease-in-out;
+}
+
+@keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-5px); }
+    75% { transform: translateX(5px); }
 }
 
 .modal-content-small .form-group input:focus {

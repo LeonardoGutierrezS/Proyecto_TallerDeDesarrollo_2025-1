@@ -18,6 +18,11 @@ const PenalizacionesSchema = new EntitySchema({
       type: "text",
       nullable: false,
     },
+    Dias_Sancion: {
+      type: "int",
+      nullable: false,
+      default: 0,
+    },
   },
   relations: {
     tienePenalizaciones: {

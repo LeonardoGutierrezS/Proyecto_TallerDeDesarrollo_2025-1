@@ -46,6 +46,11 @@ const PrestamoSchema = new EntitySchema({
       type: "text",
       nullable: true,
     },
+    Documento_Suscrito: {
+      type: "varchar",
+      length: 255,
+      nullable: true,
+    },
   },
   relations: {
     equipos: {

@@ -5,7 +5,8 @@ import { useState, useEffect } from 'react';
 import { useGetEquiposDisponibles } from '@hooks/equipos/useGetEquiposDisponibles';
 import { useGetCategorias } from '@hooks/catalogos/useGetCategorias';
 import { createSolicitud } from '@services/solicitud.service';
-import { showErrorAlert, showSuccessAlert } from '@helpers/sweetAlert';
+import { getActivasPorUsuario } from '@services/penalizacion.service';
+import { showErrorAlert, showSuccessAlert, showLoadingAlert, closeAlert } from '@helpers/sweetAlert';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@context/AuthContext';
 import DatePicker from 'react-datepicker';
@@ -28,9 +29,24 @@ const GenerarSolicitud = () => {
         motivo: ''
     });
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [sancionesActivas, setSancionesActivas] = useState([]);
+    const [loadingSanciones, setLoadingSanciones] = useState(true);
 
     const { equipos, loading: loadingEquipos } = useGetEquiposDisponibles();
     const { categorias, loading: loadingCategorias } = useGetCategorias();
+
+    useEffect(() => {
+        const checkSanciones = async () => {
+            if (user?.rut) {
+                const [data] = await getActivasPorUsuario(user.rut);
+                if (data && data.length > 0) {
+                    setSancionesActivas(data);
+                }
+            }
+            setLoadingSanciones(false);
+        };
+        checkSanciones();
+    }, [user]);
 
     // Filtrar equipos por categoría seleccionada
     const equiposFiltrados = selectedCategoria
@@ -104,6 +120,7 @@ const GenerarSolicitud = () => {
         }
 
         setIsSubmitting(true);
+        showLoadingAlert('Enviando Solicitud...', 'Por favor espera un momento mientras procesamos tu pedido.');
 
         try {
             // Obtener hora actual en formato HH:MM:SS
@@ -119,13 +136,19 @@ const GenerarSolicitud = () => {
                 Motivo_Sol: formData.motivo.trim()
             };
 
-            // Agregar fechas si existen (largo plazo)
+            // Agregar fechas si existen (largo plazo), si no, usar la fecha de solicitud (diario)
             if (fechaInicio && fechaTermino) {
                 solicitudData.Fecha_inicio_sol = fechaInicio.toISOString().split('T')[0];
                 solicitudData.Fecha_termino_sol = fechaTermino.toISOString().split('T')[0];
+            } else {
+                const soloFecha = now.toISOString().split('T')[0];
+                solicitudData.Fecha_inicio_sol = soloFecha;
+                solicitudData.Fecha_termino_sol = soloFecha;
             }
 
             const response = await createSolicitud(solicitudData);
+
+            closeAlert(); // Cerrar el loading antes de mostrar éxito/error
 
             if (response.status === 'Success') {
                 showSuccessAlert(
@@ -138,6 +161,7 @@ const GenerarSolicitud = () => {
                 showErrorAlert('Error', response.message || 'No se pudo crear la solicitud');
             }
         } catch (error) {
+            closeAlert();
             console.error('Error al crear solicitud:', error);
             showErrorAlert('Error', 'Ocurrió un error al crear la solicitud');
         } finally {
@@ -425,6 +449,60 @@ const GenerarSolicitud = () => {
             </div>
         );
     };
+
+    if (loadingSanciones) {
+        return <div className="main-container"><div className="loading-message">Verificando estado de cuenta...</div></div>;
+    }
+
+    if (sancionesActivas.length > 0) {
+        return (
+            <div className="main-container">
+                <div className="solicitud-header">
+                    <h1>🚫 Acceso Restringido</h1>
+                </div>
+                <div className="step-content">
+                    <div style={{
+                        backgroundColor: '#fff3cd', 
+                        color: '#856404', 
+                        padding: '30px', 
+                        borderRadius: '8px', 
+                        border: '1px solid #ffeeba',
+                        textAlign: 'center'
+                    }}>
+                        <h2 style={{color: '#856404', marginTop: 0}}>Cuenta con Sanciones Activas</h2>
+                        <p style={{fontSize: '1.1em'}}>
+                            No puedes realizar nuevas solicitudes de préstamo debido a que tienes sanciones vigentes en tu cuenta.
+                        </p>
+                        
+                        <div style={{textAlign: 'left', marginTop: '20px', backgroundColor: 'white', padding: '15px', borderRadius: '5px'}}>
+                            <h3 style={{fontSize: '1em', marginBottom: '10px'}}>Detalle de Sanciones:</h3>
+                            <ul style={{paddingLeft: '20px'}}>
+                                {sancionesActivas.map(s => (
+                                    <li key={s.ID} style={{marginBottom: '10px'}}>
+                                        <strong>{s.penalizacion?.Descripcion}</strong>
+                                        <br/>
+                                        <span>Motivo: {s.Motivo_Obs}</span>
+                                        <br/>
+                                        <small className="text-danger">
+                                            Vigente hasta: {new Date(s.Fecha_Fin).toLocaleDateString('es-CL', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+                                        </small>
+                                    </li>
+                                ))}
+                            </ul>
+                        </div>
+
+                        <button 
+                            className="btn-back" 
+                            onClick={() => navigate('/perfil')}
+                            style={{marginTop: '20px'}}
+                        >
+                            Volver a Mi Perfil
+                        </button>
+                    </div>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="main-container">

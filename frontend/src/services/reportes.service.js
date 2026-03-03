@@ -3,11 +3,13 @@ import axios from './root.service.js';
 /**
  * Descargar reporte de solicitudes en PDF
  */
-export const descargarReporteSolicitudesPDF = async (fechaInicio, fechaFin) => {
+export const descargarReporteSolicitudesPDF = async (fechaInicio, fechaFin, tipoUsuario, cargo) => {
   try {
     const params = {};
     if (fechaInicio) params.fechaInicio = fechaInicio;
     if (fechaFin) params.fechaFin = fechaFin;
+    if (tipoUsuario) params.tipoUsuario = tipoUsuario;
+    if (cargo) params.cargo = cargo;
 
     const response = await axios.get('/reportes/solicitudes/pdf', {
       params,
@@ -24,11 +26,13 @@ export const descargarReporteSolicitudesPDF = async (fechaInicio, fechaFin) => {
 /**
  * Descargar reporte de solicitudes en CSV
  */
-export const descargarReporteSolicitudesCSV = async (fechaInicio, fechaFin) => {
+export const descargarReporteSolicitudesCSV = async (fechaInicio, fechaFin, tipoUsuario, cargo) => {
   try {
     const params = {};
     if (fechaInicio) params.fechaInicio = fechaInicio;
     if (fechaFin) params.fechaFin = fechaFin;
+    if (tipoUsuario) params.tipoUsuario = tipoUsuario;
+    if (cargo) params.cargo = cargo;
 
     const response = await axios.get('/reportes/solicitudes/csv', {
       params,
@@ -45,11 +49,13 @@ export const descargarReporteSolicitudesCSV = async (fechaInicio, fechaFin) => {
 /**
  * Descargar reporte de préstamos en PDF
  */
-export const descargarReportePrestamosPDF = async (fechaInicio, fechaFin) => {
+export const descargarReportePrestamosPDF = async (fechaInicio, fechaFin, tipoUsuario, rut) => {
   try {
     const params = {};
     if (fechaInicio) params.fechaInicio = fechaInicio;
     if (fechaFin) params.fechaFin = fechaFin;
+    if (tipoUsuario) params.tipoUsuario = tipoUsuario;
+    if (rut) params.rut = rut;
 
     const response = await axios.get('/reportes/prestamos/pdf', {
       params,
@@ -66,11 +72,13 @@ export const descargarReportePrestamosPDF = async (fechaInicio, fechaFin) => {
 /**
  * Descargar reporte de préstamos en CSV
  */
-export const descargarReportePrestamosCSV = async (fechaInicio, fechaFin) => {
+export const descargarReportePrestamosCSV = async (fechaInicio, fechaFin, tipoUsuario, rut) => {
   try {
     const params = {};
     if (fechaInicio) params.fechaInicio = fechaInicio;
     if (fechaFin) params.fechaFin = fechaFin;
+    if (tipoUsuario) params.tipoUsuario = tipoUsuario;
+    if (rut) params.rut = rut;
 
     const response = await axios.get('/reportes/prestamos/csv', {
       params,
@@ -138,10 +146,11 @@ export const descargarReporteEstadisticasPDF = async (meses) => {
 /**
  * Descargar reporte de usuarios en PDF
  */
-export const descargarReporteUsuariosPDF = async (tipoUsuario) => {
+export const descargarReporteUsuariosPDF = async (tipoUsuario, carrera) => {
   try {
     const params = {};
     if (tipoUsuario) params.tipoUsuario = tipoUsuario;
+    if (carrera) params.carrera = carrera;
 
     const response = await axios.get('/reportes/usuarios/pdf', {
       params,
@@ -158,10 +167,11 @@ export const descargarReporteUsuariosPDF = async (tipoUsuario) => {
 /**
  * Descargar reporte de usuarios en CSV
  */
-export const descargarReporteUsuariosCSV = async (tipoUsuario) => {
+export const descargarReporteUsuariosCSV = async (tipoUsuario, carrera) => {
   try {
     const params = {};
     if (tipoUsuario) params.tipoUsuario = tipoUsuario;
+    if (carrera) params.carrera = carrera;
 
     const response = await axios.get('/reportes/usuarios/csv', {
       params,
@@ -178,10 +188,14 @@ export const descargarReporteUsuariosCSV = async (tipoUsuario) => {
 /**
  * Obtener datos para gráficos
  */
-export const obtenerDatosGraficos = async (meses) => {
+export const obtenerDatosGraficos = async (filtros = {}) => {
   try {
-    const params = {};
-    if (meses) params.meses = meses;
+    // Soporte para llamadas legacy que solo enviaban el número de meses
+    if (typeof filtros === 'number') {
+        filtros = { meses: filtros };
+    }
+
+    const params = { ...filtros };
 
     const response = await axios.get('/reportes/graficos', { params });
     return response.data.data;
